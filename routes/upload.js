@@ -22,8 +22,18 @@ const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowed.includes(ext)) {
     cb(null, true);
+  } else if (ext === '.pages') {
+    cb(new Error(
+      'Il formato .pages non è supportato direttamente.\n' +
+      'In Apple Pages: vai su File → Esporta in → Excel (.xlsx), poi carica il file .xlsx.'
+    ), false);
+  } else if (ext === '.numbers') {
+    cb(new Error(
+      'Il formato .numbers non è supportato direttamente.\n' +
+      'In Apple Numbers: vai su File → Esporta in → Excel (.xlsx), poi carica il file .xlsx.'
+    ), false);
   } else {
-    cb(new Error(`Formato non supportato: ${ext}. Usa .xlsx, .csv o .txt`), false);
+    cb(new Error(`Formato "${ext}" non supportato. Usa .xlsx, .csv o .txt`), false);
   }
 };
 
