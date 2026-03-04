@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listing — Amazon AI Tool</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <span class="logo-icon">🎨</span>
+      <span>Amazon <em>AI</em> Listing Tool</span>
+    </a>
+    <nav class="navbar-nav">
+      <a href="/" class="nav-link">📋 Dashboard</a>
+    </nav>
+  </nav>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay d-none" id="loadingOverlay">
+    <div class="loading-card">
+      <div class="big-spinner"></div>
+      <h3 id="loadingTitle">Rigenerazione in corso...</h3>
+      <p id="loadingSubtitle">Claude sta riscrivendo il campo selezionato</p>
+    </div>
+  </div>
+
+  <div class="container" style="padding-bottom: 100px;">
+
+    <!-- BACK -->
+    <a href="/" class="back-btn">← Torna alla Dashboard</a>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <h1 id="pageTitle">📄 Dettaglio Listing</h1>
+      <p id="pageSubtitle" class="text-muted">Caricamento...</p>
+    </div>
+
+    <!-- PRODUCT INFO -->
+    <div class="product-info-card" id="productInfoCard" style="display:none">
+      <h3>🖼️ Dati Opera Originale</h3>
+      <div id="productInfoRows"></div>
+    </div>
+
+    <!-- AI ACTIONS BAR -->
+    <div class="ai-actions">
+      <div class="ai-actions-label">
+        <span>🤖</span>
+        <span>Rigenera con AI</span>
+      </div>
+      <div class="ai-actions-buttons">
+        <button class="btn btn-ai btn-sm" id="regenTitoloBtn">
+          🔄 Rigenera Titolo
+        </button>
+        <button class="btn btn-ai btn-sm" id="regenBpBtn">
+          🔄 Rigenera Bullet Points
+        </button>
+        <button class="btn btn-ai btn-sm" id="regenDescBtn">
+          🔄 Rigenera Descrizione
+        </button>
+      </div>
+    </div>
+
+    <!-- LISTING FIELDS -->
+    <div class="listing-grid" id="listingGrid">
+
+      <!-- TITOLO -->
+      <div class="field-card">
+        <div class="field-card-header">
+          <div class="field-label">
+            <span class="field-icon">📌</span>
+            <span>Titolo</span>
+            <span class="text-muted" style="font-weight:400;font-size:12px;">(max 200 caratteri)</span>
+          </div>
+          <div class="field-actions">
+            <span id="titoloCounter" class="text-muted" style="font-size:12px;">0 car.</span>
+            <button class="btn btn-copy" onclick="copyField('titolo')">📋 Copia</button>
+          </div>
+        </div>
+        <div class="field-content">
+          <input type="text" id="titolo" class="field-input" placeholder="Titolo del prodotto Amazon..." maxlength="200" />
+        </div>
+      </div>
+
+      <!-- DESCRIZIONE -->
+      <div class="field-card">
+        <div class="field-card-header">
+          <div class="field-label">
+            <span class="field-icon">📝</span>
+            <span>Descrizione</span>
+            <span class="text-muted" style="font-weight:400;font-size:12px;">(200-2000 caratteri)</span>
+          </div>
+          <div class="field-actions">
+            <span id="descrizioneCounter" class="text-muted" style="font-size:12px;">0 car.</span>
+            <button class="btn btn-copy" onclick="copyField('descrizione')">📋 Copia</button>
+          </div>
+        </div>
+        <div class="field-content">
+          <textarea id="descrizione" class="field-input" rows="6" placeholder="Descrizione lunga del prodotto..."></textarea>
+        </div>
+      </div>
+
+      <!-- BULLET POINTS -->
+      <div class="field-card">
+        <div class="field-card-header">
+          <div class="field-label">
+            <span class="field-icon">🔵</span>
+            <span>Bullet Points</span>
+            <span class="text-muted" style="font-weight:400;font-size:12px;">(max 500 caratteri ciascuno)</span>
+          </div>
+          <div class="field-actions">
+            <button class="btn btn-copy" onclick="copyAllBullets()">📋 Copia tutti</button>
+          </div>
+        </div>
+        <div class="field-content" style="display:flex;flex-direction:column;gap:12px;">
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 1</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span id="bp1Counter" class="text-muted" style="font-size:12px;">0 car.</span>
+                <button class="btn btn-copy" onclick="copyField('bp1')">📋 Copia</button>
+              </div>
+            </div>
+            <textarea id="bp1" class="field-input" rows="2" placeholder="Primo bullet point..."></textarea>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 2</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span id="bp2Counter" class="text-muted" style="font-size:12px;">0 car.</span>
+                <button class="btn btn-copy" onclick="copyField('bp2')">📋 Copia</button>
+              </div>
+            </div>
+            <textarea id="bp2" class="field-input" rows="2" placeholder="Secondo bullet point..."></textarea>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 3</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span id="bp3Counter" class="text-muted" style="font-size:12px;">0 car.</span>
+                <button class="btn btn-copy" onclick="copyField('bp3')">📋 Copia</button>
+              </div>
+            </div>
+            <textarea id="bp3" class="field-input" rows="2" placeholder="Terzo bullet point..."></textarea>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 4</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span id="bp4Counter" class="text-muted" style="font-size:12px;">0 car.</span>
+                <button class="btn btn-copy" onclick="copyField('bp4')">📋 Copia</button>
+              </div>
+            </div>
+            <textarea id="bp4" class="field-input" rows="2" placeholder="Quarto bullet point..."></textarea>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 5</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span id="bp5Counter" class="text-muted" style="font-size:12px;">0 car.</span>
+                <button class="btn btn-copy" onclick="copyField('bp5')">📋 Copia</button>
+              </div>
+            </div>
+            <textarea id="bp5" class="field-input" rows="2" placeholder="Quinto bullet point..."></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PAROLE CHIAVE -->
+      <div class="field-card">
+        <div class="field-card-header">
+          <div class="field-label">
+            <span class="field-icon">🔍</span>
+            <span>Parole Chiave</span>
+            <span class="text-muted" style="font-weight:400;font-size:12px;">(separate da virgola)</span>
+          </div>
+          <div class="field-actions">
+            <button class="btn btn-copy" onclick="copyField('parole_chiave')">📋 Copia</button>
+          </div>
+        </div>
+        <div class="field-content">
+          <textarea id="parole_chiave" class="field-input" rows="3" placeholder="keyword1, keyword2, keyword3..."></textarea>
+        </div>
+      </div>
+
+      <!-- PREZZO E QUANTITA -->
+      <div class="field-card">
+        <div class="field-card-header">
+          <div class="field-label">
+            <span class="field-icon">💰</span>
+            <span>Prezzo e Disponibilità</span>
+          </div>
+        </div>
+        <div class="field-content" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <label style="font-size:13px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:8px;">
+              💰 Prezzo (€)
+            </label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="prezzo" class="field-input" placeholder="0.00" step="0.01" min="0" style="flex:1;" />
+              <button class="btn btn-copy" onclick="copyField('prezzo')">📋</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:8px;">
+              📦 Quantità
+            </label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="quantita" class="field-input" placeholder="1" min="0" style="flex:1;" />
+              <button class="btn btn-copy" onclick="copyField('quantita')">📋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /listing-grid -->
+
+  </div><!-- /container -->
+
+  <!-- SAVE BAR -->
+  <div class="save-bar" id="saveBar">
+    <div class="save-bar-info">
+      ✏️ <span>Hai modifiche non salvate</span>
+    </div>
+    <div class="save-bar-actions">
+      <button class="btn btn-secondary" id="discardBtn">↩ Annulla</button>
+      <button class="btn btn-success" id="saveBtn">💾 Salva modifiche</button>
+    </div>
+  </div>
+
+  <script src="/js/listing.js"></script>
+</body>
+</html>
