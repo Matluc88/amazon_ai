@@ -1,5 +1,11 @@
 node_modules/
 .env
 database/*.db
+database/*.db-shm
+database/*.db-wal
 uploads/
 *.db
+*.db-shm
+*.db-wal
+.DS_Store
+**/.DS_Store
