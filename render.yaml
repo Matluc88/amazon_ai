@@ -17,6 +17,4 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: amazon-ai-db
-          property: connectionString
+        sync: false
