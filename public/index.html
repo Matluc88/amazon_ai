@@ -73,24 +73,58 @@
         <h2>📁 Importa prodotti</h2>
       </div>
       <div class="card-body">
-        <div class="upload-area" id="uploadArea">
-          <span class="upload-icon">☁️</span>
-          <h3>Trascina qui il file oppure clicca per selezionarlo</h3>
-          <p>Un prodotto per file (testo libero) oppure file tabellare con più prodotti</p>
-          <div class="format-badges">
-            <span class="badge badge-format">TXT</span>
-            <span class="badge badge-format">XLSX</span>
-            <span class="badge badge-format">CSV</span>
+        <!-- TAB BAR -->
+        <div style="display:flex;gap:0;border-bottom:2px solid var(--gray-200);margin-bottom:20px;">
+          <button id="tabFileBtn" onclick="switchImportTab('file')"
+            style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px;">
+            📁 Carica file
+          </button>
+          <button id="tabPasteBtn" onclick="switchImportTab('paste')"
+            style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-2px;">
+            📋 Incolla testo
+          </button>
+        </div>
+
+        <!-- TAB: FILE -->
+        <div id="tabFile">
+          <div class="upload-area" id="uploadArea">
+            <span class="upload-icon">☁️</span>
+            <h3>Trascina qui il file oppure clicca per selezionarlo</h3>
+            <p>Un prodotto per file (testo libero) oppure file tabellare con più prodotti</p>
+            <div class="format-badges">
+              <span class="badge badge-format">TXT</span>
+              <span class="badge badge-format">XLSX</span>
+              <span class="badge badge-format">CSV</span>
+            </div>
+          </div>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" />
+
+          <div class="file-template" style="margin-top:16px;">
+            <strong>📊 Formato tabellare (.xlsx/.csv):</strong>
+            colonne: <code>titolo_opera</code> <code>autore</code> <code>dimensioni</code> <code>tecnica</code> <code>descrizione_raw</code> <code>prezzo</code>
           </div>
         </div>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" />
 
-        <div class="file-template" style="margin-top:16px;">
-          <strong>📋 Formato testo libero (.txt):</strong>
-          <code>Prima riga = titolo opera</code>&nbsp;— poi descrizione libera con autore, dimensioni, tecnica, prezzo.
-          <br style="margin-top:6px;">
-          <strong>📊 Formato tabellare (.xlsx/.csv):</strong>
-          colonne: <code>titolo_opera</code> <code>autore</code> <code>dimensioni</code> <code>tecnica</code> <code>descrizione_raw</code> <code>prezzo</code>
+        <!-- TAB: INCOLLA TESTO -->
+        <div id="tabPaste" style="display:none;">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">
+            Copia il testo da <strong>Pages, Word, Notes</strong> o qualsiasi app e incollalo qui sotto.
+            La prima riga sarà usata come titolo dell'opera.
+          </p>
+          <textarea id="pasteTextarea"
+            style="width:100%;height:160px;padding:14px;border:1.5px solid var(--gray-300);border-radius:var(--radius);font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;"
+            placeholder="Incolla qui la descrizione del prodotto...
+Es:
+L'abbraccio - Gustav Klimt
+Stampa artistica su tela di alta qualità. Dimensioni: 90x120 cm.
+Tecnica: stampa digitale UV su canvas con telaio in legno.
+Prezzo: 49,90"></textarea>
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+            <button class="btn btn-primary" id="submitPasteBtn" onclick="submitPastedText()">
+              ✨ Importa testo
+            </button>
+            <span style="font-size:12px;color:var(--gray-500);">Il testo verrà processato come un singolo prodotto</span>
+          </div>
         </div>
       </div>
     </div>

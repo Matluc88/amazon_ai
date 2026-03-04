@@ -242,6 +242,68 @@ async function deleteProduct(productId, btn) {
 }
 
 // =============================================
+// IMPORT TAB SWITCHING
+// =============================================
+function switchImportTab(tab) {
+  const isFile = tab === 'file';
+  document.getElementById('tabFile').style.display = isFile ? '' : 'none';
+  document.getElementById('tabPaste').style.display = isFile ? 'none' : '';
+
+  const fileBtn = document.getElementById('tabFileBtn');
+  const pasteBtn = document.getElementById('tabPasteBtn');
+
+  fileBtn.style.color = isFile ? 'var(--primary)' : 'var(--gray-500)';
+  fileBtn.style.borderBottom = isFile ? '2px solid var(--primary)' : '2px solid transparent';
+
+  pasteBtn.style.color = isFile ? 'var(--gray-500)' : 'var(--primary)';
+  pasteBtn.style.borderBottom = isFile ? '2px solid transparent' : '2px solid var(--primary)';
+}
+
+// =============================================
+// SUBMIT PASTED TEXT
+// =============================================
+async function submitPastedText() {
+  const textarea = document.getElementById('pasteTextarea');
+  const text = textarea.value.trim();
+
+  if (!text) {
+    showToast('Incolla prima il testo del prodotto!', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('submitPasteBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Importazione...';
+
+  showLoading('Importazione testo...', 'Analisi della descrizione in corso');
+
+  // Crea un file .txt virtuale dal testo incollato
+  const blob = new Blob([text], { type: 'text/plain' });
+  const file = new File([blob], 'prodotto.txt', { type: 'text/plain' });
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    hideLoading();
+    showToast(`✅ ${data.message}`, 'success');
+    textarea.value = '';
+    loadProducts();
+  } catch (err) {
+    hideLoading();
+    showToast(`Errore importazione: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+// =============================================
 // UPLOAD FILE
 // =============================================
 function initUpload() {
