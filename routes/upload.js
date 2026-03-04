@@ -18,29 +18,24 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowed = ['.xlsx', '.xls', '.csv', '.txt'];
+  const allowed = ['.xlsx', '.xls', '.csv', '.txt', '.pages'];
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowed.includes(ext)) {
     cb(null, true);
-  } else if (ext === '.pages') {
-    cb(new Error(
-      'Il formato .pages non è supportato direttamente.\n' +
-      'In Apple Pages: vai su File → Esporta in → Excel (.xlsx), poi carica il file .xlsx.'
-    ), false);
   } else if (ext === '.numbers') {
     cb(new Error(
       'Il formato .numbers non è supportato direttamente.\n' +
       'In Apple Numbers: vai su File → Esporta in → Excel (.xlsx), poi carica il file .xlsx.'
     ), false);
   } else {
-    cb(new Error(`Formato "${ext}" non supportato. Usa .xlsx, .csv o .txt`), false);
+    cb(new Error(`Formato "${ext}" non supportato. Usa .xlsx, .csv, .txt o .pages`), false);
   }
 };
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max (Pages files can be larger)
 });
 
 // POST /api/upload
