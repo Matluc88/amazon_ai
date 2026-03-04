@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: amazon-ai-listing-tool
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/products
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ANTHROPIC_API_KEY
+        sync: false          # inserisci manualmente nel dashboard Render
+      - key: DATABASE_PATH
+        value: /data/amazon_ai.db
+
+    # Disco persistente per il database SQLite
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1

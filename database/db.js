@@ -2,12 +2,17 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
-const dbDir = path.join(__dirname);
+// In produzione (Render) usa DATABASE_PATH=/data/amazon_ai.db
+// In locale usa il percorso di default nella cartella database/
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'amazon_ai.db');
+
+// Assicura che la directory esista
+const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const db = new DatabaseSync(path.join(dbDir, 'amazon_ai.db'));
+const db = new DatabaseSync(dbPath);
 
 // Abilita WAL mode per performance migliori
 db.exec('PRAGMA journal_mode = WAL');
