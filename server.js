@@ -23,10 +23,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 const uploadRoutes = require('./routes/upload');
 const productsRoutes = require('./routes/products');
 const listingsRoutes = require('./routes/listings');
+const keywordsRoutes = require('./routes/keywords');
 
 app.use('/api/upload', uploadRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/listings', listingsRoutes);
+app.use('/api/keywords', keywordsRoutes);
 
 // Fallback per le pagine HTML
 app.get('/listing', (req, res) => {

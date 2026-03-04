@@ -8,6 +8,32 @@ const {
   regenerateDescription
 } = require('../services/anthropicService');
 
+/**
+ * Recupera le keyword in cache per un prodotto (se disponibili)
+ */
+function getCachedKeywords(productId) {
+  try {
+    const cache = db.prepare(
+      'SELECT results_json FROM amazon_suggest_cache WHERE seed LIKE ? ORDER BY updated_at DESC LIMIT 50'
+    ).all(`%product:${productId}%`);
+
+    if (cache.length === 0) return [];
+
+    const all = [];
+    cache.forEach(row => {
+      try {
+        const arr = JSON.parse(row.results_json);
+        if (Array.isArray(arr)) all.push(...arr);
+      } catch {}
+    });
+
+    // Dedup e limita a 30
+    return [...new Set(all)].slice(0, 30);
+  } catch {
+    return [];
+  }
+}
+
 // GET /api/listings — tutti i listing con dati prodotto
 router.get('/', (req, res) => {
   try {
@@ -68,8 +94,9 @@ router.post('/generate/:productId', async (req, res) => {
       return res.status(404).json({ error: 'Prodotto non trovato' });
     }
 
-    // Genera il listing con Claude
-    const generated = await generateFullListing(product);
+    // Recupera keyword in cache (se disponibili) e passa a Claude
+    const keywords = getCachedKeywords(product.id);
+    const generated = await generateFullListing(product, keywords);
 
     // Controlla se esiste già un listing per questo prodotto
     const existing = db.prepare('SELECT id FROM amazon_listings WHERE product_id = ?').get(product.id);
@@ -191,14 +218,17 @@ router.post('/:id/regenerate', async (req, res) => {
       quantita: listing.quantita
     };
 
+    // Recupera keyword in cache (se disponibili) e passa a Claude
+    const keywords = getCachedKeywords(product.id);
+
     let generated = {};
 
     if (field === 'titolo') {
-      generated = await regenerateTitle(product, listing);
+      generated = await regenerateTitle(product, listing, keywords);
     } else if (field === 'bullet_points') {
-      generated = await regenerateBulletPoints(product, listing);
+      generated = await regenerateBulletPoints(product, listing, keywords);
     } else if (field === 'descrizione') {
-      generated = await regenerateDescription(product, listing);
+      generated = await regenerateDescription(product, listing, keywords);
     }
 
     // Aggiorna solo i campi rigenerati

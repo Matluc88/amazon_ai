@@ -64,6 +64,9 @@
         <button class="btn btn-ai btn-sm" id="regenDescBtn">
           🔄 Rigenera Descrizione
         </button>
+        <button class="btn btn-sm" id="mineKeywordsBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:600;">
+          🔍 Mining Keywords Amazon
+        </button>
       </div>
     </div>
 
@@ -226,6 +229,31 @@
       </div>
 
     </div><!-- /listing-grid -->
+
+    <!-- KEYWORD MINING SECTION (hidden by default) -->
+    <div id="keywordMiningSection" style="display:none; margin-top:24px;">
+      <div class="field-card">
+        <div class="field-card-header">
+          <div class="field-label">
+            <span class="field-icon">🔍</span>
+            <span>Keyword Mining Amazon.it</span>
+            <span id="keywordMiningStatus" class="text-muted" style="font-weight:400;font-size:12px;margin-left:8px;"></span>
+          </div>
+          <div class="field-actions">
+            <button class="btn btn-copy" id="copyAllKeywordsBtn" style="display:none;" onclick="copyMinedKeywords()">📋 Copia tutte</button>
+            <button class="btn btn-sm" id="useKeywordsBtn" style="display:none;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;font-weight:600;" onclick="injectKeywordsToParoleChiave()">✨ Aggiungi alle Parole Chiave</button>
+          </div>
+        </div>
+        <div class="field-content" id="keywordMiningContent">
+          <div id="keywordMiningLoading" style="display:none;text-align:center;padding:24px;color:var(--gray-500);">
+            <div class="spinner" style="margin:0 auto 12px;"></div>
+            <p>Mining in corso... ricerca keyword reali su Amazon.it</p>
+            <p style="font-size:12px;" id="keywordMiningProgress"></p>
+          </div>
+          <div id="keywordChipsContainer" style="display:flex;flex-wrap:wrap;gap:8px;min-height:40px;"></div>
+        </div>
+      </div>
+    </div>
 
   </div><!-- /container -->
 

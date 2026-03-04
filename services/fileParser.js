@@ -103,10 +103,11 @@ function parseTxt(filePath) {
 
 /**
  * Parsa file Apple Pages (.pages) tramite textutil (macOS)
- * Converte in HTML e poi estrae i dati dalla tabella
+ * Formato testo libero: prima riga breve = titolo opera, resto = descrizione.
+ * Autore, dimensioni e tecnica vengono estratti con regex.
  */
 function parsePages(filePath) {
-  const tempHtml = filePath + '_converted.html';
+  const tempTxt = filePath + '_converted.txt';
 
   try {
     // Verifica che textutil sia disponibile (solo macOS)
@@ -119,79 +120,94 @@ function parsePages(filePath) {
       );
     }
 
-    // Converti Pages → HTML tramite textutil
-    execSync(`textutil -convert html "${filePath}" -output "${tempHtml}"`, {
+    // Converti Pages → TXT tramite textutil
+    execSync(`textutil -convert txt "${filePath}" -output "${tempTxt}"`, {
       timeout: 30000,
       stdio: 'pipe'
     });
 
-    if (!fs.existsSync(tempHtml)) {
+    if (!fs.existsSync(tempTxt)) {
       throw new Error('La conversione del file .pages non ha prodotto output. Prova a esportarlo come Excel da Pages.');
     }
 
-    const html = fs.readFileSync(tempHtml, 'utf-8');
-    fs.unlinkSync(tempHtml);
+    const rawText = fs.readFileSync(tempTxt, 'utf-8');
+    fs.unlinkSync(tempTxt);
 
-    // Parsa l'HTML e cerca la tabella con più righe
-    const root = parseHtml(html);
-    const tables = root.querySelectorAll('table');
+    // Split in righe, rimuovi righe vuote
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-    if (tables.length === 0) {
-      throw new Error(
-        'Nessuna tabella trovata nel file Pages.\n' +
-        'I dati devono essere organizzati in una tabella all\'interno del documento Pages.\n' +
-        'Prima riga = intestazioni colonne (es: titolo_opera, autore, prezzo...)'
-      );
+    if (lines.length === 0) {
+      throw new Error('Il file .pages sembra vuoto dopo la conversione.');
     }
 
-    // Usa la tabella con più righe
-    let bestTable = tables[0];
-    let maxRows = 0;
-    for (const table of tables) {
-      const rowCount = table.querySelectorAll('tr').length;
-      if (rowCount > maxRows) {
-        maxRows = rowCount;
-        bestTable = table;
+    // Prima riga con meno di 120 caratteri = titolo opera
+    let titleIdx = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].length < 120) {
+        titleIdx = i;
+        break;
       }
     }
 
-    const rows = bestTable.querySelectorAll('tr');
+    const titolo_opera = lines[titleIdx];
+    const restText = lines.slice(titleIdx + 1).join('\n');
 
-    if (rows.length < 2) {
-      throw new Error('La tabella nel file Pages deve avere almeno 2 righe (intestazione + dati).');
+    // --- Estrai autore via regex ---
+    let autore = '';
+    const autoreMatch = restText.match(
+      /(?:artista[:\s]+|dell[''\u2019]artista[:\s]+|di[:\s]+|autore[:\s]+|pittore[:\s]+)([A-ZÀÈÌÒÙ][a-zàèìòù]+(?:[\s-]+[A-ZÀÈÌÒÙ][a-zàèìòù]+)*)/i
+    );
+    if (autoreMatch) {
+      autore = autoreMatch[1].trim();
     }
 
-    // Estrai intestazioni (prima riga)
-    const headerCells = rows[0].querySelectorAll('td, th');
-    const headers = headerCells.map(cell => cell.text.trim()).filter(h => h);
-
-    if (headers.length === 0) {
-      throw new Error('Impossibile leggere le intestazioni della tabella dal file Pages.');
+    // --- Estrai dimensioni via regex (es: 30x40 cm, 50 × 70 cm) ---
+    let dimensioni = '';
+    const dimMatch = restText.match(/(\d+\s*[xX×]\s*\d+(?:\s*[xX×]\s*\d+)?\s*cm)/i);
+    if (dimMatch) {
+      dimensioni = dimMatch[1].trim();
     }
 
-    // Estrai righe dati
-    const records = [];
-    for (let i = 1; i < rows.length; i++) {
-      const cells = rows[i].querySelectorAll('td, th');
-      if (cells.length === 0) continue;
+    // --- Estrai tecnica ---
+    let tecnica = '';
+    const tecnicaPatterns = [
+      /stampa\s+(?:digitale|fotografica|artistica)/i,
+      /stampa\s+su\s+tela/i,
+      /stampa/i,
+      /olio\s+su\s+tela/i,
+      /acquerello/i,
+      /litografia/i,
+      /serigrafia/i,
+    ];
+    for (const pat of tecnicaPatterns) {
+      const m = restText.match(pat);
+      if (m) { tecnica = m[0].trim(); break; }
+    }
+    if (!tecnica) tecnica = 'Stampa su tela';
 
-      const record = {};
-      headers.forEach((h, idx) => {
-        record[h] = cells[idx] ? cells[idx].text.trim() : '';
-      });
-
-      const normalized = normalizeRecord(record);
-      if (normalized.titolo_opera) {
-        records.push(normalized);
-      }
+    // --- Estrai prezzo opzionale ---
+    let prezzo = null;
+    const prezzoMatch = restText.match(/(?:prezzo[:\s€]*|€\s*)(\d+(?:[.,]\d{1,2})?)/i);
+    if (prezzoMatch) {
+      prezzo = parseFloat(prezzoMatch[1].replace(',', '.')) || null;
     }
 
-    return records;
+    const record = {
+      titolo_opera,
+      autore,
+      dimensioni,
+      tecnica,
+      descrizione_raw: restText,
+      prezzo,
+      quantita: 1
+    };
+
+    return [record];
 
   } catch (err) {
     // Cleanup in caso di errore
-    if (fs.existsSync(tempHtml)) {
-      try { fs.unlinkSync(tempHtml); } catch {}
+    if (fs.existsSync(tempTxt)) {
+      try { fs.unlinkSync(tempTxt); } catch {}
     }
     throw err;
   }

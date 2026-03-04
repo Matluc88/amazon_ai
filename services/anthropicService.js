@@ -5,10 +5,23 @@ const client = new Anthropic({
 });
 
 /**
- * Genera il listing completo per un prodotto
+ * Blocco aggiuntivo con le keyword reali minate da Amazon.it
  */
-async function generateFullListing(product) {
-  const prompt = buildFullPrompt(product);
+function keywordsBlock(keywords) {
+  if (!keywords || keywords.length === 0) return '';
+  return `
+KEYWORD REALI CERCATE SU AMAZON.IT (usa queste nei contenuti dove naturale):
+${keywords.slice(0, 20).join(', ')}
+`;
+}
+
+/**
+ * Genera il listing completo per un prodotto
+ * @param {object} product
+ * @param {string[]} [keywords] - keyword minate da Amazon (opzionale)
+ */
+async function generateFullListing(product, keywords = []) {
+  const prompt = buildFullPrompt(product, keywords);
 
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
@@ -27,8 +40,11 @@ async function generateFullListing(product) {
 
 /**
  * Rigenera solo il titolo
+ * @param {object} product
+ * @param {object} currentListing
+ * @param {string[]} [keywords]
  */
-async function regenerateTitle(product, currentListing) {
+async function regenerateTitle(product, currentListing, keywords = []) {
   const prompt = `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
 
 Devi riscrivere SOLO il titolo del prodotto Amazon per questa stampa artistica su tela.
@@ -42,7 +58,7 @@ DATI DEL PRODOTTO:
 
 TITOLO ATTUALE:
 ${currentListing.titolo || 'Non presente'}
-
+${keywordsBlock(keywords)}
 REGOLE PER IL TITOLO AMAZON:
 - Massimo 200 caratteri
 - Includi: tipo prodotto, titolo opera, autore, dimensioni se disponibili
@@ -66,8 +82,11 @@ Rispondi SOLO con un JSON nel seguente formato, senza testo aggiuntivo:
 
 /**
  * Rigenera solo i bullet points
+ * @param {object} product
+ * @param {object} currentListing
+ * @param {string[]} [keywords]
  */
-async function regenerateBulletPoints(product, currentListing) {
+async function regenerateBulletPoints(product, currentListing, keywords = []) {
   const prompt = `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
 
 Devi riscrivere SOLO i 5 bullet points del prodotto Amazon per questa stampa artistica su tela.
@@ -85,7 +104,7 @@ BULLET POINTS ATTUALI:
 3. ${currentListing.bp3 || 'Non presente'}
 4. ${currentListing.bp4 || 'Non presente'}
 5. ${currentListing.bp5 || 'Non presente'}
-
+${keywordsBlock(keywords)}
 REGOLE PER I BULLET POINTS AMAZON:
 - Massimo 500 caratteri per bullet point
 - Inizia ogni bullet con una keyword importante in MAIUSCOLO seguita da " – "
@@ -115,8 +134,11 @@ Rispondi SOLO con un JSON nel seguente formato, senza testo aggiuntivo:
 
 /**
  * Rigenera solo la descrizione
+ * @param {object} product
+ * @param {object} currentListing
+ * @param {string[]} [keywords]
  */
-async function regenerateDescription(product, currentListing) {
+async function regenerateDescription(product, currentListing, keywords = []) {
   const prompt = `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
 
 Devi riscrivere SOLO la descrizione lunga del prodotto Amazon per questa stampa artistica su tela.
@@ -130,7 +152,7 @@ DATI DEL PRODOTTO:
 
 DESCRIZIONE ATTUALE:
 ${currentListing.descrizione || 'Non presente'}
-
+${keywordsBlock(keywords)}
 REGOLE PER LA DESCRIZIONE AMAZON:
 - Tra 200 e 2000 caratteri
 - Racconta la storia dell'opera e dell'artista
@@ -157,7 +179,7 @@ Rispondi SOLO con un JSON nel seguente formato, senza testo aggiuntivo:
 /**
  * Costruisce il prompt completo per la generazione del listing
  */
-function buildFullPrompt(product) {
+function buildFullPrompt(product, keywords = []) {
   return `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
 
 Devi creare un listing completo e ottimizzato per Amazon per questa stampa artistica su tela.
@@ -169,7 +191,7 @@ DATI DEL PRODOTTO:
 - Tecnica: ${product.tecnica || 'Stampa su tela'}
 - Descrizione originale: ${product.descrizione_raw || 'N/D'}
 - Prezzo: ${product.prezzo ? `€${product.prezzo}` : 'N/D'}
-
+${keywordsBlock(keywords)}
 OBIETTIVO: Creare contenuti che convincano un acquirente italiano ad acquistare questa stampa artistica su tela su Amazon.
 
 REGOLE SPECIFICHE:

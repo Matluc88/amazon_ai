@@ -3,8 +3,10 @@
    ============================================= */
 
 let listingId = null;
+let productId = null;
 let originalData = {};
 let hasUnsavedChanges = false;
+let minedKeywords = [];
 
 // =============================================
 // INIT
@@ -63,6 +65,9 @@ function populateListing(listing) {
       ? `di ${listing.autore}${listing.dimensioni ? ' — ' + listing.dimensioni : ''}`
       : listing.dimensioni || 'Stampa artistica su tela';
   document.title = `${listing.titolo_opera} — Amazon AI Tool`;
+
+  // Salva product_id per il keyword mining
+  productId = listing.product_id;
 
   // Salva i dati originali per il "Annulla"
   originalData = { ...listing };
@@ -245,6 +250,7 @@ function initRegenButtons() {
   document.getElementById('regenTitoloBtn').addEventListener('click', () => regenerate('titolo'));
   document.getElementById('regenBpBtn').addEventListener('click', () => regenerate('bullet_points'));
   document.getElementById('regenDescBtn').addEventListener('click', () => regenerate('descrizione'));
+  document.getElementById('mineKeywordsBtn').addEventListener('click', mineKeywords);
 }
 
 async function regenerate(field) {
@@ -307,6 +313,170 @@ function setAiButtonsDisabled(disabled) {
     const btn = document.getElementById(id);
     if (btn) btn.disabled = disabled;
   });
+}
+
+// =============================================
+// KEYWORD MINING AMAZON.IT
+// =============================================
+
+/**
+ * Avvia il mining delle keyword da Amazon.it per questo prodotto
+ */
+async function mineKeywords() {
+  if (!productId) {
+    showToast('Product ID non disponibile', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('mineKeywordsBtn');
+  const section = document.getElementById('keywordMiningSection');
+  const loading = document.getElementById('keywordMiningLoading');
+  const chips = document.getElementById('keywordChipsContainer');
+  const status = document.getElementById('keywordMiningStatus');
+  const copyBtn = document.getElementById('copyAllKeywordsBtn');
+  const useBtn = document.getElementById('useKeywordsBtn');
+
+  // Mostra la sezione e lo stato di caricamento
+  section.style.display = 'block';
+  loading.style.display = 'block';
+  chips.innerHTML = '';
+  status.textContent = '';
+  copyBtn.style.display = 'none';
+  useBtn.style.display = 'none';
+
+  btn.disabled = true;
+  const btnOriginal = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Mining...';
+
+  // Scroll alla sezione
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const res = await fetch(`/api/keywords/mine/${productId}`, { method: 'POST' });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Errore nel mining');
+
+    minedKeywords = data.keywords || [];
+
+    loading.style.display = 'none';
+
+    if (minedKeywords.length === 0) {
+      chips.innerHTML = '<p style="color:var(--gray-500);font-size:14px;">Nessuna keyword trovata per questo prodotto.</p>';
+      status.textContent = '(nessun risultato)';
+    } else {
+      renderKeywordChips(minedKeywords);
+      status.textContent = `— ${minedKeywords.length} keyword trovate`;
+      copyBtn.style.display = 'inline-flex';
+      useBtn.style.display = 'inline-flex';
+      showToast(`✅ ${minedKeywords.length} keyword trovate su Amazon.it!`, 'success');
+    }
+
+  } catch (err) {
+    loading.style.display = 'none';
+    chips.innerHTML = `<p style="color:var(--danger);font-size:14px;">Errore: ${escHtml(err.message)}</p>`;
+    status.textContent = '(errore)';
+    showToast(`Errore mining: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = btnOriginal;
+  }
+}
+
+/**
+ * Mostra le keyword come chip cliccabili
+ * Click su chip → copia la keyword singola
+ */
+function renderKeywordChips(keywords) {
+  const container = document.getElementById('keywordChipsContainer');
+  container.innerHTML = '';
+
+  keywords.forEach(kw => {
+    const chip = document.createElement('span');
+    chip.className = 'keyword-chip';
+    chip.textContent = kw;
+    chip.title = 'Clicca per copiare';
+    chip.style.cssText = `
+      display:inline-block;
+      background:#eff6ff;
+      color:#1d4ed8;
+      border:1px solid #bfdbfe;
+      border-radius:20px;
+      padding:4px 12px;
+      font-size:13px;
+      cursor:pointer;
+      transition:all 0.15s;
+      user-select:none;
+    `;
+    chip.addEventListener('click', () => {
+      navigator.clipboard.writeText(kw).then(() => {
+        chip.style.background = '#dcfce7';
+        chip.style.color = '#166534';
+        chip.style.borderColor = '#86efac';
+        const orig = chip.textContent;
+        chip.textContent = '✅ ' + orig;
+        setTimeout(() => {
+          chip.style.background = '#eff6ff';
+          chip.style.color = '#1d4ed8';
+          chip.style.borderColor = '#bfdbfe';
+          chip.textContent = orig;
+        }, 1200);
+      });
+    });
+    container.appendChild(chip);
+  });
+}
+
+/**
+ * Copia tutte le keyword minate come stringa separata da virgole
+ */
+function copyMinedKeywords() {
+  if (!minedKeywords.length) {
+    showToast('Nessuna keyword da copiare', 'warning');
+    return;
+  }
+  const text = minedKeywords.join(', ');
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(`📋 ${minedKeywords.length} keyword copiate!`, 'success');
+  });
+}
+
+/**
+ * Inietta le keyword minate nel campo "Parole Chiave" del listing
+ * (aggiunge senza sovrascrivere quelle esistenti)
+ */
+function injectKeywordsToParoleChiave() {
+  if (!minedKeywords.length) {
+    showToast('Nessuna keyword da aggiungere', 'warning');
+    return;
+  }
+
+  const el = document.getElementById('parole_chiave');
+  if (!el) return;
+
+  const existing = el.value.trim();
+  const existingArr = existing
+    ? existing.split(',').map(k => k.trim().toLowerCase()).filter(k => k)
+    : [];
+
+  // Aggiungi solo quelle non già presenti (case-insensitive)
+  const toAdd = minedKeywords.filter(k => !existingArr.includes(k.toLowerCase()));
+
+  if (toAdd.length === 0) {
+    showToast('Tutte le keyword sono già presenti nel campo!', 'info');
+    return;
+  }
+
+  el.value = existing
+    ? existing + ', ' + toAdd.join(', ')
+    : toAdd.join(', ');
+
+  markUnsaved();
+  showToast(`✨ ${toAdd.length} keyword aggiunte alle Parole Chiave!`, 'success');
+
+  // Scroll al campo parole chiave
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus();
 }
 
 // =============================================

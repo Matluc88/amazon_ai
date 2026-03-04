@@ -53,4 +53,14 @@ db.exec(`
   )
 `);
 
+// Tabella cache per Amazon autocomplete suggestions
+db.exec(`
+  CREATE TABLE IF NOT EXISTS amazon_suggest_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seed TEXT NOT NULL UNIQUE,
+    results_json TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 module.exports = db;
