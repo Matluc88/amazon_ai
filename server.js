@@ -1,3 +1,18 @@
+// ─── Cattura TUTTI gli errori (anche al caricamento moduli) ──
+process.on('uncaughtException', (err) => {
+  console.error('💥 UNCAUGHT EXCEPTION:');
+  console.error('  message:', err?.message);
+  console.error('  name   :', err?.name);
+  console.error('  code   :', err?.code);
+  console.error('  stack  :', err?.stack || String(err));
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('💥 UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
