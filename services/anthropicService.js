@@ -10,7 +10,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
  */
 async function generateAllAiAttributes(product, keywords = []) {
   const keywordsSection = keywords.length > 0
-    ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale:\n${keywords.slice(0, 20).join(', ')}\n`
+    ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
 
   const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
@@ -28,12 +28,42 @@ ${keywordsSection}
 
 ISTRUZIONI:
 - Analizza il testo e comprendi il soggetto, lo stile e il contesto dell'opera
-- Genera contenuti SEO ottimizzati per Amazon Italia
+- Genera contenuti SEO ottimizzati per Amazon Italia, algoritmo A9
 - Tutti i campi DEVONO essere in ITALIANO
-- Per "Chiavi di ricerca": stringa di 5-8 keyword separata da virgole (non troppo lunga)
-- Per "Punto elenco": inizia con una keyword in MAIUSCOLO seguita da " – "
-- Per "Nome dell'articolo": max 200 caratteri, formato: Stampa su Tela - [Titolo] di [Autore] - [Dimensioni] - [Caratteristica
-- Per "Personaggio rappresentato": se non applicabile, scrivi "N/D"
+
+### NOME DELL'ARTICOLO (max 200 caratteri):
+- Inizia con la keyword principale più cercata dagli acquirenti (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno")
+- Poi segue: [Soggetto] - Stampa su Tela [Dimensioni] - [Caratteristica distintiva]
+- NON iniziare genericamente con "Stampa su Tela" — metti la keyword ad alto volume subito
+
+### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
+- Racconta l'opera con linguaggio evocativo
+- Suggerisci contesti d'uso e destinatari
+- Se il testo menziona misure/taglie alternative (es. "disponibile in tre misure: X, Y, Z"), RIPORTALE esplicitamente alla fine della descrizione con una frase tipo: "Disponibile nelle misure: [misure]."
+- Chiudi sempre con una frase che invita all'acquisto
+
+### CHIAVI DI RICERCA (campo backend Amazon):
+- NON ripetere parole già presenti nel Nome dell'articolo
+- Includi sinonimi, varianti di ricerca, contesti d'uso
+- Sfrutta al massimo i 250 caratteri disponibili — la stringa deve essere LUNGA
+- Formato: keyword1, keyword2, keyword3, ... (virgola + spazio tra le keyword)
+- Almeno 8-12 keyword diverse
+
+### PUNTI ELENCO:
+- Inizia ogni punto con una keyword in MAIUSCOLO seguita da " – "
+- Punto elenco 1: qualità e caratteristiche della stampa
+- Punto elenco 2: palette cromatica e impatto visivo
+- Punto elenco 3: processo artigianale (ritocchi, fissativo, ecc.)
+- Punto elenco 4: info pratiche (dimensioni, telaio, pronta da appendere)
+- Punto elenco 5: garanzia e acquisto sicuro — esempio: "ACQUISTO SICURO – Sivigliart garantisce imballaggio protettivo e reso gratuito entro 30 giorni. Ogni opera è accuratamente verificata prima della spedizione"
+
+### ALTRI CAMPI:
+- "Personaggio rappresentato": se non applicabile, scrivi "N/D"
+- "Colore": elenca i colori principali separati da virgola
+- "Stile": stile artistico
+- "Tema": tema dell'opera
+- "Tipo di stanza": ambienti consigliati separati da virgola
+- "Usi consigliati per il prodotto": usi pratici separati da virgola
 
 Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esattamente questi campi:
 
@@ -84,26 +114,27 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     : '';
 
   const guideMap = {
-    "Nome dell'articolo": 'max 200 caratteri, formato: Stampa su Tela - [Titolo Opera] di [Autore] - [Dimensioni]',
+    "Nome dell'articolo": `max 200 caratteri. IMPORTANTE: inizia con la keyword principale più cercata (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno") — NON iniziare con "Stampa su Tela". Poi: [Soggetto] - Stampa su Tela [Dimensioni] - [Caratteristica].`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
-    "Descrizione del prodotto": '200-2000 caratteri, racconta l\'opera e suggerisce utilizzi decorativi',
-    "Punto elenco 1": 'inizia con keyword MAIUSCOLA – qualità della stampa',
-    "Punto elenco 2": 'inizia con keyword MAIUSCOLA – fedeltà riproduzione',
-    "Punto elenco 3": 'inizia con keyword MAIUSCOLA – utilizzi decorativi',
-    "Punto elenco 4": 'inizia con keyword MAIUSCOLA – valore artistico',
-    "Punto elenco 5": 'inizia con keyword MAIUSCOLA – info pratiche (montaggio, confezione)',
-    "Chiavi di ricerca": '5-8 keyword separate da virgole, ottimizzate Amazon',
-    "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto...)',
-    "Tema": 'tema dell\'opera (es. Natura, Ritratto, Paesaggio...)',
-    "Tipo di stanza": 'ambienti consigliati (es. Salotto, Camera, Ufficio...)',
-    "Famiglia di colori": 'palette dominante (es. Blu e verde, Caldi, Pastello...)',
-    "Colore": 'colori principali dell\'opera',
-    "Motivo": 'motivo decorativo (es. Floreale, Astratto, Geometrico...)',
+    "Descrizione del prodotto": `200-2000 caratteri. Racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. Se il testo menziona misure alternative (es. "disponibile in tre misure"), RIPORTALE esplicitamente alla fine con "Disponibile nelle misure: X, Y, Z." Chiudi con frase che invita all'acquisto.`,
+    "Punto elenco 1": 'inizia con keyword MAIUSCOLA – qualità e caratteristiche della stampa',
+    "Punto elenco 2": 'inizia con keyword MAIUSCOLA – palette cromatica e impatto visivo',
+    "Punto elenco 3": 'inizia con keyword MAIUSCOLA – processo artigianale (ritocchi acrilici, fissativo)',
+    "Punto elenco 4": 'inizia con keyword MAIUSCOLA – info pratiche (dimensioni, telaio, pronta da appendere)',
+    "Punto elenco 5": 'inizia con "ACQUISTO SICURO –" e menziona garanzia Sivigliart, imballaggio protettivo, reso entro 30 giorni',
+    "Chiavi di ricerca": `NON ripetere parole già nel titolo. Includi sinonimi, varianti, contesti d'uso. Sfrutta al massimo i 250 caratteri. Formato: keyword1, keyword2, keyword3, ... Almeno 8-12 keyword diverse.`,
+    "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto, Figurativo...)',
+    "Tema": 'tema dell\'opera (es. Natura, Ritratto, Paesaggio, Astratto...)',
+    "Tipo di stanza": 'ambienti consigliati separati da virgola (es. Salotto, Camera, Ufficio...)',
+    "Famiglia di colori": 'palette dominante (es. Blu e verde, Caldi, Pastello, Multicolore...)',
+    "Colore": 'colori principali dell\'opera separati da virgola',
+    "Motivo": 'motivo decorativo (es. Floreale, Astratto, Geometrico, Figurativo...)',
+    "Usi consigliati per il prodotto": 'usi pratici separati da virgola (es. Decorazione parete, Regalo, Arredamento...)',
   };
 
   const guide = guideMap[nomeAttributo] || 'campo testo libero per listing Amazon Italia';
 
-  const prompt = `Sei un esperto di listing Amazon per il mercato italiano.
+  const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
 Rigenera SOLO il campo "${nomeAttributo}" per questa stampa artistica su tela.
 
@@ -113,17 +144,19 @@ ${product.descrizione_raw || 'Nessuna descrizione'}
 """
 ${product.dimensioni ? `\nDIMENSIONI: ${product.dimensioni}` : ''}
 ${product.autore ? `\nAUTORE: ${product.autore}` : ''}
+${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
 
-VALORE ATTUALE:
+VALORE ATTUALE (da migliorare):
 ${currentValue || 'Non presente'}
 ${keywordsSection}
-GUIDA: ${guide}
+GUIDA SPECIFICA PER QUESTO CAMPO:
+${guide}
 
 Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
 
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
-    max_tokens: 800,
+    max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }]
   });
 
