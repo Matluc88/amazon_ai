@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-  store: new pgSession({ pool, tableName: 'session', createTableIfMissing: false }),
+  store: new pgSession({ pool, tableName: 'session', createTableIfMissing: true }),
   secret: process.env.SESSION_SECRET || 'amazon-ai-secret',
   resave: false,
   saveUninitialized: false,
@@ -76,13 +76,22 @@ app.use('/api/config',   requireAuth, require('./routes/config'));
 // ─── Avvio ───────────────────────────────────────────────────
 async function start() {
   try {
+    console.log('🔄 Step 1: initDatabase...');
     await initDatabase();
+
+    console.log('🔄 Step 2: runSeed...');
     await runSeed();
+
+    console.log('🔄 Step 3: app.listen...');
     app.listen(PORT, () => {
       console.log(`🚀 Server avviato su http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error('❌ Errore avvio server:', err.message);
+    console.error('❌ Errore avvio server');
+    console.error('  message :', err?.message);
+    console.error('  name    :', err?.name);
+    console.error('  code    :', err?.code);
+    console.error('  stack   :', err?.stack || String(err));
     process.exit(1);
   }
 }
