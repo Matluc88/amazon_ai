@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurazione — Amazon AI Tool</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .config-table th, .config-table td { padding: 10px 14px; font-size: 13px; }
+    .config-table td:first-child { font-weight: 600; color: var(--gray-800); max-width: 250px; }
+    .config-table td:nth-child(2) { color: var(--gray-500); font-size: 12px; }
+
+    .source-select {
+      padding: 5px 10px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--white);
+      color: var(--gray-800);
+      transition: border-color 0.2s;
+    }
+    .source-select:focus { outline: none; border-color: var(--primary); }
+    .source-select.AI     { border-color: #8b5cf6; color: #6d28d9; background: #ede9fe; }
+    .source-select.FIXED  { border-color: #9ca3af; color: #4b5563; background: #f3f4f6; }
+    .source-select.AUTO   { border-color: #34d399; color: #065f46; background: #d1fae5; }
+    .source-select.MANUAL { border-color: #f59e0b; color: #92400e; background: #fff3e0; }
+    .source-select.SKIP   { border-color: #d1d5db; color: #9ca3af; background: #f9fafb; }
+
+    .fixed-value-input {
+      padding: 5px 10px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 12px;
+      width: 200px;
+      font-family: inherit;
+    }
+    .fixed-value-input:focus { outline: none; border-color: var(--primary); }
+
+    .btn-save-row {
+      padding: 4px 12px;
+      font-size: 12px;
+      background: var(--success);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .btn-save-row:hover { opacity: 0.85; }
+    .btn-save-row:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .sezione-header {
+      background: var(--secondary);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 8px 14px !important;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--gray-200);
+      padding-bottom: 0;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--gray-500);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Users table */
+    .user-table td { font-size: 13px; }
+    .badge-role-admin { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .badge-role-op    { background: #e0f2fe; color: #075985; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+
+    .add-user-form {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .add-user-form h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--gray-800); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+    .form-row label { font-size: 12px; font-weight: 600; color: var(--gray-600); display: block; margin-bottom: 4px; }
+    .form-row input, .form-row select {
+      padding: 9px 12px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: inherit;
+      width: 100%;
+    }
+    .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--primary); }
+
+    @media (max-width: 768px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <span class="logo-icon">🎨</span>
+      <span>Amazon <em>AI</em> Listing Tool</span>
+    </a>
+    <nav class="navbar-nav">
+      <a href="/" class="nav-link">📋 Dashboard</a>
+      <a href="/config.html" class="nav-link active">⚙️ Config</a>
+      <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
+    </nav>
+  </nav>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container">
+
+    <div class="page-header">
+      <h1>⚙️ Configurazione</h1>
+      <p>Gestisci gli attributi Amazon, i valori fissi e gli utenti del sistema.</p>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('attrs')">📋 Attributi Amazon</button>
+      <button class="tab-btn" onclick="switchTab('users')" id="usersTab">👥 Utenti</button>
+    </div>
+
+    <!-- TAB: Attributi -->
+    <div class="tab-content active" id="tab-attrs">
+      <div class="card">
+        <div class="card-header">
+          <h2>📋 Attributi Amazon</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="searchAttr" placeholder="🔍 Cerca attributo..." style="padding:7px 12px;border:1.5px solid var(--gray-300);border-radius:var(--radius);font-size:13px;width:220px;"
+                   oninput="filterAttributes()">
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="config-table" id="attrTable">
+            <thead>
+              <tr>
+                <th>Nome attributo</th>
+                <th>Sezione</th>
+                <th>Priorità</th>
+                <th>Sorgente</th>
+                <th>Valore fisso</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="attrTableBody">
+              <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-400);">Caricamento...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Utenti -->
+    <div class="tab-content" id="tab-users">
+      <div class="card">
+        <div class="card-header">
+          <h2>👥 Gestione Utenti</h2>
+        </div>
+        <div class="table-wrapper">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Ruolo</th>
+                <th>Registrato il</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--gray-400);">Caricamento...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="add-user-form" id="addUserForm">
+          <h3>➕ Aggiungi utente</h3>
+          <div class="form-row">
+            <div>
+              <label>Nome</label>
+              <input type="text" id="newNome" placeholder="Mario Rossi" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" id="newEmail" placeholder="mario@sivigliart.it" />
+            </div>
+            <div>
+              <label>Password</label>
+              <input type="password" id="newPassword" placeholder="Password sicura" />
+            </div>
+            <div>
+              <label>Ruolo</label>
+              <select id="newRuolo">
+                <option value="operatore">Operatore</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary btn-sm" onclick="addUser()">➕ Crea utente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/config.js"></script>
+</body>
+</html>

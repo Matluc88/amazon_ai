@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accedi — Amazon AI Listing Tool</title>
+  <style>
+    :root {
+      --primary: #FF9900;
+      --primary-dark: #e68900;
+      --secondary: #232F3E;
+      --danger: #c62828;
+      --gray-100: #F5F5F5;
+      --gray-200: #EEEEEE;
+      --gray-300: #E0E0E0;
+      --gray-500: #9E9E9E;
+      --gray-700: #616161;
+      --gray-800: #424242;
+      --gray-900: #212121;
+      --white: #FFFFFF;
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.14);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--secondary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo .logo-icon {
+      font-size: 52px;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .login-logo h1 {
+      color: var(--white);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .login-logo h1 em {
+      color: var(--primary);
+      font-style: normal;
+    }
+    .login-logo p {
+      color: var(--gray-500);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 6px;
+    }
+    .login-card .subtitle {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: var(--gray-900);
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .form-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255,153,0,0.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      background: var(--primary);
+      color: var(--secondary);
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-login:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .error-msg {
+      background: #FFEBEE;
+      border: 1px solid #EF9A9A;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--danger);
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(35,47,62,0.3);
+      border-top-color: var(--secondary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--gray-500);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+
+    <div class="login-logo">
+      <span class="logo-icon">🎨</span>
+      <h1>Amazon <em>AI</em> Listing Tool</h1>
+      <p>Sivigliart — Strumento interno</p>
+    </div>
+
+    <div class="login-card">
+      <h2>Accedi al tuo account</h2>
+      <p class="subtitle">Inserisci le tue credenziali per continuare</p>
+
+      <div class="error-msg" id="errorMsg">
+        ❌ <span id="errorText">Credenziali non valide. Riprova.</span>
+      </div>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label for="email">Indirizzo email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="es. operatore@sivigliart.it"
+            required
+            autocomplete="email"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="La tua password"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+        <button type="submit" class="btn-login" id="submitBtn">
+          🔑 Accedi
+        </button>
+      </form>
+    </div>
+
+    <p class="footer-note">Accesso riservato al personale Sivigliart</p>
+
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const errorText = document.getElementById('errorText');
+
+      errorMsg.classList.remove('visible');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Accesso in corso...';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorText.textContent = data.error || 'Credenziali non valide.';
+          errorMsg.classList.add('visible');
+          btn.disabled = false;
+          btn.innerHTML = '🔑 Accedi';
+          return;
+        }
+
+        // Login riuscito → redirect
+        window.location.href = '/';
+      } catch (err) {
+        errorText.textContent = 'Errore di connessione. Riprova.';
+        errorMsg.classList.add('visible');
+        btn.disabled = false;
+        btn.innerHTML = '🔑 Accedi';
+      }
+    });
+
+    // Enter key nel campo email passa al password
+    document.getElementById('email').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('password').focus();
+      }
+    });
+  </script>
+
+</body>
+</html>

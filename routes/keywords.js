@@ -1,71 +1,37 @@
 const express = require('express');
 const router = express.Router();
+const { query } = require('../database/db');
 const { getKeywordsForProduct } = require('../services/keywordService');
-const db = require('../database/db');
 
-// POST /api/keywords/mine/:productId — avvia mining con caching
+// POST /api/keywords/mine/:productId — esegui mining
 router.post('/mine/:productId', async (req, res) => {
   try {
-    const productId = parseInt(req.params.productId);
-    const product = db.prepare('SELECT id FROM products WHERE id = ?').get(productId);
-    if (!product) {
-      return res.status(404).json({ error: 'Prodotto non trovato' });
-    }
+    const prodResult = await query('SELECT * FROM products WHERE id = $1', [req.params.productId]);
+    if (!prodResult.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
 
-    const result = await getKeywordsForProduct(productId);
-
-    res.json({
-      success: true,
-      product_id: productId,
-      keywords: result.keywords,
-      seeds_used: result.seeds_used,
-      total: result.total
-    });
-
-  } catch (error) {
-    console.error('Errore keyword mining:', error);
-    res.status(500).json({ error: error.message });
+    const { keywords, seeds_used } = await getKeywordsForProduct(req.params.productId, prodResult.rows[0]);
+    res.json({ success: true, keywords, seeds_used, total: keywords.length });
+  } catch (err) {
+    console.error('Errore mining keywords:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/keywords/:productId — restituisce keywords dalla cache
-router.get('/:productId', (req, res) => {
+// GET /api/keywords/:productId — keyword in cache (senza nuove chiamate)
+router.get('/:productId', async (req, res) => {
   try {
-    // Raccoglie tutte le keyword cachate per i seed del prodotto
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.productId);
-    if (!product) {
-      return res.status(404).json({ error: 'Prodotto non trovato' });
+    const result = await query(
+      `SELECT results_json FROM amazon_suggest_cache 
+       WHERE seed LIKE $1 ORDER BY updated_at DESC LIMIT 50`,
+      [`%${req.params.productId}%`]
+    );
+    const all = [];
+    for (const row of result.rows) {
+      try { all.push(...JSON.parse(row.results_json)); } catch {}
     }
-
-    const { buildSeeds } = require('../services/keywordService');
-    const seeds = buildSeeds(product);
-
-    const allKeywords = new Set();
-    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-    for (const seed of seeds) {
-      const row = db.prepare('SELECT results_json, updated_at FROM amazon_suggest_cache WHERE seed = ?').get(seed);
-      if (!row) continue;
-
-      const updatedAt = new Date(row.updated_at).getTime();
-      if (Date.now() - updatedAt > CACHE_TTL_MS) continue;
-
-      try {
-        const results = JSON.parse(row.results_json);
-        results.forEach(k => allKeywords.add(k.toLowerCase().trim()));
-      } catch {}
-    }
-
-    res.json({
-      product_id: parseInt(req.params.productId),
-      keywords: Array.from(allKeywords),
-      total: allKeywords.size,
-      from_cache: true
-    });
-
-  } catch (error) {
-    console.error('Errore get keywords:', error);
-    res.status(500).json({ error: error.message });
+    res.json({ keywords: [...new Set(all)].slice(0, 50) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

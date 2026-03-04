@@ -1,66 +1,137 @@
-const { DatabaseSync } = require('node:sqlite');
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-// In produzione (Render) usa DATABASE_PATH=/data/amazon_ai.db
-// In locale usa il percorso di default nella cartella database/
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'amazon_ai.db');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com')
+    ? { rejectUnauthorized: false }
+    : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
 
-// Assicura che la directory esista
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+pool.on('error', (err) => {
+  console.error('Errore pool PostgreSQL:', err.message);
+});
+
+/**
+ * Esegui una query con parametri opzionali
+ */
+async function query(sql, params) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(sql, params);
+    return result;
+  } finally {
+    client.release();
+  }
 }
 
-const db = new DatabaseSync(dbPath);
+/**
+ * Inizializza il database creando tutte le tabelle
+ */
+async function initDatabase() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-// Abilita WAL mode per performance migliori
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA foreign_keys = ON');
+    // Tabella utenti
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        nome VARCHAR(255),
+        ruolo VARCHAR(50) NOT NULL DEFAULT 'operatore',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
 
-// Crea tabella products
-db.exec(`
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    titolo_opera TEXT NOT NULL,
-    autore TEXT,
-    dimensioni TEXT,
-    tecnica TEXT,
-    descrizione_raw TEXT,
-    prezzo REAL,
-    quantita INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+    // Tabella sessioni
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" VARCHAR NOT NULL COLLATE "default",
+        "sess" JSON NOT NULL,
+        "expire" TIMESTAMP(6) NOT NULL,
+        CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")
+    `);
 
-// Crea tabella amazon_listings
-db.exec(`
-  CREATE TABLE IF NOT EXISTS amazon_listings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id INTEGER NOT NULL,
-    titolo TEXT,
-    descrizione TEXT,
-    bp1 TEXT,
-    bp2 TEXT,
-    bp3 TEXT,
-    bp4 TEXT,
-    bp5 TEXT,
-    parole_chiave TEXT,
-    prezzo REAL,
-    quantita INTEGER,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-  )
-`);
+    // Tabella prodotti
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        titolo_opera VARCHAR(500),
+        autore VARCHAR(255),
+        dimensioni VARCHAR(100),
+        tecnica VARCHAR(255),
+        descrizione_raw TEXT,
+        prezzo DECIMAL(10,2),
+        quantita INTEGER DEFAULT 1,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
 
-// Tabella cache per Amazon autocomplete suggestions
-db.exec(`
-  CREATE TABLE IF NOT EXISTS amazon_suggest_cache (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    seed TEXT NOT NULL UNIQUE,
-    results_json TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+    // Tabella definizioni attributi Amazon
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS attribute_definitions (
+        id SERIAL PRIMARY KEY,
+        nome_attributo VARCHAR(500) NOT NULL,
+        sezione VARCHAR(100) NOT NULL,
+        priorita VARCHAR(100) NOT NULL,
+        source VARCHAR(50) NOT NULL DEFAULT 'SKIP',
+        ordine INTEGER DEFAULT 0,
+        UNIQUE(nome_attributo)
+      )
+    `);
 
-module.exports = db;
+    // Tabella valori fissi per attributi FIXED
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS attribute_fixed_values (
+        id SERIAL PRIMARY KEY,
+        attribute_id INTEGER REFERENCES attribute_definitions(id) ON DELETE CASCADE,
+        value TEXT,
+        UNIQUE(attribute_id)
+      )
+    `);
+
+    // Tabella valori attributi per prodotto
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS product_attribute_values (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+        attribute_id INTEGER REFERENCES attribute_definitions(id) ON DELETE CASCADE,
+        value TEXT,
+        compiled_by VARCHAR(50),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(product_id, attribute_id)
+      )
+    `);
+
+    // Tabella cache keyword Amazon
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS amazon_suggest_cache (
+        id SERIAL PRIMARY KEY,
+        seed VARCHAR(500) NOT NULL,
+        results_json TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(seed)
+      )
+    `);
+
+    await client.query('COMMIT');
+    console.log('✅ Database inizializzato correttamente');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('❌ Errore inizializzazione database:', err.message);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { pool, query, initDatabase };

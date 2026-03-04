@@ -1,29 +1,26 @@
-const db = require('../database/db');
+/**
+ * Keyword Mining Service — Amazon.it Autocomplete
+ * Usa PostgreSQL per la cache (sostituisce SQLite)
+ */
+const { query } = require('../database/db');
 
-// TTL cache: 24 ore in millisecondi
+// TTL cache: 24 ore
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-// Delay tra chiamate Amazon (ms) per evitare rate limiting
+// Delay tra chiamate Amazon per evitare rate limiting
 const RATE_LIMIT_DELAY = 400;
-
-// Marketplace ID di Amazon.it
+// Marketplace ID Amazon.it
 const AMAZON_IT_MID = 'A1F83G8C2ARO7P';
 
-/**
- * Delay helper
- */
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
  * Genera seed keyword contestuali per una stampa su tela
- * basandosi sui dati del prodotto
  */
 function buildSeeds(product) {
   const seeds = new Set();
 
-  // Seed base fissi per stampe su tela
   const baseSeeds = [
     'stampa su tela',
     'stampa su tela moderna',
@@ -36,18 +33,19 @@ function buildSeeds(product) {
 
   const titolo = (product.titolo_opera || '').toLowerCase();
   const desc = (product.descrizione_raw || '').toLowerCase();
+  const combinedText = titolo + ' ' + desc;
 
   // Dall'autore
   if (product.autore) {
-    const autore = product.autore.split(' ').slice(-1)[0]; // cognome
-    if (autore.length > 3) {
-      seeds.add(`stampa su tela ${autore.toLowerCase()}`);
-      seeds.add(`quadro ${autore.toLowerCase()}`);
+    const cognome = product.autore.split(' ').slice(-1)[0];
+    if (cognome.length > 3) {
+      seeds.add(`stampa su tela ${cognome.toLowerCase()}`);
+      seeds.add(`quadro ${cognome.toLowerCase()}`);
     }
   }
 
-  // Dai temi/soggetti nella descrizione
-  const themeKeywords = [
+  // Temi/soggetti
+  const themes = [
     { match: /coppi[ae]|innamorat|romantic|amore/i, seeds: ['stampa su tela coppia', 'quadro romantico', 'quadro coppia soggiorno'] },
     { match: /music|sax|jazz|chitarr|pianofort/i, seeds: ['stampa su tela musica', 'quadro musicale', 'quadro jazz'] },
     { match: /astratt|abstract/i, seeds: ['stampa su tela astratta', 'quadro astratto moderno', 'quadri astratti colorati'] },
@@ -57,27 +55,16 @@ function buildSeeds(product) {
     { match: /animale|cane|gatto|cavallo|leone/i, seeds: ['stampa su tela animali', 'quadro animali'] },
     { match: /bambino|famiglia|maternità/i, seeds: ['quadro bambini', 'stampa su tela famiglia'] },
   ];
+  themes.forEach(t => { if (t.match.test(combinedText)) t.seeds.forEach(s => seeds.add(s)); });
 
-  const combinedText = titolo + ' ' + desc;
-  for (const theme of themeKeywords) {
-    if (theme.match.test(combinedText)) {
-      theme.seeds.forEach(s => seeds.add(s));
-    }
-  }
-
-  // Dagli ambienti menzionati
-  const roomKeywords = [
+  // Ambienti
+  const rooms = [
     { match: /soggiorno|divano|salotto/i, seeds: ['quadro soggiorno grande', 'stampa su tela soggiorno', 'quadri moderni parete soggiorno'] },
-    { match: /camera|letto|capezzale|dormitorio/i, seeds: ['quadro camera da letto', 'stampa su tela camera', 'quadro sopra il letto'] },
+    { match: /camera|letto|capezzale/i, seeds: ['quadro camera da letto', 'stampa su tela camera', 'quadro sopra il letto'] },
     { match: /cucina/i, seeds: ['quadro cucina moderna', 'stampa su tela cucina'] },
     { match: /ufficio|studio/i, seeds: ['quadro ufficio', 'stampa su tela ufficio'] },
   ];
-
-  for (const room of roomKeywords) {
-    if (room.match.test(combinedText)) {
-      room.seeds.forEach(s => seeds.add(s));
-    }
-  }
+  rooms.forEach(r => { if (r.match.test(combinedText)) r.seeds.forEach(s => seeds.add(s)); });
 
   // Stile
   if (/modern|contemporaneo|minimal/i.test(combinedText)) {
@@ -89,9 +76,9 @@ function buildSeeds(product) {
     seeds.add('quadro colorato vivace');
   }
 
-  // Dalle dimensioni
+  // Dimensioni
   if (product.dimensioni) {
-    const dimMatch = product.dimensioni.match(/(\d+)\s*[xX×]\s*(\d+)/);
+    const dimMatch = (product.dimensioni || product.descrizione_raw || '').match(/(\d+)\s*[xX×]\s*(\d+)/);
     if (dimMatch) {
       const [, w, h] = dimMatch;
       seeds.add(`stampa su tela ${w}x${h}`);
@@ -105,8 +92,7 @@ function buildSeeds(product) {
 }
 
 /**
- * Chiama l'endpoint autocomplete di Amazon.it
- * Ritorna array di suggerimenti, [] in caso di errore
+ * Chiama l'autocomplete di Amazon.it
  */
 async function fetchAmazonSuggest(seed) {
   try {
@@ -125,42 +111,35 @@ async function fetchAmazonSuggest(seed) {
     });
 
     if (!response.ok) {
-      console.warn(`[Keywords] Amazon suggest HTTP ${response.status} per seed: "${seed}"`);
+      console.warn(`[Keywords] Amazon HTTP ${response.status} per: "${seed}"`);
       return [];
     }
 
     const data = await response.json();
-
-    // Struttura risposta: { suggestions: [{ value: "..." }, ...] }
     if (data && Array.isArray(data.suggestions)) {
-      return data.suggestions
-        .map(s => s.value || '')
-        .filter(v => v.length > 2)
-        .slice(0, 11);
+      return data.suggestions.map(s => s.value || '').filter(v => v.length > 2).slice(0, 11);
     }
-
     return [];
   } catch (err) {
-    console.warn(`[Keywords] Errore fetch per seed "${seed}": ${err.message}`);
+    console.warn(`[Keywords] Errore fetch "${seed}": ${err.message}`);
     return [];
   }
 }
 
 /**
- * Controlla la cache per un seed
- * Ritorna i risultati se validi (non scaduti), null altrimenti
+ * Controlla la cache PostgreSQL per un seed
  */
-function getCachedSeed(seed) {
+async function getCachedSeed(seed) {
   try {
-    const row = db.prepare('SELECT results_json, updated_at FROM amazon_suggest_cache WHERE seed = ?').get(seed);
+    const result = await query(
+      'SELECT results_json, updated_at FROM amazon_suggest_cache WHERE seed = $1',
+      [seed]
+    );
+    const row = result.rows[0];
     if (!row) return null;
 
     const updatedAt = new Date(row.updated_at).getTime();
-    const now = Date.now();
-
-    if (now - updatedAt > CACHE_TTL_MS) {
-      return null; // scaduta
-    }
+    if (Date.now() - updatedAt > CACHE_TTL_MS) return null; // scaduta
 
     return JSON.parse(row.results_json);
   } catch {
@@ -169,56 +148,50 @@ function getCachedSeed(seed) {
 }
 
 /**
- * Salva i risultati in cache
+ * Salva i risultati nella cache PostgreSQL
  */
-function saveSeedCache(seed, results) {
+async function saveSeedCache(seed, results) {
   try {
-    const existing = db.prepare('SELECT id FROM amazon_suggest_cache WHERE seed = ?').get(seed);
-    if (existing) {
-      db.prepare(`
-        UPDATE amazon_suggest_cache SET results_json = @results_json, updated_at = CURRENT_TIMESTAMP WHERE seed = @seed
-      `).run({ results_json: JSON.stringify(results), seed });
-    } else {
-      db.prepare(`
-        INSERT INTO amazon_suggest_cache (seed, results_json) VALUES (@seed, @results_json)
-      `).run({ seed, results_json: JSON.stringify(results) });
-    }
+    await query(`
+      INSERT INTO amazon_suggest_cache (seed, results_json, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (seed)
+      DO UPDATE SET results_json = EXCLUDED.results_json, updated_at = NOW()
+    `, [seed, JSON.stringify(results)]);
   } catch (err) {
-    console.warn(`[Keywords] Errore salvataggio cache per seed "${seed}": ${err.message}`);
+    console.warn(`[Keywords] Errore salvataggio cache "${seed}": ${err.message}`);
   }
 }
 
 /**
- * Funzione principale: genera e restituisce tutte le keyword per un prodotto
- * Con caching, rate limiting, deduplicazione
+ * Funzione principale: genera e restituisce le keyword per un prodotto
  */
-async function getKeywordsForProduct(productId) {
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(productId);
-  if (!product) throw new Error('Prodotto non trovato');
+async function getKeywordsForProduct(productId, product = null) {
+  if (!product) {
+    const result = await query('SELECT * FROM products WHERE id = $1', [productId]);
+    product = result.rows[0];
+    if (!product) throw new Error('Prodotto non trovato');
+  }
 
   const seeds = buildSeeds(product);
   const allKeywords = new Set();
   const keywordFrequency = {};
 
-  console.log(`[Keywords] Mining ${seeds.length} seeds per prodotto "${product.titolo_opera}"`);
+  console.log(`[Keywords] Mining ${seeds.length} seeds per: "${product.titolo_opera}"`);
 
   for (let i = 0; i < seeds.length; i++) {
     const seed = seeds[i];
-
-    // Controlla cache
-    let results = getCachedSeed(seed);
+    let results = await getCachedSeed(seed);
 
     if (results === null) {
-      // Non in cache o scaduta → chiama Amazon
-      if (i > 0) await sleep(RATE_LIMIT_DELAY); // rate limit
+      if (i > 0) await sleep(RATE_LIMIT_DELAY);
       results = await fetchAmazonSuggest(seed);
-      saveSeedCache(seed, results);
-      console.log(`[Keywords] Seed "${seed}" → ${results.length} suggerimenti (API)`);
+      await saveSeedCache(seed, results);
+      console.log(`[Keywords] "${seed}" → ${results.length} risultati (API)`);
     } else {
-      console.log(`[Keywords] Seed "${seed}" → ${results.length} suggerimenti (cache)`);
+      console.log(`[Keywords] "${seed}" → ${results.length} risultati (cache)`);
     }
 
-    // Conta frequenza per ordinamento
     for (const kw of results) {
       const normalized = kw.toLowerCase().trim();
       if (normalized.length > 3) {
@@ -228,11 +201,9 @@ async function getKeywordsForProduct(productId) {
     }
   }
 
-  // Ordina per frequenza (più comune prima) poi alfabetico
   const sorted = Array.from(allKeywords).sort((a, b) => {
-    const freqDiff = (keywordFrequency[b] || 0) - (keywordFrequency[a] || 0);
-    if (freqDiff !== 0) return freqDiff;
-    return a.localeCompare(b, 'it');
+    const diff = (keywordFrequency[b] || 0) - (keywordFrequency[a] || 0);
+    return diff !== 0 ? diff : a.localeCompare(b, 'it');
   });
 
   return {
@@ -242,8 +213,4 @@ async function getKeywordsForProduct(productId) {
   };
 }
 
-module.exports = {
-  buildSeeds,
-  fetchAmazonSuggest,
-  getKeywordsForProduct
-};
+module.exports = { buildSeeds, fetchAmazonSuggest, getKeywordsForProduct };

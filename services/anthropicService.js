@@ -1,250 +1,143 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-});
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
- * Blocco aggiuntivo con le keyword reali minate da Amazon.it
+ * Genera TUTTI gli attributi AI in una singola chiamata Claude
+ * @param {object} product - dati del prodotto (descrizione_raw, dimensioni, ecc.)
+ * @param {string[]} keywords - keyword minate da Amazon (opzionale)
+ * @returns {object} - { "Nome dell'articolo": "...", "Punto elenco 1": "...", ... }
  */
-function keywordsBlock(keywords) {
-  if (!keywords || keywords.length === 0) return '';
-  return `
-KEYWORD REALI CERCATE SU AMAZON.IT (usa queste nei contenuti dove naturale):
-${keywords.slice(0, 20).join(', ')}
-`;
-}
+async function generateAllAiAttributes(product, keywords = []) {
+  const keywordsSection = keywords.length > 0
+    ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale:\n${keywords.slice(0, 20).join(', ')}\n`
+    : '';
 
-/**
- * Genera il listing completo per un prodotto
- * @param {object} product
- * @param {string[]} [keywords] - keyword minate da Amazon (opzionale)
- */
-async function generateFullListing(product, keywords = []) {
-  const prompt = buildFullPrompt(product, keywords);
+  const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
-  const message = await client.messages.create({
-    model: 'claude-opus-4-5',
-    max_tokens: 2048,
-    messages: [
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]
-  });
+Il tuo compito è analizzare il testo di un'opera d'arte e generare TUTTI gli attributi necessari per un listing Amazon ottimizzato per stampe su tela.
 
-  const responseText = message.content[0].text;
-  return parseJsonResponse(responseText);
-}
+TESTO DELL'OPERA:
+"""
+${product.descrizione_raw || 'Nessuna descrizione fornita'}
+"""
+${product.dimensioni ? `\nDIMENSIONI: ${product.dimensioni}` : ''}
+${product.autore ? `\nAUTORE: ${product.autore}` : ''}
+${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
+${keywordsSection}
 
-/**
- * Rigenera solo il titolo
- * @param {object} product
- * @param {object} currentListing
- * @param {string[]} [keywords]
- */
-async function regenerateTitle(product, currentListing, keywords = []) {
-  const prompt = `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
+ISTRUZIONI:
+- Analizza il testo e comprendi il soggetto, lo stile e il contesto dell'opera
+- Genera contenuti SEO ottimizzati per Amazon Italia
+- Tutti i campi DEVONO essere in ITALIANO
+- Per "Chiavi di ricerca": stringa di 5-8 keyword separata da virgole (non troppo lunga)
+- Per "Punto elenco": inizia con una keyword in MAIUSCOLO seguita da " – "
+- Per "Nome dell'articolo": max 200 caratteri, formato: Stampa su Tela - [Titolo] di [Autore] - [Dimensioni] - [Caratteristica
+- Per "Personaggio rappresentato": se non applicabile, scrivi "N/D"
 
-Devi riscrivere SOLO il titolo del prodotto Amazon per questa stampa artistica su tela.
+Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esattamente questi campi:
 
-DATI DEL PRODOTTO:
-- Opera: ${product.titolo_opera}
-- Autore: ${product.autore || 'N/D'}
-- Dimensioni: ${product.dimensioni || 'N/D'}
-- Tecnica: ${product.tecnica || 'Stampa su tela'}
-- Descrizione: ${product.descrizione_raw || 'N/D'}
-
-TITOLO ATTUALE:
-${currentListing.titolo || 'Non presente'}
-${keywordsBlock(keywords)}
-REGOLE PER IL TITOLO AMAZON:
-- Massimo 200 caratteri
-- Includi: tipo prodotto, titolo opera, autore, dimensioni se disponibili
-- Ottimizzato per le ricerche Amazon italiane
-- Deve essere chiaro, descrittivo e accattivante
-- Non usare caratteri speciali non necessari (!, ?, *)
-- Formato consigliato: [Tipo] - [Titolo Opera] di [Autore] - [Dimensioni] - [Materiale/Caratteristica]
-
-Rispondi SOLO con un JSON nel seguente formato, senza testo aggiuntivo:
-{"titolo": "il titolo generato"}`;
-
-  const message = await client.messages.create({
-    model: 'claude-opus-4-5',
-    max_tokens: 512,
-    messages: [{ role: 'user', content: prompt }]
-  });
-
-  const responseText = message.content[0].text;
-  return parseJsonResponse(responseText);
-}
-
-/**
- * Rigenera solo i bullet points
- * @param {object} product
- * @param {object} currentListing
- * @param {string[]} [keywords]
- */
-async function regenerateBulletPoints(product, currentListing, keywords = []) {
-  const prompt = `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
-
-Devi riscrivere SOLO i 5 bullet points del prodotto Amazon per questa stampa artistica su tela.
-
-DATI DEL PRODOTTO:
-- Opera: ${product.titolo_opera}
-- Autore: ${product.autore || 'N/D'}
-- Dimensioni: ${product.dimensioni || 'N/D'}
-- Tecnica: ${product.tecnica || 'Stampa su tela'}
-- Descrizione: ${product.descrizione_raw || 'N/D'}
-
-BULLET POINTS ATTUALI:
-1. ${currentListing.bp1 || 'Non presente'}
-2. ${currentListing.bp2 || 'Non presente'}
-3. ${currentListing.bp3 || 'Non presente'}
-4. ${currentListing.bp4 || 'Non presente'}
-5. ${currentListing.bp5 || 'Non presente'}
-${keywordsBlock(keywords)}
-REGOLE PER I BULLET POINTS AMAZON:
-- Massimo 500 caratteri per bullet point
-- Inizia ogni bullet con una keyword importante in MAIUSCOLO seguita da " – "
-- Evidenzia benefici concreti per l'acquirente
-- Copri: qualità del prodotto, caratteristiche tecniche, uso decorativo, valore artistico, informazioni pratiche
-- Linguaggio persuasivo ma informativo
-- In italiano
-
-Rispondi SOLO con un JSON nel seguente formato, senza testo aggiuntivo:
 {
-  "bp1": "primo bullet point",
-  "bp2": "secondo bullet point",
-  "bp3": "terzo bullet point",
-  "bp4": "quarto bullet point",
-  "bp5": "quinto bullet point"
+  "Nome dell'articolo": "...",
+  "Nome del modello": "...",
+  "Descrizione del prodotto": "...",
+  "Punto elenco 1": "...",
+  "Punto elenco 2": "...",
+  "Punto elenco 3": "...",
+  "Punto elenco 4": "...",
+  "Punto elenco 5": "...",
+  "Chiavi di ricerca": "...",
+  "Funzioni speciali": "...",
+  "Personaggio rappresentato": "...",
+  "Stile": "...",
+  "Tema": "...",
+  "Usi consigliati per il prodotto": "...",
+  "Tipo di stanza": "...",
+  "Famiglia di colori": "...",
+  "Motivo": "...",
+  "Colore": "...",
+  "Supporti di stampa": "Stampa su tela canvas",
+  "Stagioni": "...",
+  "Utilizzo in ambienti interni ed esterni": "...",
+  "forma decorazione da parete": "..."
 }`;
 
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
-    max_tokens: 1024,
+    max_tokens: 3000,
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const responseText = message.content[0].text;
-  return parseJsonResponse(responseText);
+  return parseJsonResponse(message.content[0].text);
 }
 
 /**
- * Rigenera solo la descrizione
+ * Rigenera un singolo attributo AI
  * @param {object} product
- * @param {object} currentListing
- * @param {string[]} [keywords]
+ * @param {string} nomeAttributo - es. "Punto elenco 1", "Descrizione del prodotto"
+ * @param {string} currentValue - valore attuale
+ * @param {string[]} keywords
  */
-async function regenerateDescription(product, currentListing, keywords = []) {
-  const prompt = `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
+async function regenerateSingleAttribute(product, nomeAttributo, currentValue, keywords = []) {
+  const keywordsSection = keywords.length > 0
+    ? `\nKEYWORD REALI CERCATE SU AMAZON.IT:\n${keywords.slice(0, 20).join(', ')}\n`
+    : '';
 
-Devi riscrivere SOLO la descrizione lunga del prodotto Amazon per questa stampa artistica su tela.
+  const guideMap = {
+    "Nome dell'articolo": 'max 200 caratteri, formato: Stampa su Tela - [Titolo Opera] di [Autore] - [Dimensioni]',
+    "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
+    "Descrizione del prodotto": '200-2000 caratteri, racconta l\'opera e suggerisce utilizzi decorativi',
+    "Punto elenco 1": 'inizia con keyword MAIUSCOLA – qualità della stampa',
+    "Punto elenco 2": 'inizia con keyword MAIUSCOLA – fedeltà riproduzione',
+    "Punto elenco 3": 'inizia con keyword MAIUSCOLA – utilizzi decorativi',
+    "Punto elenco 4": 'inizia con keyword MAIUSCOLA – valore artistico',
+    "Punto elenco 5": 'inizia con keyword MAIUSCOLA – info pratiche (montaggio, confezione)',
+    "Chiavi di ricerca": '5-8 keyword separate da virgole, ottimizzate Amazon',
+    "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto...)',
+    "Tema": 'tema dell\'opera (es. Natura, Ritratto, Paesaggio...)',
+    "Tipo di stanza": 'ambienti consigliati (es. Salotto, Camera, Ufficio...)',
+    "Famiglia di colori": 'palette dominante (es. Blu e verde, Caldi, Pastello...)',
+    "Colore": 'colori principali dell\'opera',
+    "Motivo": 'motivo decorativo (es. Floreale, Astratto, Geometrico...)',
+  };
 
-DATI DEL PRODOTTO:
-- Opera: ${product.titolo_opera}
-- Autore: ${product.autore || 'N/D'}
-- Dimensioni: ${product.dimensioni || 'N/D'}
-- Tecnica: ${product.tecnica || 'Stampa su tela'}
-- Descrizione originale: ${product.descrizione_raw || 'N/D'}
+  const guide = guideMap[nomeAttributo] || 'campo testo libero per listing Amazon Italia';
 
-DESCRIZIONE ATTUALE:
-${currentListing.descrizione || 'Non presente'}
-${keywordsBlock(keywords)}
-REGOLE PER LA DESCRIZIONE AMAZON:
-- Tra 200 e 2000 caratteri
-- Racconta la storia dell'opera e dell'artista
-- Descrivi l'effetto visivo e l'atmosfera
-- Spiega i possibili utilizzi decorativi (salotto, camera, ufficio, ecc.)
-- Includi informazioni tecniche (materiale, qualità di stampa)
-- Termina con un invito all'acquisto
-- Linguaggio caldo, evocativo e persuasivo
-- In italiano
+  const prompt = `Sei un esperto di listing Amazon per il mercato italiano.
 
-Rispondi SOLO con un JSON nel seguente formato, senza testo aggiuntivo:
-{"descrizione": "la descrizione generata"}`;
+Rigenera SOLO il campo "${nomeAttributo}" per questa stampa artistica su tela.
+
+TESTO DELL'OPERA:
+"""
+${product.descrizione_raw || 'Nessuna descrizione'}
+"""
+${product.dimensioni ? `\nDIMENSIONI: ${product.dimensioni}` : ''}
+${product.autore ? `\nAUTORE: ${product.autore}` : ''}
+
+VALORE ATTUALE:
+${currentValue || 'Non presente'}
+${keywordsSection}
+GUIDA: ${guide}
+
+Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
 
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
-    max_tokens: 1024,
+    max_tokens: 800,
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const responseText = message.content[0].text;
-  return parseJsonResponse(responseText);
-}
-
-/**
- * Costruisce il prompt completo per la generazione del listing
- */
-function buildFullPrompt(product, keywords = []) {
-  return `Sei un esperto copywriter specializzato in listing Amazon per il mercato italiano.
-
-Devi creare un listing completo e ottimizzato per Amazon per questa stampa artistica su tela.
-
-DATI DEL PRODOTTO:
-- Titolo opera: ${product.titolo_opera}
-- Autore: ${product.autore || 'N/D'}
-- Dimensioni: ${product.dimensioni || 'N/D'}
-- Tecnica: ${product.tecnica || 'Stampa su tela'}
-- Descrizione originale: ${product.descrizione_raw || 'N/D'}
-- Prezzo: ${product.prezzo ? `€${product.prezzo}` : 'N/D'}
-${keywordsBlock(keywords)}
-OBIETTIVO: Creare contenuti che convincano un acquirente italiano ad acquistare questa stampa artistica su tela su Amazon.
-
-REGOLE SPECIFICHE:
-
-TITOLO (max 200 caratteri):
-- Includi: tipo prodotto, titolo opera, autore, dimensioni se disponibili
-- Formato: [Stampa su Tela] - [Titolo Opera] di [Autore] - [Dimensioni] - [Caratteristica chiave]
-- Ottimizzato per ricerche Amazon italiane
-
-BULLET POINTS (5 punti, max 500 caratteri ciascuno):
-- Inizia ogni bullet con una keyword in MAIUSCOLO seguita da " – "
-- bp1: Qualità e materiali della stampa
-- bp2: Fedeltà riproduzione e dettagli artistici
-- bp3: Utilizzi decorativi e ambienti consigliati
-- bp4: Valore artistico e informazioni sull'opera/autore
-- bp5: Informazioni pratiche (spedizione, montaggio, confezione)
-
-DESCRIZIONE (200-2000 caratteri):
-- Racconta la storia dell'opera
-- Descrivi l'effetto visivo e l'atmosfera
-- Spiega i possibili utilizzi decorativi
-- Includi informazioni tecniche
-- Termina con invito all'acquisto
-- Linguaggio caldo ed evocativo
-
-PAROLE CHIAVE (stringa separata da virgole):
-- 8-12 keyword rilevanti per la ricerca su Amazon
-- Includi: tipo prodotto, soggetto, stile, utilizzo, autore
-- Varianti e sinonimi utili
-
-Rispondi SOLO con un JSON valido nel seguente formato, senza testo aggiuntivo prima o dopo:
-{
-  "titolo": "...",
-  "bp1": "...",
-  "bp2": "...",
-  "bp3": "...",
-  "bp4": "...",
-  "bp5": "...",
-  "descrizione": "...",
-  "parole_chiave": "..."
-}`;
+  return parseJsonResponse(message.content[0].text);
 }
 
 /**
  * Estrae e parsa la risposta JSON di Claude
  */
 function parseJsonResponse(text) {
-  // Cerca il JSON nella risposta (Claude a volte aggiunge testo prima/dopo)
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     throw new Error('Claude non ha restituito un JSON valido');
   }
-
   try {
     return JSON.parse(jsonMatch[0]);
   } catch (e) {
@@ -252,9 +145,4 @@ function parseJsonResponse(text) {
   }
 }
 
-module.exports = {
-  generateFullListing,
-  regenerateTitle,
-  regenerateBulletPoints,
-  regenerateDescription
-};
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute };

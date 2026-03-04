@@ -1,44 +1,90 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
+const { pool, initDatabase } = require('./database/db');
+const { runSeed } = require('./database/seed');
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Assicura che la cartella uploads esista
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Middleware
+// ─── Middleware ──────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes
-const uploadRoutes = require('./routes/upload');
-const productsRoutes = require('./routes/products');
-const listingsRoutes = require('./routes/listings');
-const keywordsRoutes = require('./routes/keywords');
+app.use(session({
+  store: new pgSession({ pool, tableName: 'session', createTableIfMissing: false }),
+  secret: process.env.SESSION_SECRET || 'amazon-ai-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 giorni
+    httpOnly: true,
+    secure: false // metti true in produzione con HTTPS
+  }
+}));
 
-app.use('/api/upload', uploadRoutes);
-app.use('/api/products', productsRoutes);
-app.use('/api/listings', listingsRoutes);
-app.use('/api/keywords', keywordsRoutes);
+// ─── Route pubbliche (no auth) ───────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
 
-// Fallback per le pagine HTML
+// Pagina login pubblica
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Redirect root → login se non autenticato
+app.get('/', (req, res, next) => {
+  if (!req.session.userId) return res.redirect('/login.html');
+  next();
+});
+
+// Route HTML senza estensione (protette da auth)
 app.get('/listing', (req, res) => {
+  if (!req.session.userId) return res.redirect('/login.html');
   res.sendFile(path.join(__dirname, 'public', 'listing.html'));
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/config', (req, res) => {
+  if (!req.session.userId) return res.redirect('/login.html');
+  res.sendFile(path.join(__dirname, 'public', 'config.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Amazon AI Listing Tool avviato su http://localhost:${PORT}`);
+// ─── File statici (protetti) ─────────────────────────────────
+app.use((req, res, next) => {
+  // Lascia passare login.html, css, js (pubblici)
+  const publicPaths = ['/login.html', '/css/', '/js/'];
+  if (publicPaths.some(p => req.path.startsWith(p))) return next();
+  // Tutto il resto richiede auth (per le pagine HTML)
+  if (!req.path.startsWith('/api/') && req.path.endsWith('.html') && !req.session.userId) {
+    return res.redirect('/login.html');
+  }
+  next();
 });
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── Route API protette ──────────────────────────────────────
+app.use('/api/products', requireAuth, require('./routes/products'));
+app.use('/api/upload',   requireAuth, require('./routes/upload'));
+app.use('/api/listings', requireAuth, require('./routes/listings'));
+app.use('/api/keywords', requireAuth, require('./routes/keywords'));
+app.use('/api/config',   requireAuth, require('./routes/config'));
+
+// ─── Avvio ───────────────────────────────────────────────────
+async function start() {
+  try {
+    await initDatabase();
+    await runSeed();
+    app.listen(PORT, () => {
+      console.log(`🚀 Server avviato su http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('❌ Errore avvio server:', err.message);
+    process.exit(1);
+  }
+}
+
+start();

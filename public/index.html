@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Amazon AI Listing Tool</title>
+  <title>Amazon AI Listing Tool — Dashboard</title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -15,7 +15,10 @@
       <span>Amazon <em>AI</em> Listing Tool</span>
     </a>
     <nav class="navbar-nav">
+      <span id="userBadge" style="color:var(--gray-400);font-size:13px;"></span>
       <a href="/" class="nav-link active">📋 Dashboard</a>
+      <a href="/config.html" class="nav-link">⚙️ Config</a>
+      <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
     </nav>
   </nav>
 
@@ -73,30 +76,21 @@
         <div class="upload-area" id="uploadArea">
           <span class="upload-icon">☁️</span>
           <h3>Trascina qui il file oppure clicca per selezionarlo</h3>
-          <p>Il file deve contenere la colonna <strong>titolo_opera</strong> (obbligatoria)</p>
+          <p>Un prodotto per file (testo libero) oppure file tabellare con più prodotti</p>
           <div class="format-badges">
+            <span class="badge badge-format">TXT</span>
             <span class="badge badge-format">XLSX</span>
             <span class="badge badge-format">CSV</span>
-            <span class="badge badge-format">TXT</span>
-            <span class="badge badge-format">PAGES</span>
           </div>
         </div>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt,.pages" style="display:none" />
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" />
 
-        <div class="file-template">
-          <strong>📋 Colonne supportate nel file:</strong>
-          <code>titolo_opera</code> (obbligatorio) &nbsp;|&nbsp;
-          <code>autore</code> &nbsp;|&nbsp;
-          <code>dimensioni</code> &nbsp;|&nbsp;
-          <code>tecnica</code> &nbsp;|&nbsp;
-          <code>descrizione_raw</code> &nbsp;|&nbsp;
-          <code>prezzo</code> &nbsp;|&nbsp;
-          <code>quantita</code>
-        </div>
-
-        <div style="margin-top:12px; background:#E8F5E9; border:1px solid #A5D6A7; border-radius:8px; padding:12px 16px; font-size:13px; color:#2e7d32;">
-          <strong>🍎 Pages supportato!</strong> Puoi caricare direttamente i tuoi file <code>.pages</code> — i dati devono essere in una <strong>tabella</strong> con la prima riga come intestazione.<br>
-          <span style="color:#555;margin-top:4px;display:block;">Per Apple Numbers: usa <strong>File → Esporta in → Excel (.xlsx)</strong> prima di caricare.</span>
+        <div class="file-template" style="margin-top:16px;">
+          <strong>📋 Formato testo libero (.txt):</strong>
+          <code>Prima riga = titolo opera</code>&nbsp;— poi descrizione libera con autore, dimensioni, tecnica, prezzo.
+          <br style="margin-top:6px;">
+          <strong>📊 Formato tabellare (.xlsx/.csv):</strong>
+          colonne: <code>titolo_opera</code> <code>autore</code> <code>dimensioni</code> <code>tecnica</code> <code>descrizione_raw</code> <code>prezzo</code>
         </div>
       </div>
     </div>

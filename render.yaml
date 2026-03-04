@@ -2,21 +2,21 @@ services:
   - type: web
     name: amazon-ai-listing-tool
     runtime: node
+    plan: free
     buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /api/products
+    startCommand: node --no-warnings server.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
       - key: ANTHROPIC_API_KEY
-        sync: false          # inserisci manualmente nel dashboard Render
-      - key: DATABASE_PATH
-        value: /data/amazon_ai.db
-
-    # Disco persistente per il database SQLite
-    disk:
-      name: sqlite-data
-      mountPath: /data
-      sizeGB: 1
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@sivigliart.it
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: amazon-ai-db
+          property: connectionString

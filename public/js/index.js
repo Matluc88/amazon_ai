@@ -1,5 +1,6 @@
 /* =============================================
    AMAZON AI LISTING TOOL — Dashboard JS
+   Sistema attributi dinamico + Auth
    ============================================= */
 
 let allProducts = [];
@@ -8,16 +9,46 @@ let allProducts = [];
 // INIT
 // =============================================
 document.addEventListener('DOMContentLoaded', () => {
+  initAuth();
   initUpload();
   loadProducts();
 });
+
+// =============================================
+// AUTH
+// =============================================
+async function initAuth() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) {
+      window.location.href = '/login.html';
+      return;
+    }
+    const user = await res.json();
+    const badge = document.getElementById('userBadge');
+    if (badge) {
+      badge.textContent = `👤 ${user.nome || user.email}`;
+    }
+  } catch {
+    window.location.href = '/login.html';
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  });
+}
 
 // =============================================
 // CARICAMENTO PRODOTTI
 // =============================================
 async function loadProducts() {
   try {
-    const res = await fetch('/api/products');
+    const res = await fetch('/api/listings');
+    if (!res.ok) {
+      if (res.status === 401) { window.location.href = '/login.html'; return; }
+      throw new Error('Errore server');
+    }
     allProducts = await res.json();
     renderProducts(allProducts);
     updateStats(allProducts);
@@ -28,18 +59,18 @@ async function loadProducts() {
 
 function updateStats(products) {
   const totali = products.length;
-  const conListing = products.filter(p => p.listing_id).length;
+  const conListing = products.filter(p => parseInt(p.attributi_compilati) > 0).length;
   const senzaListing = totali - conListing;
 
   document.getElementById('statTotali').textContent = totali;
   document.getElementById('statConListing').textContent = conListing;
   document.getElementById('statSenzaListing').textContent = senzaListing;
 
-  // Mostra/nascondi bottone "Genera tutti"
   const generateAllBtn = document.getElementById('generateAllBtn');
   if (senzaListing > 0) {
     generateAllBtn.style.display = 'inline-flex';
-    generateAllBtn.textContent = `✨ Genera tutti i listing (${senzaListing})`;
+    generateAllBtn.textContent = `✨ Genera tutti (${senzaListing})`;
+    generateAllBtn.onclick = generateAll;
   } else {
     generateAllBtn.style.display = 'none';
   }
@@ -59,36 +90,51 @@ function renderProducts(products) {
   }
 
   const rows = products.map(p => {
-    const hasListing = !!p.listing_id;
-    const statusBadge = hasListing
-      ? `<span class="badge badge-status-done">✅ Listing generato</span>`
-      : `<span class="badge badge-status-pending">⏳ Da generare</span>`;
+    const compiled = parseInt(p.attributi_compilati) || 0;
+    const total = parseInt(p.attributi_totali) || 0;
+    const hasListing = compiled > 0;
+    const pct = total > 0 ? Math.round(compiled / total * 100) : 0;
 
-    const updatedAt = p.listing_updated_at
-      ? new Date(p.listing_updated_at).toLocaleDateString('it-IT', {
-          day: '2-digit', month: '2-digit', year: 'numeric',
-          hour: '2-digit', minute: '2-digit'
+    let statusBadge;
+    if (!hasListing) {
+      statusBadge = `<span class="badge badge-status-pending">⏳ Da generare</span>`;
+    } else if (pct < 100) {
+      statusBadge = `
+        <div style="min-width:120px;">
+          <div style="font-size:11px;color:var(--gray-500);margin-bottom:3px;">${compiled}/${total} attributi (${pct}%)</div>
+          <div style="background:var(--gray-200);border-radius:10px;height:4px;">
+            <div style="background:var(--primary);width:${pct}%;height:100%;border-radius:10px;"></div>
+          </div>
+        </div>`;
+    } else {
+      statusBadge = `<span class="badge badge-status-done">✅ Completo</span>`;
+    }
+
+    const createdAt = p.created_at
+      ? new Date(p.created_at).toLocaleDateString('it-IT', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
         })
       : '—';
 
     return `
       <tr>
         <td>
-          <span class="product-title">${escHtml(p.titolo_opera)}</span>
+          <span class="product-title">${escHtml(p.titolo_opera || '—')}</span>
           <span class="product-subtitle">${escHtml(p.autore || '—')}</span>
         </td>
         <td>${escHtml(p.dimensioni || '—')}</td>
         <td>${escHtml(p.tecnica || '—')}</td>
         <td>${p.prezzo ? `€${parseFloat(p.prezzo).toFixed(2)}` : '—'}</td>
         <td>${statusBadge}</td>
-        <td>${updatedAt}</td>
+        <td>${createdAt}</td>
         <td>
           <div class="actions-cell">
-            ${hasListing
-              ? `<a href="/listing?id=${p.listing_id}" class="btn btn-outline btn-sm">📄 Apri</a>`
-              : `<button class="btn btn-primary btn-sm" onclick="generateListing(${p.id}, this)">✨ Genera</button>`
+            <a href="/listing?id=${p.id}" class="btn btn-outline btn-sm">📄 Apri</a>
+            ${!hasListing
+              ? `<button class="btn btn-primary btn-sm" onclick="generateListing(${p.id}, this)">✨ Genera</button>`
+              : ''
             }
-            <button class="btn btn-secondary btn-sm" onclick="deleteProduct(${p.id}, this)">🗑️</button>
+            <button class="btn btn-secondary btn-sm" onclick="deleteProduct(${p.id}, this)" title="Elimina">🗑️</button>
           </div>
         </td>
       </tr>`;
@@ -104,16 +150,13 @@ function renderProducts(products) {
             <th>Tecnica</th>
             <th>Prezzo</th>
             <th>Stato</th>
-            <th>Ultimo aggiornamento</th>
+            <th>Importato il</th>
             <th>Azioni</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
-
-  // Collega il bottone "Genera tutti"
-  document.getElementById('generateAllBtn').onclick = generateAll;
 }
 
 // =============================================
@@ -122,22 +165,19 @@ function renderProducts(products) {
 async function generateListing(productId, btn) {
   const originalText = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Generazione...';
+  btn.innerHTML = '<span class="spinner"></span>';
 
-  showLoading('Generazione listing in corso...', 'Claude sta creando il tuo listing Amazon');
+  showLoading('Generazione listing...', 'Claude sta creando gli attributi Amazon');
 
   try {
     const res = await fetch(`/api/listings/generate/${productId}`, { method: 'POST' });
     const data = await res.json();
-
     if (!res.ok) throw new Error(data.error || 'Errore sconosciuto');
 
-    showToast('✅ Listing generato con successo!', 'success');
-
-    // Reindirizza alla pagina del listing
+    showToast('✅ Listing generato!', 'success');
     setTimeout(() => {
-      window.location.href = `/listing?id=${data.listing.id}`;
-    }, 800);
+      window.location.href = `/listing?id=${productId}`;
+    }, 600);
 
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
@@ -148,7 +188,7 @@ async function generateListing(productId, btn) {
 }
 
 async function generateAll() {
-  const toGenerate = allProducts.filter(p => !p.listing_id);
+  const toGenerate = allProducts.filter(p => parseInt(p.attributi_compilati) === 0);
   if (toGenerate.length === 0) return;
 
   showLoading(
@@ -162,15 +202,11 @@ async function generateAll() {
   for (const product of toGenerate) {
     try {
       const res = await fetch(`/api/listings/generate/${product.id}`, { method: 'POST' });
-      if (res.ok) {
-        success++;
-      } else {
-        errors++;
-      }
+      if (res.ok) success++;
+      else errors++;
     } catch {
       errors++;
     }
-    // Aggiorna il testo del loading
     document.getElementById('loadingSubtitle').textContent =
       `Completati: ${success + errors} / ${toGenerate.length}`;
   }
@@ -178,7 +214,7 @@ async function generateAll() {
   hideLoading();
 
   if (errors === 0) {
-    showToast(`✅ Tutti i ${success} listing generati con successo!`, 'success');
+    showToast(`✅ Tutti i ${success} listing generati!`, 'success');
   } else {
     showToast(`⚠️ ${success} generati, ${errors} errori.`, 'warning');
   }
@@ -190,17 +226,18 @@ async function generateAll() {
 // ELIMINA PRODOTTO
 // =============================================
 async function deleteProduct(productId, btn) {
-  if (!confirm('Eliminare questo prodotto e il suo listing? L\'operazione non è reversibile.')) return;
+  if (!confirm('Eliminare questo prodotto e tutti i suoi attributi? L\'operazione non è reversibile.')) return;
 
+  btn.disabled = true;
   try {
     const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-
     showToast('Prodotto eliminato', 'success');
     loadProducts();
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
+    btn.disabled = false;
   }
 }
 
@@ -244,24 +281,19 @@ async function handleFile(file) {
     return;
   }
 
-  showLoading('Importazione in corso...', `Elaborazione di: ${file.name}`);
+  showLoading('Importazione...', `Elaborazione di: ${file.name}`);
 
   const formData = new FormData();
   formData.append('file', file);
 
   try {
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
     const data = await res.json();
-
     if (!res.ok) throw new Error(data.error);
 
     hideLoading();
     showToast(`✅ ${data.message}`, 'success');
     loadProducts();
-
   } catch (err) {
     hideLoading();
     showToast(`Errore importazione: ${err.message}`, 'error');
@@ -284,12 +316,10 @@ function hideLoading() {
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
   container.appendChild(toast);
-
   setTimeout(() => {
     toast.classList.add('hiding');
     setTimeout(() => toast.remove(), 300);

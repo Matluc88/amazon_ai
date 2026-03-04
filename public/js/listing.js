@@ -1,31 +1,67 @@
 /* =============================================
-   AMAZON AI LISTING TOOL — Listing Detail JS
+   AMAZON AI LISTING TOOL — Listing Dinamico
+   Sistema attributi: AI | FIXED | AUTO | MANUAL
    ============================================= */
 
-let listingId = null;
 let productId = null;
-let originalData = {};
-let hasUnsavedChanges = false;
+let currentProduct = null;
+let currentSections = null;           // { sezione: [attr, ...] }
+let pendingChanges = {};              // { attribute_id: new_value }
 let minedKeywords = [];
+
+// Limiti caratteri noti (Amazon Italy)
+const CHAR_LIMITS = {
+  'Nome articolo': 200,
+  'Punto elenco 1': 500, 'Punto elenco 2': 500,
+  'Punto elenco 3': 500, 'Punto elenco 4': 500,
+  'Punto elenco 5': 500,
+  'Descrizione prodotto': 2000,
+  'Chiavi ricerca': 250,
+  'Chiavi ricerca 1': 250, 'Chiavi ricerca 2': 250,
+  'Chiavi ricerca 3': 250,
+};
+
+// Icone sezioni
+const SECTION_ICONS = {
+  'Titolo e Descrizione': '📝',
+  'Bullet Points': '🔵',
+  'Parole chiave': '🔍',
+  'SEO': '🔍',
+  'Immagini': '🖼️',
+  'Prezzo': '💰',
+  'Logistica': '📦',
+  'Dettagli tecnici': '🔧',
+  'Classificazione': '🏷️',
+  'Informazioni aggiuntive': 'ℹ️',
+};
+
+function getSectionIcon(name) {
+  for (const [key, icon] of Object.entries(SECTION_ICONS)) {
+    if (name.toLowerCase().includes(key.toLowerCase())) return icon;
+  }
+  return '📋';
+}
 
 // =============================================
 // INIT
 // =============================================
 document.addEventListener('DOMContentLoaded', () => {
-  // Leggi l'ID dal query string
   const params = new URLSearchParams(window.location.search);
-  listingId = params.get('id');
+  productId = params.get('id');
 
-  if (!listingId) {
-    showToast('ID listing non trovato', 'error');
+  if (!productId) {
+    showToast('ID prodotto non trovato nell\'URL', 'error');
     setTimeout(() => window.location.href = '/', 1500);
     return;
   }
 
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  });
+
   loadListing();
-  initCounters();
-  initSaveBar();
-  initRegenButtons();
 });
 
 // =============================================
@@ -33,162 +69,289 @@ document.addEventListener('DOMContentLoaded', () => {
 // =============================================
 async function loadListing() {
   try {
-    const res = await fetch(`/api/listings/${listingId}`);
+    const res = await fetch(`/api/listings/${productId}`);
     if (!res.ok) {
+      if (res.status === 401) { window.location.href = '/login.html'; return; }
       const data = await res.json();
       throw new Error(data.error || 'Listing non trovato');
     }
-    const listing = await res.json();
-    populateListing(listing);
-    populateProductInfo(listing);
+    const data = await res.json();
+    currentProduct = data.product;
+    currentSections = data.sections;
+
+    renderProductInfo(currentProduct);
+    renderSections(currentSections);
+    updateProgress();
+    checkIfEmpty();
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
-    setTimeout(() => window.location.href = '/', 2000);
+    setTimeout(() => window.location.href = '/', 2500);
   }
 }
 
-function populateListing(listing) {
-  const fields = ['titolo', 'descrizione', 'bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'parole_chiave', 'prezzo', 'quantita'];
-
-  fields.forEach(field => {
-    const el = document.getElementById(field);
-    if (el) {
-      el.value = listing[field] !== null && listing[field] !== undefined ? listing[field] : '';
-      updateCounter(field);
-    }
-  });
-
-  // Aggiorna header pagina
-  document.getElementById('pageTitle').textContent = `📄 ${listing.titolo_opera || 'Listing'}`;
+// =============================================
+// PRODUCT INFO
+// =============================================
+function renderProductInfo(product) {
+  // Update page title
+  document.getElementById('pageTitle').textContent = `📄 ${product.titolo_opera || 'Listing'}`;
   document.getElementById('pageSubtitle').textContent =
-    listing.autore
-      ? `di ${listing.autore}${listing.dimensioni ? ' — ' + listing.dimensioni : ''}`
-      : listing.dimensioni || 'Stampa artistica su tela';
-  document.title = `${listing.titolo_opera} — Amazon AI Tool`;
-
-  // Salva product_id per il keyword mining
-  productId = listing.product_id;
-
-  // Salva i dati originali per il "Annulla"
-  originalData = { ...listing };
-
-  // Reset modifiche non salvate
-  hasUnsavedChanges = false;
-  hideSaveBar();
-}
-
-function populateProductInfo(listing) {
-  const card = document.getElementById('productInfoCard');
-  const rows = document.getElementById('productInfoRows');
+    [product.autore, product.dimensioni, product.tecnica].filter(Boolean).join(' — ') || 'Stampa artistica su tela';
+  document.title = `${product.titolo_opera || 'Listing'} — Amazon AI Tool`;
 
   const fields = [
-    { key: 'Opera', val: listing.titolo_opera },
-    { key: 'Autore', val: listing.autore },
-    { key: 'Dimensioni', val: listing.dimensioni },
-    { key: 'Tecnica', val: listing.tecnica },
-    { key: 'Descrizione', val: listing.descrizione_raw },
-  ];
+    { k: 'Opera', v: product.titolo_opera },
+    { k: 'Autore', v: product.autore },
+    { k: 'Dimensioni', v: product.dimensioni },
+    { k: 'Tecnica', v: product.tecnica },
+    { k: 'Descrizione', v: product.descrizione_raw },
+  ].filter(f => f.v);
 
-  const html = fields
-    .filter(f => f.val)
-    .map(f => `
+  if (fields.length) {
+    document.getElementById('productInfoRows').innerHTML = fields.map(f => `
       <div class="product-info-row">
-        <span class="info-key">${f.key}:</span>
-        <span class="info-val">${escHtml(f.val)}</span>
-      </div>`)
-    .join('');
-
-  if (html) {
-    rows.innerHTML = html;
-    card.style.display = 'block';
+        <span class="info-key">${f.k}:</span>
+        <span class="info-val">${escHtml(f.v)}</span>
+      </div>`).join('');
+    document.getElementById('productInfoCard').style.display = 'block';
   }
 }
 
 // =============================================
-// CONTATORI CARATTERI
+// CHECK IF EMPTY
 // =============================================
-function initCounters() {
-  const fieldCounters = {
-    'titolo': 'titoloCounter',
-    'descrizione': 'descrizioneCounter',
-    'bp1': 'bp1Counter',
-    'bp2': 'bp2Counter',
-    'bp3': 'bp3Counter',
-    'bp4': 'bp4Counter',
-    'bp5': 'bp5Counter',
-  };
+function checkIfEmpty() {
+  if (!currentSections) return;
+  const allAttrs = Object.values(currentSections).flat();
+  const hasAnyValue = allAttrs.some(a => a.value && a.value.trim().length > 0);
 
-  Object.entries(fieldCounters).forEach(([fieldId, counterId]) => {
-    const el = document.getElementById(fieldId);
-    if (el) {
-      el.addEventListener('input', () => {
-        updateCounter(fieldId);
-        markUnsaved();
-      });
+  if (!hasAnyValue) {
+    document.getElementById('generateBanner').classList.remove('d-none');
+    document.getElementById('listingToolbar').style.display = 'none';
+  } else {
+    document.getElementById('generateBanner').classList.add('d-none');
+    document.getElementById('listingToolbar').style.display = '';
+  }
+}
+
+// =============================================
+// RENDER SECTIONS
+// =============================================
+function renderSections(sections) {
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = '';
+
+  for (const [sectionName, attrs] of Object.entries(sections)) {
+    if (!attrs || attrs.length === 0) continue;
+
+    const block = document.createElement('div');
+    block.className = 'section-block';
+    block.dataset.section = sectionName;
+
+    const icon = getSectionIcon(sectionName);
+    block.innerHTML = `<div class="section-title">${icon} ${escHtml(sectionName)}</div>`;
+
+    for (const attr of attrs) {
+      block.appendChild(createAttrCard(attr));
     }
-  });
 
-  // Monitora anche gli altri campi per le modifiche
-  ['parole_chiave', 'prezzo', 'quantita'].forEach(fieldId => {
-    const el = document.getElementById(fieldId);
-    if (el) el.addEventListener('input', markUnsaved);
+    container.appendChild(block);
+  }
+}
+
+// =============================================
+// CREATE ATTRIBUTE CARD
+// =============================================
+function createAttrCard(attr) {
+  const isReadonly = attr.source === 'FIXED' || attr.source === 'AUTO';
+  const isEmpty = !attr.value || attr.value.trim() === '';
+  const isManualEmpty = attr.source === 'MANUAL' && isEmpty;
+  const charLimit = CHAR_LIMITS[attr.nome] || null;
+  const isTextarea = /descrizione|punto elenco|elenco puntato|informazioni|caratteristiche/i.test(attr.nome);
+
+  const card = document.createElement('div');
+  card.className = [
+    'attr-card',
+    attr.priorita,
+    isReadonly ? 'readonly' : '',
+    isManualEmpty ? 'empty-manual' : '',
+  ].filter(Boolean).join(' ');
+  card.dataset.attrId = attr.id;
+  card.dataset.nome = attr.nome;
+  card.dataset.source = attr.source;
+  card.dataset.priorita = attr.priorita;
+
+  // Source badge label & emoji
+  const sourceMeta = {
+    AI:     { label: '🤖 AI',     cls: 'AI' },
+    FIXED:  { label: '📌 FISSO',  cls: 'FIXED' },
+    AUTO:   { label: '⚙️ AUTO',   cls: 'AUTO' },
+    MANUAL: { label: '✍️ MANUALE',cls: 'MANUAL' },
+  };
+  const sm = sourceMeta[attr.source] || { label: attr.source, cls: '' };
+
+  // Priority indicator text
+  const prioText = attr.priorita === 'obbligatorio' ? '<span style="color:#ef4444;font-size:11px;font-weight:700;">●</span>' :
+                   attr.priorita === 'seo' ? '<span style="color:#f59e0b;font-size:11px;font-weight:700;">●</span>' : '';
+
+  // Buttons
+  const copyBtn = `<button class="btn btn-copy" onclick="copyAttr(${attr.id})" title="Copia">📋</button>`;
+  const regenBtn = attr.source === 'AI'
+    ? `<button class="btn-regen" onclick="regenerateAttr(${attr.id}, '${escHtml(attr.nome).replace(/'/g, "\\'")}', this)" title="Rigenera con AI">🔄 Rigenera</button>`
+    : '';
+
+  // Input element
+  const inputId = `attr-${attr.id}`;
+  const inputEl = isTextarea
+    ? `<textarea id="${inputId}" class="attr-input" rows="3" ${isReadonly ? 'readonly' : ''}
+        oninput="handleInput(${attr.id}, this)">${escHtml(attr.value || '')}</textarea>`
+    : `<input type="text" id="${inputId}" class="attr-input" ${isReadonly ? 'readonly' : ''}
+        value="${escHtml(attr.value || '')}" oninput="handleInput(${attr.id}, this)" />`;
+
+  const counterHtml = charLimit
+    ? `<div class="char-counter" id="counter-${attr.id}">${(attr.value || '').length} / ${charLimit}</div>`
+    : '';
+
+  const manualHint = isManualEmpty
+    ? `<div style="font-size:11px;color:#92400e;margin-top:4px;">⚠️ Campo manuale — inserire valore</div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="attr-header">
+      <div class="attr-header-left">
+        ${prioText}
+        <span class="attr-nome">${escHtml(attr.nome)}</span>
+        <span class="badge-source ${sm.cls}">${sm.label}</span>
+      </div>
+      <div class="attr-header-right">
+        ${regenBtn}
+        ${copyBtn}
+      </div>
+    </div>
+    <div class="attr-body">
+      ${inputEl}
+      ${counterHtml}
+      ${manualHint}
+    </div>`;
+
+  return card;
+}
+
+// =============================================
+// INPUT HANDLING (track changes)
+// =============================================
+function handleInput(attrId, el) {
+  pendingChanges[attrId] = el.value;
+  updateCharCounter(attrId, el.value);
+  showSaveBar();
+}
+
+function updateCharCounter(attrId, value) {
+  const counter = document.getElementById(`counter-${attrId}`);
+  if (!counter) return;
+
+  // Find the limit from the card nome
+  const card = document.querySelector(`[data-attr-id="${attrId}"]`);
+  const nome = card ? card.dataset.nome : '';
+  const limit = CHAR_LIMITS[nome];
+  if (!limit) return;
+
+  const len = value.length;
+  counter.textContent = `${len} / ${limit}`;
+  counter.className = 'char-counter';
+  if (len > limit) counter.classList.add('over');
+  else if (len > limit * 0.85) counter.classList.add('warn');
+}
+
+// =============================================
+// COPY ATTRIBUTE
+// =============================================
+function copyAttr(attrId) {
+  const el = document.getElementById(`attr-${attrId}`);
+  if (!el) return;
+  const text = el.value || el.textContent;
+  if (!text.trim()) { showToast('Campo vuoto!', 'warning'); return; }
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('📋 Copiato!', 'success');
+  }).catch(() => {
+    el.select && el.select();
+    document.execCommand('copy');
+    showToast('📋 Copiato!', 'success');
   });
 }
 
-function updateCounter(fieldId) {
-  const counterMap = {
-    'titolo': 'titoloCounter',
-    'descrizione': 'descrizioneCounter',
-    'bp1': 'bp1Counter',
-    'bp2': 'bp2Counter',
-    'bp3': 'bp3Counter',
-    'bp4': 'bp4Counter',
-    'bp5': 'bp5Counter',
-  };
+// =============================================
+// SAVE CHANGES (bulk)
+// =============================================
+async function saveChanges() {
+  if (Object.keys(pendingChanges).length === 0) return;
 
-  const counterId = counterMap[fieldId];
-  if (!counterId) return;
+  const saveBtn = document.getElementById('saveBtn');
+  const original = saveBtn.innerHTML;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="spinner"></span> Salvataggio...';
 
-  const el = document.getElementById(fieldId);
-  const counter = document.getElementById(counterId);
-  if (el && counter) {
-    const len = el.value.length;
-    counter.textContent = `${len} car.`;
+  const attributes = Object.entries(pendingChanges).map(([attribute_id, value]) => ({
+    attribute_id: parseInt(attribute_id),
+    value
+  }));
 
-    // Colori warning
-    const limits = { titolo: 200, descrizione: 2000, bp1: 500, bp2: 500, bp3: 500, bp4: 500, bp5: 500 };
-    const limit = limits[fieldId];
-    if (limit) {
-      if (len > limit) {
-        counter.style.color = 'var(--danger)';
-        counter.style.fontWeight = '700';
-      } else if (len > limit * 0.85) {
-        counter.style.color = 'var(--warning)';
-        counter.style.fontWeight = '600';
-      } else {
-        counter.style.color = '';
-        counter.style.fontWeight = '';
+  try {
+    const res = await fetch(`/api/listings/${productId}/bulk`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attributes })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Update currentSections with new values
+    for (const [attrId, value] of Object.entries(pendingChanges)) {
+      for (const attrs of Object.values(currentSections)) {
+        const attr = attrs.find(a => a.id === parseInt(attrId));
+        if (attr) { attr.value = value; attr.is_compiled = !!value; }
+      }
+    }
+
+    pendingChanges = {};
+    hideSaveBar();
+    updateProgress();
+    showToast(`✅ ${attributes.length} attributi salvati!`, 'success');
+  } catch (err) {
+    showToast(`Errore salvataggio: ${err.message}`, 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = original;
+  }
+}
+
+// =============================================
+// DISCARD CHANGES
+// =============================================
+function discardChanges() {
+  // Ripristina i valori originali dal currentSections
+  for (const [attrId] of Object.entries(pendingChanges)) {
+    for (const attrs of Object.values(currentSections)) {
+      const attr = attrs.find(a => a.id === parseInt(attrId));
+      if (attr) {
+        const el = document.getElementById(`attr-${attrId}`);
+        if (el) el.value = attr.value || '';
       }
     }
   }
+  pendingChanges = {};
+  hideSaveBar();
+  showToast('Modifiche annullate', 'info');
 }
 
 // =============================================
 // SAVE BAR
 // =============================================
-function initSaveBar() {
-  document.getElementById('saveBtn').addEventListener('click', saveListing);
-  document.getElementById('discardBtn').addEventListener('click', discardChanges);
-}
-
-function markUnsaved() {
-  if (!hasUnsavedChanges) {
-    hasUnsavedChanges = true;
-    showSaveBar();
-  }
-}
-
 function showSaveBar() {
+  const count = Object.keys(pendingChanges).length;
+  document.getElementById('pendingCount').textContent =
+    `${count} modifica${count !== 1 ? 'he' : ''} non salvata${count !== 1 ? 'e' : ''}`;
   document.getElementById('saveBar').classList.add('visible');
 }
 
@@ -196,356 +359,249 @@ function hideSaveBar() {
   document.getElementById('saveBar').classList.remove('visible');
 }
 
-function discardChanges() {
-  populateListing(originalData);
-  showToast('Modifiche annullate', 'info');
-}
+// =============================================
+// GENERATE / REGENERATE ALL
+// =============================================
+async function generateListing() {
+  showLoading('Generazione in corso...', 'Claude sta creando tutti gli attributi Amazon');
 
-async function saveListing() {
-  const saveBtn = document.getElementById('saveBtn');
-  const originalText = saveBtn.innerHTML;
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = '<span class="spinner"></span> Salvataggio...';
-
-  const payload = {
-    titolo: document.getElementById('titolo').value,
-    descrizione: document.getElementById('descrizione').value,
-    bp1: document.getElementById('bp1').value,
-    bp2: document.getElementById('bp2').value,
-    bp3: document.getElementById('bp3').value,
-    bp4: document.getElementById('bp4').value,
-    bp5: document.getElementById('bp5').value,
-    parole_chiave: document.getElementById('parole_chiave').value,
-    prezzo: document.getElementById('prezzo').value || null,
-    quantita: document.getElementById('quantita').value || null,
-  };
+  const genBtn = document.getElementById('generateBtn');
+  const regenBtn = document.getElementById('regenAllBtn');
+  if (genBtn) genBtn.disabled = true;
+  if (regenBtn) regenBtn.disabled = true;
 
   try {
-    const res = await fetch(`/api/listings/${listingId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    originalData = { ...originalData, ...payload };
-    hasUnsavedChanges = false;
-    hideSaveBar();
-    showToast('✅ Listing salvato con successo!', 'success');
-
-  } catch (err) {
-    showToast(`Errore salvataggio: ${err.message}`, 'error');
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = originalText;
-  }
-}
-
-// =============================================
-// RIGENERAZIONE AI
-// =============================================
-function initRegenButtons() {
-  document.getElementById('regenTitoloBtn').addEventListener('click', () => regenerate('titolo'));
-  document.getElementById('regenBpBtn').addEventListener('click', () => regenerate('bullet_points'));
-  document.getElementById('regenDescBtn').addEventListener('click', () => regenerate('descrizione'));
-  document.getElementById('mineKeywordsBtn').addEventListener('click', mineKeywords);
-}
-
-async function regenerate(field) {
-  const labels = {
-    titolo: 'titolo',
-    bullet_points: 'bullet points',
-    descrizione: 'descrizione'
-  };
-
-  showLoading(
-    `Rigenerazione ${labels[field]}...`,
-    'Claude sta riscrivendo il contenuto selezionato'
-  );
-
-  // Disabilita tutti i bottoni AI durante la rigenerazione
-  setAiButtonsDisabled(true);
-
-  try {
-    const res = await fetch(`/api/listings/${listingId}/regenerate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ field })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    // Aggiorna i campi rigenerati
-    const listing = data.listing;
-    if (field === 'titolo') {
-      document.getElementById('titolo').value = listing.titolo || '';
-      updateCounter('titolo');
-    } else if (field === 'bullet_points') {
-      ['bp1', 'bp2', 'bp3', 'bp4', 'bp5'].forEach(bp => {
-        document.getElementById(bp).value = listing[bp] || '';
-        updateCounter(bp);
-      });
-    } else if (field === 'descrizione') {
-      document.getElementById('descrizione').value = listing.descrizione || '';
-      updateCounter('descrizione');
+    const res = await fetch(`/api/listings/generate/${productId}`, { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Errore generazione');
     }
+    const data = await res.json();
 
-    // Aggiorna i dati originali con quelli nuovi (già salvati sul server)
-    originalData = { ...originalData, ...listing };
-    hasUnsavedChanges = false;
+    currentSections = data.sections;
+    pendingChanges = {};
+
+    // Re-render
+    renderSections(currentSections);
+    updateProgress();
+    checkIfEmpty();
     hideSaveBar();
 
-    showToast(`✅ ${labels[field].charAt(0).toUpperCase() + labels[field].slice(1)} rigenerato!`, 'success');
-
+    showToast('✅ Listing generato con successo!', 'success');
   } catch (err) {
-    showToast(`Errore rigenerazione: ${err.message}`, 'error');
+    showToast(`Errore: ${err.message}`, 'error');
   } finally {
     hideLoading();
-    setAiButtonsDisabled(false);
+    if (genBtn) genBtn.disabled = false;
+    if (regenBtn) regenBtn.disabled = false;
   }
 }
 
-function setAiButtonsDisabled(disabled) {
-  ['regenTitoloBtn', 'regenBpBtn', 'regenDescBtn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.disabled = disabled;
+// =============================================
+// REGENERATE SINGLE ATTRIBUTE
+// =============================================
+async function regenerateAttr(attrId, nomeAttributo, btn) {
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳';
+
+  // Disabilita tutti i btn regen durante la rigenerazione
+  document.querySelectorAll('.btn-regen').forEach(b => b.disabled = true);
+
+  const el = document.getElementById(`attr-${attrId}`);
+  const currentValue = el ? el.value : '';
+
+  try {
+    const res = await fetch(`/api/listings/${productId}/regenerate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attribute_id: attrId,
+        nome_attributo: nomeAttributo,
+        current_value: currentValue
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const newValue = data.value || '';
+
+    // Aggiorna UI
+    if (el) {
+      el.value = newValue;
+      updateCharCounter(attrId, newValue);
+    }
+
+    // Aggiorna currentSections
+    for (const attrs of Object.values(currentSections)) {
+      const attr = attrs.find(a => a.id === attrId);
+      if (attr) { attr.value = newValue; attr.is_compiled = true; }
+    }
+
+    // Rimuovi dalle pendingChanges se c'era (è già salvato)
+    delete pendingChanges[attrId];
+    if (Object.keys(pendingChanges).length === 0) hideSaveBar();
+    updateProgress();
+
+    showToast(`✅ "${nomeAttributo}" rigenerato!`, 'success');
+  } catch (err) {
+    showToast(`Errore: ${err.message}`, 'error');
+  } finally {
+    document.querySelectorAll('.btn-regen').forEach(b => b.disabled = false);
+    btn.innerHTML = originalText;
+  }
+}
+
+// =============================================
+// PROGRESS BAR
+// =============================================
+function updateProgress() {
+  if (!currentSections) return;
+  const all = Object.values(currentSections).flat();
+  const total = all.length;
+  const compiled = all.filter(a => a.is_compiled || (a.value && a.value.trim())).length;
+  const pct = total > 0 ? Math.round(compiled / total * 100) : 0;
+
+  document.getElementById('progressLabel').textContent = `${compiled} / ${total} attributi compilati`;
+  document.getElementById('progressFill').style.width = `${pct}%`;
+}
+
+// =============================================
+// FILTER
+// =============================================
+function applyFilter() {
+  const onlyMandatory = document.getElementById('filterMandatory').checked;
+  const hideReadonly = document.getElementById('filterHideReadonly').checked;
+
+  document.getElementById('filterChip').classList.toggle('active', onlyMandatory);
+  document.getElementById('filterReadonlyChip').classList.toggle('active', hideReadonly);
+
+  document.querySelectorAll('.attr-card').forEach(card => {
+    const prio = card.dataset.priorita;
+    const src = card.dataset.source;
+    let visible = true;
+    if (onlyMandatory && prio !== 'obbligatorio') visible = false;
+    if (hideReadonly && (src === 'FIXED' || src === 'AUTO')) visible = false;
+    card.style.display = visible ? '' : 'none';
+  });
+
+  // Nascondi sezioni vuote dopo il filtro
+  document.querySelectorAll('.section-block').forEach(block => {
+    const visibleCards = [...block.querySelectorAll('.attr-card')].filter(
+      c => c.style.display !== 'none'
+    );
+    block.style.display = visibleCards.length > 0 ? '' : 'none';
   });
 }
 
 // =============================================
-// KEYWORD MINING AMAZON.IT
+// KEYWORD MINING
 // =============================================
-
-/**
- * Avvia il mining delle keyword da Amazon.it per questo prodotto
- */
 async function mineKeywords() {
-  if (!productId) {
-    showToast('Product ID non disponibile', 'error');
-    return;
-  }
-
+  const section = document.getElementById('keywordSection');
+  const loading = document.getElementById('kwLoading');
+  const chips = document.getElementById('kwChips');
+  const status = document.getElementById('kwStatus');
+  const copyBtn = document.getElementById('copyKwBtn');
+  const injectBtn = document.getElementById('injectKwBtn');
   const btn = document.getElementById('mineKeywordsBtn');
-  const section = document.getElementById('keywordMiningSection');
-  const loading = document.getElementById('keywordMiningLoading');
-  const chips = document.getElementById('keywordChipsContainer');
-  const status = document.getElementById('keywordMiningStatus');
-  const copyBtn = document.getElementById('copyAllKeywordsBtn');
-  const useBtn = document.getElementById('useKeywordsBtn');
 
-  // Mostra la sezione e lo stato di caricamento
   section.style.display = 'block';
   loading.style.display = 'block';
   chips.innerHTML = '';
-  status.textContent = '';
   copyBtn.style.display = 'none';
-  useBtn.style.display = 'none';
+  injectBtn.style.display = 'none';
+  status.textContent = 'Mining in corso...';
 
   btn.disabled = true;
-  const btnOriginal = btn.innerHTML;
-  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Mining...';
+  const origBtn = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;"></span> Mining...';
 
-  // Scroll alla sezione
   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   try {
     const res = await fetch(`/api/keywords/mine/${productId}`, { method: 'POST' });
     const data = await res.json();
-
-    if (!res.ok) throw new Error(data.error || 'Errore nel mining');
+    if (!res.ok) throw new Error(data.error);
 
     minedKeywords = data.keywords || [];
-
     loading.style.display = 'none';
 
     if (minedKeywords.length === 0) {
-      chips.innerHTML = '<p style="color:var(--gray-500);font-size:14px;">Nessuna keyword trovata per questo prodotto.</p>';
+      chips.innerHTML = '<p style="color:var(--gray-500);font-size:13px;">Nessuna keyword trovata.</p>';
       status.textContent = '(nessun risultato)';
     } else {
       renderKeywordChips(minedKeywords);
       status.textContent = `— ${minedKeywords.length} keyword trovate`;
       copyBtn.style.display = 'inline-flex';
-      useBtn.style.display = 'inline-flex';
+      injectBtn.style.display = 'inline-flex';
       showToast(`✅ ${minedKeywords.length} keyword trovate su Amazon.it!`, 'success');
     }
-
   } catch (err) {
     loading.style.display = 'none';
-    chips.innerHTML = `<p style="color:var(--danger);font-size:14px;">Errore: ${escHtml(err.message)}</p>`;
+    chips.innerHTML = `<p style="color:var(--danger);font-size:13px;">Errore: ${escHtml(err.message)}</p>`;
     status.textContent = '(errore)';
     showToast(`Errore mining: ${err.message}`, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = btnOriginal;
+    btn.innerHTML = origBtn;
   }
 }
 
-/**
- * Mostra le keyword come chip cliccabili
- * Click su chip → copia la keyword singola
- */
 function renderKeywordChips(keywords) {
-  const container = document.getElementById('keywordChipsContainer');
+  const container = document.getElementById('kwChips');
   container.innerHTML = '';
-
   keywords.forEach(kw => {
     const chip = document.createElement('span');
     chip.className = 'keyword-chip';
     chip.textContent = kw;
     chip.title = 'Clicca per copiare';
-    chip.style.cssText = `
-      display:inline-block;
-      background:#eff6ff;
-      color:#1d4ed8;
-      border:1px solid #bfdbfe;
-      border-radius:20px;
-      padding:4px 12px;
-      font-size:13px;
-      cursor:pointer;
-      transition:all 0.15s;
-      user-select:none;
-    `;
     chip.addEventListener('click', () => {
       navigator.clipboard.writeText(kw).then(() => {
-        chip.style.background = '#dcfce7';
-        chip.style.color = '#166534';
-        chip.style.borderColor = '#86efac';
+        chip.classList.add('copied');
         const orig = chip.textContent;
         chip.textContent = '✅ ' + orig;
-        setTimeout(() => {
-          chip.style.background = '#eff6ff';
-          chip.style.color = '#1d4ed8';
-          chip.style.borderColor = '#bfdbfe';
-          chip.textContent = orig;
-        }, 1200);
+        setTimeout(() => { chip.classList.remove('copied'); chip.textContent = orig; }, 1200);
       });
     });
     container.appendChild(chip);
   });
 }
 
-/**
- * Copia tutte le keyword minate come stringa separata da virgole
- */
-function copyMinedKeywords() {
-  if (!minedKeywords.length) {
-    showToast('Nessuna keyword da copiare', 'warning');
-    return;
-  }
-  const text = minedKeywords.join(', ');
-  navigator.clipboard.writeText(text).then(() => {
+function copyAllKeywords() {
+  if (!minedKeywords.length) return;
+  navigator.clipboard.writeText(minedKeywords.join(', ')).then(() => {
     showToast(`📋 ${minedKeywords.length} keyword copiate!`, 'success');
   });
 }
 
-/**
- * Inietta le keyword minate nel campo "Parole Chiave" del listing
- * (aggiunge senza sovrascrivere quelle esistenti)
- */
-function injectKeywordsToParoleChiave() {
-  if (!minedKeywords.length) {
-    showToast('Nessuna keyword da aggiungere', 'warning');
+function injectKeywords() {
+  if (!minedKeywords.length) return;
+
+  // Trova la prima Chiave ricerca nel DOM
+  const kwCard = [...document.querySelectorAll('.attr-card')].find(
+    c => /chiave|keyword|ricerca/i.test(c.dataset.nome || '')
+  );
+  if (!kwCard) {
+    showToast('Attributo "Chiavi ricerca" non trovato', 'warning');
     return;
   }
 
-  const el = document.getElementById('parole_chiave');
+  const attrId = kwCard.dataset.attrId;
+  const el = document.getElementById(`attr-${attrId}`);
   if (!el) return;
 
   const existing = el.value.trim();
-  const existingArr = existing
-    ? existing.split(',').map(k => k.trim().toLowerCase()).filter(k => k)
-    : [];
-
-  // Aggiungi solo quelle non già presenti (case-insensitive)
+  const existingArr = existing ? existing.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
   const toAdd = minedKeywords.filter(k => !existingArr.includes(k.toLowerCase()));
 
-  if (toAdd.length === 0) {
-    showToast('Tutte le keyword sono già presenti nel campo!', 'info');
-    return;
-  }
+  if (toAdd.length === 0) { showToast('Tutte le keyword già presenti!', 'info'); return; }
 
-  el.value = existing
-    ? existing + ', ' + toAdd.join(', ')
-    : toAdd.join(', ');
+  el.value = existing ? existing + ', ' + toAdd.join(', ') : toAdd.join(', ');
+  handleInput(parseInt(attrId), el);
 
-  markUnsaved();
-  showToast(`✨ ${toAdd.length} keyword aggiunte alle Parole Chiave!`, 'success');
-
-  // Scroll al campo parole chiave
+  showToast(`✨ ${toAdd.length} keyword aggiunte!`, 'success');
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  el.focus();
-}
-
-// =============================================
-// COPIA NEGLI APPUNTI
-// =============================================
-function copyField(fieldId) {
-  const el = document.getElementById(fieldId);
-  if (!el) return;
-
-  const text = el.value;
-  if (!text.trim()) {
-    showToast('Il campo è vuoto!', 'warning');
-    return;
-  }
-
-  navigator.clipboard.writeText(text).then(() => {
-    showToast(`📋 "${getLabelForField(fieldId)}" copiato!`, 'success');
-
-    // Feedback visivo sul bottone
-    const btns = document.querySelectorAll(`button[onclick="copyField('${fieldId}')"]`);
-    btns.forEach(btn => {
-      const original = btn.innerHTML;
-      btn.innerHTML = '✅ Copiato!';
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.innerHTML = original;
-        btn.classList.remove('copied');
-      }, 1500);
-    });
-  }).catch(() => {
-    // Fallback per browser vecchi
-    el.select();
-    document.execCommand('copy');
-    showToast(`📋 "${getLabelForField(fieldId)}" copiato!`, 'success');
-  });
-}
-
-function copyAllBullets() {
-  const bps = ['bp1', 'bp2', 'bp3', 'bp4', 'bp5']
-    .map(id => document.getElementById(id)?.value)
-    .filter(v => v && v.trim())
-    .join('\n\n');
-
-  if (!bps) {
-    showToast('Nessun bullet point da copiare!', 'warning');
-    return;
-  }
-
-  navigator.clipboard.writeText(bps).then(() => {
-    showToast('📋 Tutti i bullet points copiati!', 'success');
-  }).catch(() => {
-    showToast('Errore durante la copia', 'error');
-  });
-}
-
-function getLabelForField(fieldId) {
-  const labels = {
-    titolo: 'Titolo',
-    descrizione: 'Descrizione',
-    bp1: 'Bullet Point 1',
-    bp2: 'Bullet Point 2',
-    bp3: 'Bullet Point 3',
-    bp4: 'Bullet Point 4',
-    bp5: 'Bullet Point 5',
-    parole_chiave: 'Parole chiave',
-    prezzo: 'Prezzo',
-    quantita: 'Quantità',
-  };
-  return labels[fieldId] || fieldId;
 }
 
 // =============================================
@@ -564,12 +620,10 @@ function hideLoading() {
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
   container.appendChild(toast);
-
   setTimeout(() => {
     toast.classList.add('hiding');
     setTimeout(() => toast.remove(), 300);

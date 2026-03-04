@@ -5,6 +5,243 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listing — Amazon AI Tool</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    /* ---- Source Badges ---- */
+    .badge-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+    .badge-source.AI    { background: #ede9fe; color: #6d28d9; }
+    .badge-source.FIXED { background: #f3f4f6; color: #4b5563; }
+    .badge-source.AUTO  { background: #d1fae5; color: #065f46; }
+    .badge-source.MANUAL{ background: #fff3e0; color: #92400e; }
+
+    /* ---- Priority Indicators ---- */
+    .attr-card { border-left: 3px solid var(--gray-200); }
+    .attr-card.obbligatorio { border-left-color: #ef4444; }
+    .attr-card.seo          { border-left-color: #f59e0b; }
+
+    /* ---- Attribute card ---- */
+    .attr-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 12px;
+    }
+    .attr-card.readonly { opacity: 0.75; }
+    .attr-card.empty-manual {
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 2px rgba(251,191,36,0.2);
+    }
+
+    .attr-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .attr-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .attr-nome {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+    .attr-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .attr-body {
+      padding: 12px 16px;
+    }
+
+    .attr-input {
+      width: 100%;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--gray-800);
+      background: var(--white);
+      transition: border-color 0.2s;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .attr-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255,153,0,0.12);
+    }
+    .attr-input:read-only {
+      background: var(--gray-50);
+      color: var(--gray-600);
+      cursor: default;
+    }
+    .attr-input:read-only:focus {
+      border-color: var(--gray-300);
+      box-shadow: none;
+    }
+
+    .char-counter {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-top: 4px;
+      text-align: right;
+    }
+    .char-counter.warn { color: var(--warning); font-weight: 600; }
+    .char-counter.over { color: var(--danger); font-weight: 700; }
+
+    /* ---- Section ---- */
+    .section-block { margin-bottom: 28px; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gray-200);
+    }
+
+    /* ---- Toolbar ---- */
+    .listing-toolbar {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    /* Toggle chip */
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--gray-300);
+      color: var(--gray-600);
+      background: var(--white);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .filter-chip.active {
+      background: var(--secondary);
+      border-color: var(--secondary);
+      color: var(--white);
+    }
+
+    /* Generate banner */
+    .generate-banner {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      text-align: center;
+      margin-bottom: 28px;
+      color: var(--white);
+    }
+    .generate-banner h3 { font-size: 20px; margin-bottom: 8px; }
+    .generate-banner p { color: var(--gray-400); font-size: 14px; margin-bottom: 20px; }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      background: var(--gray-200);
+      border-radius: 20px;
+      height: 6px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+      border-radius: 20px;
+      transition: width 0.4s ease;
+    }
+
+    /* Keyword section */
+    .keyword-section {
+      margin-top: 20px;
+    }
+    .keyword-chip {
+      display: inline-block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .keyword-chip:hover {
+      background: #dbeafe;
+    }
+    .keyword-chip.copied {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #86efac;
+    }
+
+    /* btn-regen */
+    .btn-regen {
+      padding: 4px 10px;
+      font-size: 11px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .btn-regen:hover:not(:disabled) { opacity: 0.85; }
+    .btn-regen:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    @media (max-width: 640px) {
+      .attr-header { flex-direction: column; align-items: flex-start; }
+      .listing-toolbar { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
 
@@ -14,8 +251,10 @@
       <span class="logo-icon">🎨</span>
       <span>Amazon <em>AI</em> Listing Tool</span>
     </a>
-    <nav class="navbar-nav">
+    <nav class="navbar-nav" id="navbarNav">
       <a href="/" class="nav-link">📋 Dashboard</a>
+      <a href="/config.html" class="nav-link">⚙️ Config</a>
+      <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
     </nav>
   </nav>
 
@@ -26,8 +265,8 @@
   <div class="loading-overlay d-none" id="loadingOverlay">
     <div class="loading-card">
       <div class="big-spinner"></div>
-      <h3 id="loadingTitle">Rigenerazione in corso...</h3>
-      <p id="loadingSubtitle">Claude sta riscrivendo il campo selezionato</p>
+      <h3 id="loadingTitle">Generazione in corso...</h3>
+      <p id="loadingSubtitle">Claude sta lavorando</p>
     </div>
   </div>
 
@@ -44,227 +283,84 @@
 
     <!-- PRODUCT INFO -->
     <div class="product-info-card" id="productInfoCard" style="display:none">
-      <h3>🖼️ Dati Opera Originale</h3>
+      <h3>🖼️ Opera Originale</h3>
       <div id="productInfoRows"></div>
     </div>
 
-    <!-- AI ACTIONS BAR -->
-    <div class="ai-actions">
-      <div class="ai-actions-label">
-        <span>🤖</span>
-        <span>Rigenera con AI</span>
+    <!-- GENERATE BANNER (shown when no attributes) -->
+    <div class="generate-banner d-none" id="generateBanner">
+      <h3>✨ Listing non ancora generato</h3>
+      <p>Clicca il pulsante per far generare a Claude tutti gli attributi Amazon per questo prodotto.</p>
+      <button class="btn btn-primary btn-lg" id="generateBtn" onclick="generateListing()">
+        🤖 Genera Listing con AI
+      </button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="listing-toolbar" id="listingToolbar" style="display:none">
+      <div class="toolbar-left">
+        <div id="progressWrap" style="min-width:200px;">
+          <div style="font-size:12px;color:var(--gray-500);margin-bottom:4px;" id="progressLabel">0 / 0 attributi compilati</div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+        <label class="filter-chip" id="filterChip">
+          <input type="checkbox" id="filterMandatory" style="display:none" onchange="applyFilter()">
+          🔴 Solo obbligatori
+        </label>
+        <label class="filter-chip" id="filterReadonlyChip">
+          <input type="checkbox" id="filterHideReadonly" style="display:none" onchange="applyFilter()">
+          🙈 Nascondi fissi/auto
+        </label>
       </div>
-      <div class="ai-actions-buttons">
-        <button class="btn btn-ai btn-sm" id="regenTitoloBtn">
-          🔄 Rigenera Titolo
+      <div class="toolbar-right">
+        <button class="btn btn-ai btn-sm" id="regenAllBtn" onclick="generateListing()">
+          🔄 Rigenera tutto
         </button>
-        <button class="btn btn-ai btn-sm" id="regenBpBtn">
-          🔄 Rigenera Bullet Points
-        </button>
-        <button class="btn btn-ai btn-sm" id="regenDescBtn">
-          🔄 Rigenera Descrizione
-        </button>
-        <button class="btn btn-sm" id="mineKeywordsBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:600;">
-          🔍 Mining Keywords Amazon
+        <button class="btn btn-sm" id="mineKeywordsBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:600;"
+                onclick="mineKeywords()">
+          🔍 Mining Keywords
         </button>
       </div>
     </div>
 
-    <!-- LISTING FIELDS -->
-    <div class="listing-grid" id="listingGrid">
+    <!-- SECTIONS CONTAINER -->
+    <div id="sectionsContainer"></div>
 
-      <!-- TITOLO -->
-      <div class="field-card">
-        <div class="field-card-header">
-          <div class="field-label">
-            <span class="field-icon">📌</span>
-            <span>Titolo</span>
-            <span class="text-muted" style="font-weight:400;font-size:12px;">(max 200 caratteri)</span>
-          </div>
-          <div class="field-actions">
-            <span id="titoloCounter" class="text-muted" style="font-size:12px;">0 car.</span>
-            <button class="btn btn-copy" onclick="copyField('titolo')">📋 Copia</button>
-          </div>
-        </div>
-        <div class="field-content">
-          <input type="text" id="titolo" class="field-input" placeholder="Titolo del prodotto Amazon..." maxlength="200" />
-        </div>
-      </div>
-
-      <!-- DESCRIZIONE -->
-      <div class="field-card">
-        <div class="field-card-header">
-          <div class="field-label">
-            <span class="field-icon">📝</span>
-            <span>Descrizione</span>
-            <span class="text-muted" style="font-weight:400;font-size:12px;">(200-2000 caratteri)</span>
-          </div>
-          <div class="field-actions">
-            <span id="descrizioneCounter" class="text-muted" style="font-size:12px;">0 car.</span>
-            <button class="btn btn-copy" onclick="copyField('descrizione')">📋 Copia</button>
-          </div>
-        </div>
-        <div class="field-content">
-          <textarea id="descrizione" class="field-input" rows="6" placeholder="Descrizione lunga del prodotto..."></textarea>
-        </div>
-      </div>
-
-      <!-- BULLET POINTS -->
-      <div class="field-card">
-        <div class="field-card-header">
-          <div class="field-label">
-            <span class="field-icon">🔵</span>
-            <span>Bullet Points</span>
-            <span class="text-muted" style="font-weight:400;font-size:12px;">(max 500 caratteri ciascuno)</span>
-          </div>
-          <div class="field-actions">
-            <button class="btn btn-copy" onclick="copyAllBullets()">📋 Copia tutti</button>
-          </div>
-        </div>
-        <div class="field-content" style="display:flex;flex-direction:column;gap:12px;">
-
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 1</label>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span id="bp1Counter" class="text-muted" style="font-size:12px;">0 car.</span>
-                <button class="btn btn-copy" onclick="copyField('bp1')">📋 Copia</button>
-              </div>
-            </div>
-            <textarea id="bp1" class="field-input" rows="2" placeholder="Primo bullet point..."></textarea>
-          </div>
-
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 2</label>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span id="bp2Counter" class="text-muted" style="font-size:12px;">0 car.</span>
-                <button class="btn btn-copy" onclick="copyField('bp2')">📋 Copia</button>
-              </div>
-            </div>
-            <textarea id="bp2" class="field-input" rows="2" placeholder="Secondo bullet point..."></textarea>
-          </div>
-
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 3</label>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span id="bp3Counter" class="text-muted" style="font-size:12px;">0 car.</span>
-                <button class="btn btn-copy" onclick="copyField('bp3')">📋 Copia</button>
-              </div>
-            </div>
-            <textarea id="bp3" class="field-input" rows="2" placeholder="Terzo bullet point..."></textarea>
-          </div>
-
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 4</label>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span id="bp4Counter" class="text-muted" style="font-size:12px;">0 car.</span>
-                <button class="btn btn-copy" onclick="copyField('bp4')">📋 Copia</button>
-              </div>
-            </div>
-            <textarea id="bp4" class="field-input" rows="2" placeholder="Quarto bullet point..."></textarea>
-          </div>
-
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:600;color:var(--gray-600);">Bullet Point 5</label>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span id="bp5Counter" class="text-muted" style="font-size:12px;">0 car.</span>
-                <button class="btn btn-copy" onclick="copyField('bp5')">📋 Copia</button>
-              </div>
-            </div>
-            <textarea id="bp5" class="field-input" rows="2" placeholder="Quinto bullet point..."></textarea>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- PAROLE CHIAVE -->
-      <div class="field-card">
-        <div class="field-card-header">
-          <div class="field-label">
-            <span class="field-icon">🔍</span>
-            <span>Parole Chiave</span>
-            <span class="text-muted" style="font-weight:400;font-size:12px;">(separate da virgola)</span>
-          </div>
-          <div class="field-actions">
-            <button class="btn btn-copy" onclick="copyField('parole_chiave')">📋 Copia</button>
-          </div>
-        </div>
-        <div class="field-content">
-          <textarea id="parole_chiave" class="field-input" rows="3" placeholder="keyword1, keyword2, keyword3..."></textarea>
-        </div>
-      </div>
-
-      <!-- PREZZO E QUANTITA -->
-      <div class="field-card">
-        <div class="field-card-header">
-          <div class="field-label">
-            <span class="field-icon">💰</span>
-            <span>Prezzo e Disponibilità</span>
-          </div>
-        </div>
-        <div class="field-content" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div>
-            <label style="font-size:13px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:8px;">
-              💰 Prezzo (€)
-            </label>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input type="number" id="prezzo" class="field-input" placeholder="0.00" step="0.01" min="0" style="flex:1;" />
-              <button class="btn btn-copy" onclick="copyField('prezzo')">📋</button>
-            </div>
-          </div>
-          <div>
-            <label style="font-size:13px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:8px;">
-              📦 Quantità
-            </label>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input type="number" id="quantita" class="field-input" placeholder="1" min="0" style="flex:1;" />
-              <button class="btn btn-copy" onclick="copyField('quantita')">📋</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /listing-grid -->
-
-    <!-- KEYWORD MINING SECTION (hidden by default) -->
-    <div id="keywordMiningSection" style="display:none; margin-top:24px;">
+    <!-- KEYWORD MINING SECTION -->
+    <div id="keywordSection" class="keyword-section" style="display:none">
       <div class="field-card">
         <div class="field-card-header">
           <div class="field-label">
             <span class="field-icon">🔍</span>
             <span>Keyword Mining Amazon.it</span>
-            <span id="keywordMiningStatus" class="text-muted" style="font-weight:400;font-size:12px;margin-left:8px;"></span>
+            <span id="kwStatus" class="text-muted" style="font-size:12px;margin-left:6px;"></span>
           </div>
           <div class="field-actions">
-            <button class="btn btn-copy" id="copyAllKeywordsBtn" style="display:none;" onclick="copyMinedKeywords()">📋 Copia tutte</button>
-            <button class="btn btn-sm" id="useKeywordsBtn" style="display:none;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;font-weight:600;" onclick="injectKeywordsToParoleChiave()">✨ Aggiungi alle Parole Chiave</button>
+            <button class="btn btn-copy" id="copyKwBtn" style="display:none" onclick="copyAllKeywords()">📋 Copia tutte</button>
+            <button class="btn btn-sm" id="injectKwBtn" style="display:none;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;font-weight:600;"
+                    onclick="injectKeywords()">✨ Aggiungi alle Chiavi ricerca</button>
           </div>
         </div>
-        <div class="field-content" id="keywordMiningContent">
-          <div id="keywordMiningLoading" style="display:none;text-align:center;padding:24px;color:var(--gray-500);">
-            <div class="spinner" style="margin:0 auto 12px;"></div>
-            <p>Mining in corso... ricerca keyword reali su Amazon.it</p>
-            <p style="font-size:12px;" id="keywordMiningProgress"></p>
+        <div class="field-content">
+          <div id="kwLoading" style="display:none;text-align:center;padding:20px;color:var(--gray-500);">
+            <div class="spinner spinner-dark" style="margin:0 auto 10px;"></div>
+            <p style="font-size:13px;">Mining in corso su Amazon.it...</p>
           </div>
-          <div id="keywordChipsContainer" style="display:flex;flex-wrap:wrap;gap:8px;min-height:40px;"></div>
+          <div id="kwChips" style="display:flex;flex-wrap:wrap;gap:8px;min-height:30px;"></div>
         </div>
       </div>
     </div>
 
-  </div><!-- /container -->
+  </div>
 
   <!-- SAVE BAR -->
   <div class="save-bar" id="saveBar">
     <div class="save-bar-info">
-      ✏️ <span>Hai modifiche non salvate</span>
+      ✏️ <span id="pendingCount">Hai modifiche non salvate</span>
     </div>
     <div class="save-bar-actions">
-      <button class="btn btn-secondary" id="discardBtn">↩ Annulla</button>
-      <button class="btn btn-success" id="saveBtn">💾 Salva modifiche</button>
+      <button class="btn btn-secondary" onclick="discardChanges()">↩ Annulla</button>
+      <button class="btn btn-success" id="saveBtn" onclick="saveChanges()">💾 Salva modifiche</button>
     </div>
   </div>
 

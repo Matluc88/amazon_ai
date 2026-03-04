@@ -1,57 +1,44 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database/db');
+const { query } = require('../database/db');
 
-// GET /api/products — tutti i prodotti con info listing
-router.get('/', (req, res) => {
+// GET /api/products — lista tutti i prodotti
+router.get('/', async (req, res) => {
   try {
-    const products = db.prepare(`
-      SELECT 
-        p.*,
-        al.id as listing_id,
-        al.titolo as listing_titolo,
-        al.updated_at as listing_updated_at
+    const result = await query(`
+      SELECT p.*,
+        COUNT(pav.id) FILTER (WHERE pav.value IS NOT NULL AND pav.value != '') AS attributi_compilati,
+        (SELECT COUNT(*) FROM attribute_definitions WHERE source NOT IN ('SKIP','MANUAL')) AS attributi_auto
       FROM products p
-      LEFT JOIN amazon_listings al ON al.product_id = p.id
+      LEFT JOIN product_attribute_values pav ON pav.product_id = p.id
+      GROUP BY p.id
       ORDER BY p.created_at DESC
-    `).all();
-
-    res.json(products);
-  } catch (error) {
-    console.error('Errore get products:', error);
-    res.status(500).json({ error: error.message });
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/products/:id — singolo prodotto
-router.get('/:id', (req, res) => {
+// GET /api/products/:id
+router.get('/:id', async (req, res) => {
   try {
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-    if (!product) {
-      return res.status(404).json({ error: 'Prodotto non trovato' });
-    }
-    res.json(product);
-  } catch (error) {
-    console.error('Errore get product:', error);
-    res.status(500).json({ error: error.message });
+    const result = await query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    if (!result.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE /api/products/:id — elimina prodotto e listing associato
-router.delete('/:id', (req, res) => {
+// DELETE /api/products/:id
+router.delete('/:id', async (req, res) => {
   try {
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-    if (!product) {
-      return res.status(404).json({ error: 'Prodotto non trovato' });
-    }
-
-    db.prepare('DELETE FROM amazon_listings WHERE product_id = ?').run(req.params.id);
-    db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
-
-    res.json({ success: true, message: 'Prodotto eliminato con successo' });
-  } catch (error) {
-    console.error('Errore delete product:', error);
-    res.status(500).json({ error: error.message });
+    await query('DELETE FROM product_attribute_values WHERE product_id = $1', [req.params.id]);
+    await query('DELETE FROM products WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
