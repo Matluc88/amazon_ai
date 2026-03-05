@@ -169,9 +169,15 @@ async function saveAiValues(productId, aiValues) {
 
 /**
  * Carica il listing completo di un prodotto:
- * attributi con valori, raggruppati per sezione
+ * attributi con valori, raggruppati per sezione.
+ *
+ * @param {number} productId
+ * @param {object|null} product  — riga prodotto dal DB (opzionale).
+ *   Se fornito, i campi AUTO vengono calcolati come fallback di display
+ *   anche se non sono ancora stati scritti in product_attribute_values
+ *   (es. nuovi attributi aggiunti dopo la prima generazione).
  */
-async function getProductListing(productId) {
+async function getProductListing(productId, product = null) {
   const result = await query(`
     SELECT 
       ad.id,
@@ -190,16 +196,39 @@ async function getProductListing(productId) {
     ORDER BY ad.ordine
   `, [productId]);
 
+  // Calcola dimensioni una sola volta (usato dal fallback AUTO)
+  const dims = product
+    ? extractDimensions(product.misura_max || product.descrizione_raw || '')
+    : null;
+
+  /**
+   * Fallback per attributi AUTO non ancora scritti nel DB.
+   * Replica la logica di compileFixedAndAuto senza scrivere nulla.
+   */
+  function autoFallback(nome) {
+    if (!product) return '';
+    if (nome === 'SKU') return product.sku_padre || '';
+    if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)')
+      return product.prezzo_max ? parseFloat(product.prezzo_max).toFixed(2) : '';
+    if (dims) {
+      if (nome.includes('più lungo'))     return dims.lunghezza;
+      if (nome.includes('più corto'))     return dims.larghezza;
+      if (nome === 'Orientamento')        return dims.orientamento;
+      if (nome === 'Lunghezza imballaggio') return dims.lunghezza;
+      if (nome === 'Larghezza imballaggio') return dims.larghezza;
+    }
+    return '';
+  }
+
   // Raggruppa per sezione
-  // Per attributi FIXED/AUTO: usa il valore da pav se presente,
-  // altrimenti usa fixed_value come fallback (visibili anche PRIMA della generazione)
   const sections = {};
   for (const row of result.rows) {
     if (!sections[row.sezione]) sections[row.sezione] = [];
 
-    // Calcola il valore effettivo da mostrare
+    // Priorità: valore salvato nel DB → fallback FIXED → fallback AUTO → ''
     const displayValue = row.value
       || (row.source === 'FIXED' ? (row.fixed_value || '') : '')
+      || (row.source === 'AUTO'  ? autoFallback(row.nome_attributo) : '')
       || '';
 
     sections[row.sezione].push({

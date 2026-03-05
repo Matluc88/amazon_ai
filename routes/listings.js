@@ -30,7 +30,9 @@ router.get('/:productId', async (req, res) => {
     const product = await query('SELECT * FROM products WHERE id = $1', [req.params.productId]);
     if (!product.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
 
-    const sections = await getProductListing(req.params.productId);
+    // Passa il prodotto a getProductListing così i campi AUTO hanno
+    // sempre il fallback corretto anche senza aver mai rigenerato
+    const sections = await getProductListing(req.params.productId, product.rows[0]);
     res.json({ product: product.rows[0], sections });
   } catch (err) {
     console.error('Errore get listing:', err);
@@ -56,7 +58,7 @@ router.post('/generate/:productId', async (req, res) => {
     await saveAiValues(req.params.productId, aiValues);
 
     // 4. Ritorna il listing completo
-    const sections = await getProductListing(req.params.productId);
+    const sections = await getProductListing(req.params.productId, product);
     res.json({ success: true, sections });
   } catch (err) {
     console.error('Errore generazione listing:', err);
