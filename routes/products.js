@@ -79,6 +79,37 @@ router.patch('/:id/description', async (req, res) => {
   }
 });
 
+// =============================================
+// PATCH /api/products/:id/variants
+// Salva EAN e URL immagini per le 3 varianti
+// =============================================
+router.patch('/:id/variants', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ean_max, ean_media, ean_mini, immagine_max, immagine_media, immagine_mini } = req.body;
+
+    const existing = await query('SELECT id FROM products WHERE id = $1', [id]);
+    if (!existing.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
+
+    await query(`
+      UPDATE products SET
+        ean_max = $1, ean_media = $2, ean_mini = $3,
+        immagine_max = $4, immagine_media = $5, immagine_mini = $6
+      WHERE id = $7
+    `, [
+      ean_max || null, ean_media || null, ean_mini || null,
+      immagine_max || null, immagine_media || null, immagine_mini || null,
+      id
+    ]);
+
+    const updated = await query('SELECT * FROM products WHERE id = $1', [id]);
+    res.json({ success: true, product: updated.rows[0] });
+  } catch (err) {
+    console.error('Errore salvataggio varianti:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/products/:id
 router.delete('/:id', async (req, res) => {
   try {

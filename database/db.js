@@ -98,6 +98,19 @@ async function initDatabase() {
       ON products (sku_max) WHERE sku_max IS NOT NULL AND sku_max != ''
     `);
 
+    // Colonne EAN e immagini varianti
+    const eanImageCols = [
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS ean_max VARCHAR(30)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS ean_media VARCHAR(30)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS ean_mini VARCHAR(30)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_max TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_media TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_mini TEXT`,
+    ];
+    for (const col of eanImageCols) {
+      await client.query(col);
+    }
+
     // Tabella definizioni attributi Amazon
     await client.query(`
       CREATE TABLE IF NOT EXISTS attribute_definitions (
