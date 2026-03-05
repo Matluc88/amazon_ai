@@ -55,7 +55,8 @@ Regole OBBLIGATORIE:
 - ⚠️ Se il prodotto ha varianti di taglia, NON includere NESSUNA misura specifica nel titolo (è un parent ASIN valido per tutte le varianti)
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
-- Racconta l'opera con linguaggio evocativo
+- La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." — sostituisci [autore] con il nome reale
+- Prosegui raccontando l'opera con linguaggio evocativo
 - Suggerisci contesti d'uso e destinatari
 - ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI chiudere SEMPRE la descrizione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti.
 - Chiudi dopo le misure con una frase che invita all'acquisto
@@ -71,7 +72,8 @@ Regole OBBLIGATORIE:
 ### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
 Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 
-- Punto elenco 1 — MATERIALE: "STAMPA SU TELA CANVAS – Riproduzione artistica su tela di alta qualità, montata su telaio in legno e pronta da appendere." (chiarisce che non è un dipinto a mano)
+- Punto elenco 1 — MATERIALE: inizia con "STAMPA SU TELA CANVAS –" e usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore], su tela di alta qualità montata su telaio in legno e pronta da appendere." (sostituisci [autore] con il nome reale; chiarisce che non è un dipinto a mano)
+- ⚠️ La formulazione "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]" deve comparire SOLO nel Punto elenco 1 e nella Descrizione — NON nei bullet 2-5
 - Punto elenco 2 — STILE/ARTE: inizia con "ARTE [STILE] –" e descrivi l'opera, i colori, l'impatto visivo
 - Punto elenco 3 — AMBIENTI: inizia con "DECORAZIONE PARETE –" e indica i contesti ideali (soggiorno, camera da letto, ufficio, studio, corridoio...)
 - Punto elenco 4 — INSTALLAZIONE: inizia con "PRONTO DA APPENDERE –" e descrivi telaio in legno, ganci, misure disponibili
@@ -143,8 +145,8 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
   const guideMap = {
     "Nome dell'articolo": `120-170 caratteri. Usa UNA di queste strutture: "Stampa su Tela Canvas Quadro [Stile], Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere" OPPURE "Quadro [Stile] Stampa su Tela Canvas, Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere". Regole: "Decorazione Parete" sempre presente; autore verso la fine; 4-6 keyword; NO parole vietate (migliore, premium, super qualità, gratis); NO misure specifiche se prodotto con varianti.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
-    "Descrizione del prodotto": `200-2000 caratteri. Racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
-    "Punto elenco 1": 'MATERIALE — inizia con "STAMPA SU TELA CANVAS –" e descrivi: riproduzione artistica, tela alta qualità, telaio in legno, pronta da appendere. Chiarisce che non è un dipinto a mano.',
+    "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." (sostituisci [autore] con il nome reale). Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
+    "Punto elenco 1": `MATERIALE — usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore], su tela di alta qualità montata su telaio in legno e pronta da appendere." Sostituisci [autore] con il nome reale. Questa formulazione chiarisce che non è un dipinto a mano. ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
     "Punto elenco 2": 'STILE/ARTE — inizia con "ARTE [STILE] –" e descrivi l\'opera, i colori principali, l\'impatto visivo ed emotivo',
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie)',

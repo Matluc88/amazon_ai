@@ -59,7 +59,9 @@ function parseSivigliartRows(rawRows, meta) {
     const titolo = String(row[titoloIdx] || '').trim();
     const misura = String(row[misuraIdx] || '').trim();
     const prezzo = prezzoIdx >= 0 ? String(row[prezzoIdx] || '').trim() : '';
-    const skuVariante = skuVariantiIdx >= 0 ? String(row[skuVariantiIdx] || '').trim() : '';
+    const skuVariante = skuVariantiIdx >= 0
+      ? String(row[skuVariantiIdx] || '').trim().toLowerCase().replace(/\s+/g, '-')
+      : '';
 
     if (!misura) continue; // Riga vuota
 
