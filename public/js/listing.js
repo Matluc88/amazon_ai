@@ -694,6 +694,10 @@ async function generateListing() {
     hideSaveBar();
 
     showToast('✅ Listing generato con successo!', 'success');
+
+    // Controlla automaticamente i duplicati nelle chiavi di ricerca
+    // (piccolo timeout per dare tempo al DOM di aggiornarsi)
+    setTimeout(() => checkKeywordDuplicates(), 300);
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
   } finally {
@@ -750,6 +754,11 @@ async function regenerateAttr(attrId, nomeAttributo, btn) {
     updateProgress();
 
     showToast(`✅ "${nomeAttributo}" rigenerato!`, 'success');
+
+    // Se abbiamo rigenerato le chiavi di ricerca, ricontrolla i duplicati
+    if (/chiav[ei].*ricerca|keyword/i.test(nomeAttributo)) {
+      setTimeout(() => checkKeywordDuplicates(), 150);
+    }
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
   } finally {
@@ -810,6 +819,207 @@ function applyFilter() {
     );
     block.style.display = visibleCards.length > 0 ? '' : 'none';
   });
+}
+
+// =============================================
+// DUPLICATE KEYWORD CHECKER
+// =============================================
+
+/** Parole da ignorare nel confronto (stop words italiane + articoli/prep.) */
+const STOP_WORDS_IT = new Set([
+  'di', 'e', 'su', 'il', 'la', 'un', 'per', 'con', 'da', 'in', 'a', 'al',
+  'del', 'della', 'delle', 'dei', 'gli', 'le', 'lo', 'che', 'si', 'non',
+  'come', 'questo', 'questa', 'ad', 'ed', 'o', 'ma', 'se', 'ne', 'ci',
+  'tra', 'fra', 'ai', 'agli', 'uno', 'una', 'anche', 'più', 'sono', 'ha',
+  'sua', 'suo', 'alle', 'all', 'agli', 'allo', 'sulle', 'sulla', 'sullo',
+  'degli', 'nei', 'nella', 'nelle', 'nello', 'nei', 'col', 'coi',
+]);
+
+/**
+ * Estrae parole significative da un testo (≥3 char, no stop words)
+ */
+function extractSignificantWords(text) {
+  if (!text) return new Set();
+  return new Set(
+    text.toLowerCase()
+      .replace(/[^\wàèìòùáéíóúâêîôûäëïöü\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !STOP_WORDS_IT.has(w))
+  );
+}
+
+/**
+ * Trova l'attr delle chiavi di ricerca nelle sezioni correnti
+ */
+function findKeywordAttr() {
+  if (!currentSections) return null;
+  for (const attrs of Object.values(currentSections)) {
+    const found = attrs.find(a => /chiav[ei].*ricerca|keyword/i.test(a.nome));
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Controlla le parole duplicate tra Chiavi di ricerca e Titolo/Bullet.
+ * Mostra un pannello sotto il campo Chiavi di ricerca.
+ */
+function checkKeywordDuplicates() {
+  // Rimuovi eventuale pannello precedente
+  const existing = document.getElementById('kw-duplicate-panel');
+  if (existing) existing.remove();
+
+  const kwAttr = findKeywordAttr();
+  if (!kwAttr) return;
+
+  const kwEl = document.getElementById(`attr-${kwAttr.id}`);
+  if (!kwEl) return;
+
+  const kwText = kwEl.value.trim();
+  if (!kwText) return;
+
+  // Raccoglie testo da "Nome dell'articolo" + tutti i "Punto elenco N"
+  let sourceText = '';
+  for (const attrs of Object.values(currentSections)) {
+    for (const attr of attrs) {
+      if (/nome.*articolo/i.test(attr.nome)) {
+        const el = document.getElementById(`attr-${attr.id}`);
+        sourceText += ' ' + (el ? el.value : (attr.value || ''));
+      }
+      if (/punto\s*elenco/i.test(attr.nome)) {
+        const el = document.getElementById(`attr-${attr.id}`);
+        sourceText += ' ' + (el ? el.value : (attr.value || ''));
+      }
+    }
+  }
+
+  const titleBulletWords = extractSignificantWords(sourceText);
+
+  // Parole nelle chiavi (separate da spazio, come vuole Amazon)
+  const kwWords = kwText.split(/\s+/).filter(w => w.length >= 3);
+  const duplicates = [
+    ...new Set(kwWords.filter(w => titleBulletWords.has(w.toLowerCase())))
+  ];
+
+  if (duplicates.length === 0) return;
+
+  // Costruisci il pannello
+  const panel = document.createElement('div');
+  panel.id = 'kw-duplicate-panel';
+  panel.style.cssText = [
+    'margin-top:10px', 'padding:12px 14px',
+    'background:#fffbeb', 'border:1px solid #f59e0b',
+    'border-radius:8px', 'font-size:13px',
+  ].join(';');
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <span style="font-weight:600;color:#92400e;">
+        ⚠️ ${duplicates.length} parol${duplicates.length === 1 ? 'a già' : 'e già'} nel titolo/bullet:
+      </span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="removeDuplicateKeywords()"
+          style="background:#f59e0b;color:#fff;border:none;padding:4px 12px;
+                 border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;">
+          🔧 Rimuovi automaticamente
+        </button>
+        <button onclick="document.getElementById('kw-duplicate-panel').remove()"
+          style="background:transparent;color:#92400e;border:1px solid #f59e0b;
+                 padding:4px 12px;border-radius:5px;cursor:pointer;font-size:12px;">
+          ✖ Ignora
+        </button>
+      </div>
+    </div>
+    <div id="kw-dup-chips" style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${duplicates.map(w => `
+        <span class="dup-chip" data-word="${escHtml(w)}"
+          title="Clicca per rimuovere solo questa parola"
+          onclick="removeSingleDuplicateKeyword('${escHtml(w)}')"
+          style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;
+                 padding:3px 10px;border-radius:20px;cursor:pointer;
+                 font-size:12px;font-weight:500;">
+          ${escHtml(w)} ✕
+        </span>`).join('')}
+    </div>`;
+
+  const kwCard = document.querySelector(`[data-attr-id="${kwAttr.id}"]`);
+  if (kwCard) {
+    kwCard.insertAdjacentElement('afterend', panel);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+/**
+ * Rimuove TUTTE le parole duplicate dalle chiavi di ricerca
+ */
+function removeDuplicateKeywords() {
+  const kwAttr = findKeywordAttr();
+  if (!kwAttr) return;
+
+  const kwEl = document.getElementById(`attr-${kwAttr.id}`);
+  if (!kwEl) return;
+
+  // Ricostruisce il set di parole titolo/bullet
+  let sourceText = '';
+  for (const attrs of Object.values(currentSections)) {
+    for (const attr of attrs) {
+      if (/nome.*articolo/i.test(attr.nome)) {
+        const el = document.getElementById(`attr-${attr.id}`);
+        sourceText += ' ' + (el ? el.value : (attr.value || ''));
+      }
+      if (/punto\s*elenco/i.test(attr.nome)) {
+        const el = document.getElementById(`attr-${attr.id}`);
+        sourceText += ' ' + (el ? el.value : (attr.value || ''));
+      }
+    }
+  }
+
+  const titleBulletWords = extractSignificantWords(sourceText);
+  const cleaned = kwEl.value.trim()
+    .split(/\s+/)
+    .filter(w => !titleBulletWords.has(w.toLowerCase()))
+    .join(' ');
+
+  kwEl.value = cleaned;
+  handleInput(kwAttr.id, kwEl);
+
+  const panel = document.getElementById('kw-duplicate-panel');
+  if (panel) panel.remove();
+
+  showToast('🔧 Termini duplicati rimossi dalle chiavi di ricerca!', 'success');
+}
+
+/**
+ * Rimuove UNA SINGOLA parola dalle chiavi di ricerca
+ */
+function removeSingleDuplicateKeyword(word) {
+  const kwAttr = findKeywordAttr();
+  if (!kwAttr) return;
+
+  const kwEl = document.getElementById(`attr-${kwAttr.id}`);
+  if (!kwEl) return;
+
+  const cleaned = kwEl.value.trim()
+    .split(/\s+/)
+    .filter(w => w.toLowerCase() !== word.toLowerCase())
+    .join(' ');
+
+  kwEl.value = cleaned;
+  handleInput(kwAttr.id, kwEl);
+
+  // Rimuovi il chip corrispondente
+  const chip = document.querySelector(`#kw-dup-chips [data-word="${word}"]`);
+  if (chip) chip.remove();
+
+  // Se non ci sono più chip → rimuovi l'intero pannello
+  const remaining = document.querySelectorAll('#kw-dup-chips .dup-chip');
+  if (remaining.length === 0) {
+    const panel = document.getElementById('kw-duplicate-panel');
+    if (panel) panel.remove();
+  }
+
+  showToast(`✅ "${word}" rimosso dalle chiavi di ricerca`, 'success');
 }
 
 // =============================================

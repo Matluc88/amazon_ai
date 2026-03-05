@@ -40,11 +40,19 @@ ISTRUZIONI:
 - Genera contenuti SEO ottimizzati per Amazon Italia, algoritmo A9
 - Tutti i campi DEVONO essere in ITALIANO
 
-### NOME DELL'ARTICOLO (max 200 caratteri):
-- Inizia con la keyword principale più cercata dagli acquirenti (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno")
-- Poi segue: [Soggetto] - Stampa su Tela - [Caratteristica distintiva]
-- NON iniziare genericamente con "Stampa su Tela" — metti la keyword ad alto volume subito
-- ⚠️ IMPORTANTE: se il prodotto ha varianti di taglia (più misure disponibili), NON includere NESSUNA misura specifica nel titolo. Il titolo è del prodotto padre (parent ASIN) e vale per tutte le varianti.
+### NOME DELL'ARTICOLO (120-170 caratteri — MAI oltre 200):
+Usa UNA di queste due strutture naturali (scegli quella più adatta allo stile dell'opera):
+
+OPZIONE A: "Stampa su Tela Canvas Quadro [Stile], Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere"
+OPZIONE B: "Quadro [Stile] Stampa su Tela Canvas, Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere"
+
+Regole OBBLIGATORIE:
+- "Decorazione Parete" deve essere sempre presente (è la keyword con più traffico per canvas in Italia)
+- Il nome dell'autore/artista va VERSO LA FINE (dopo le keyword commerciali)
+- 4-6 keyword principali — NO keyword stuffing
+- Parole VIETATE: migliore, premium, super qualità, gratis, spedizione veloce, esclusivo
+- Amazon indicizza automaticamente i plurali: NON ripetere quadri/stampe
+- ⚠️ Se il prodotto ha varianti di taglia, NON includere NESSUNA misura specifica nel titolo (è un parent ASIN valido per tutte le varianti)
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
 - Racconta l'opera con linguaggio evocativo
@@ -60,13 +68,14 @@ ISTRUZIONI:
 - Includi: sinonimi dell'opera, varianti di ricerca, ambienti, materiali, target, long tail
 - Esempio corretto: "quadro tela arte moderna stampe canvas decorazione pareti soggiorno regalo bambini cameretta figurativo"
 
-### PUNTI ELENCO:
-- Inizia ogni punto con una keyword in MAIUSCOLO seguita da " – "
-- Punto elenco 1: qualità e caratteristiche della stampa
-- Punto elenco 2: palette cromatica e impatto visivo
-- Punto elenco 3: processo artigianale (ritocchi, fissativo, ecc.)
-- Punto elenco 4: info pratiche (dimensioni, telaio, pronta da appendere)
-- Punto elenco 5: garanzia e acquisto sicuro — esempio: "ACQUISTO SICURO – Sivigliart garantisce imballaggio protettivo e reso gratuito entro 30 giorni. Ogni opera è accuratamente verificata prima della spedizione"
+### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
+Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
+
+- Punto elenco 1 — MATERIALE: "STAMPA SU TELA CANVAS – Riproduzione artistica su tela di alta qualità, montata su telaio in legno e pronta da appendere." (chiarisce che non è un dipinto a mano)
+- Punto elenco 2 — STILE/ARTE: inizia con "ARTE [STILE] –" e descrivi l'opera, i colori, l'impatto visivo
+- Punto elenco 3 — AMBIENTI: inizia con "DECORAZIONE PARETE –" e indica i contesti ideali (soggiorno, camera da letto, ufficio, studio, corridoio...)
+- Punto elenco 4 — INSTALLAZIONE: inizia con "PRONTO DA APPENDERE –" e descrivi telaio in legno, ganci, misure disponibili
+- Punto elenco 5 — REGALO/GARANZIA: inizia con "IDEA REGALO –" menziona occasioni regalo e garanzia Sivigliart (imballaggio protettivo, reso gratuito 30 giorni)
 
 ### ALTRI CAMPI:
 - "Personaggio rappresentato": se non applicabile, scrivi "N/D"
@@ -132,15 +141,15 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     : null;
 
   const guideMap = {
-    "Nome dell'articolo": `max 200 caratteri. Inizia con la keyword principale più cercata (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno") — NON iniziare con "Stampa su Tela". Poi: [Soggetto] - Stampa su Tela - [Caratteristica]. ⚠️ IMPORTANTE: se il prodotto ha varianti di taglia, NON includere NESSUNA misura specifica nel titolo (è un parent ASIN valido per tutte le varianti).`,
+    "Nome dell'articolo": `120-170 caratteri. Usa UNA di queste strutture: "Stampa su Tela Canvas Quadro [Stile], Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere" OPPURE "Quadro [Stile] Stampa su Tela Canvas, Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere". Regole: "Decorazione Parete" sempre presente; autore verso la fine; 4-6 keyword; NO parole vietate (migliore, premium, super qualità, gratis); NO misure specifiche se prodotto con varianti.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
     "Descrizione del prodotto": `200-2000 caratteri. Racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
-    "Punto elenco 1": 'inizia con keyword MAIUSCOLA – qualità e caratteristiche della stampa',
-    "Punto elenco 2": 'inizia con keyword MAIUSCOLA – palette cromatica e impatto visivo',
-    "Punto elenco 3": 'inizia con keyword MAIUSCOLA – processo artigianale (ritocchi acrilici, fissativo)',
-    "Punto elenco 4": 'inizia con keyword MAIUSCOLA – info pratiche (dimensioni, telaio, pronta da appendere)',
-    "Punto elenco 5": 'inizia con "ACQUISTO SICURO –" e menziona garanzia Sivigliart, imballaggio protettivo, reso entro 30 giorni',
-    "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8. ⚠️ Formato OBBLIGATORIO: solo spazi tra i termini — ZERO virgole, ZERO punteggiatura. 20-30 termini brevi (parole singole o coppie), tutti minuscoli. Riempi 240-250 byte. NON ripetere parole dal titolo/bullet/marchio. Esempio: "quadro tela arte moderna stampe canvas decorazione pareti soggiorno regalo bambini cameretta figurativo"`,
+    "Punto elenco 1": 'MATERIALE — inizia con "STAMPA SU TELA CANVAS –" e descrivi: riproduzione artistica, tela alta qualità, telaio in legno, pronta da appendere. Chiarisce che non è un dipinto a mano.',
+    "Punto elenco 2": 'STILE/ARTE — inizia con "ARTE [STILE] –" e descrivi l\'opera, i colori principali, l\'impatto visivo ed emotivo',
+    "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
+    "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie)',
+    "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (compleanno, anniversario, inaugurazione casa), garanzia Sivigliart, imballaggio protettivo, reso gratuito 30 giorni',
+    "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8. ⚠️ Formato OBBLIGATORIO: solo spazi — ZERO virgole, ZERO punteggiatura. 20-30 termini brevi, tutti minuscoli. IMPORTANTE: Amazon indicizza già le parole nel titolo e nei bullet → usa SOLO sinonimi e long-tail non ancora indicizzati. Riempi 240-250 byte. Esempio: "decorazione parete astratta canvas wall art arredamento arte contemporanea telaio legno regalo casa stampa artistica moderna"`,
     "Edizione": 'breve descrizione dell\'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")',
     "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto, Figurativo...)',
     "Tema": 'tema/i dell\'opera separati da virgola (es. Natura, Ritratto, Paesaggio, Astratto...)',
