@@ -48,7 +48,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: 'Usi consigliati per il prodotto', sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 45 },
   { nome: 'Tipo di stanza',                  sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 46 },
   { nome: 'Famiglia di colori',              sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 47 },
-  { nome: 'Motivo',                          sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 48 },
+  { nome: 'Motivo',                          sezione: 'dettagli',    priorita: 'seo_importante',      source: 'AI',     ordine: 48 },
   // — Attributi identificativi obbligatori
   { nome: 'Nome del modello',                sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'AI',     ordine: 50 },
   { nome: 'Produttore',                      sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 51, fixedValue: 'Sivigliart' },
@@ -70,7 +70,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: 'Edizione',                        sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 65 },
   { nome: 'Tipo di vernice',                 sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 66, fixedValue: 'Stampa su tela' },
   { nome: 'Tipo di finitura',                sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 67, fixedValue: 'Lucida' },
-  { nome: 'Materiale',                       sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 68, fixedValue: 'Tela' },
+  { nome: 'Materiale',                       sezione: 'dettagli',    priorita: 'seo_importante',      source: 'FIXED',  ordine: 68, fixedValue: 'Tela' },
   { nome: 'Tipo di telaio',                  sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 69, fixedValue: 'Con telaio' },
   { nome: "È personalizzabile?",             sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 70, fixedValue: 'No' },
   { nome: "Profondità dell'articolo",        sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 71, fixedValue: '2' },
