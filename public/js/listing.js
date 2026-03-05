@@ -533,6 +533,19 @@ function handleInput(attrId, el) {
   pendingChanges[attrId] = el.value;
   updateCharCounter(attrId, el.value);
   showSaveBar();
+
+  // Aggiorna il badge OK/WARN con debounce 600ms se stiamo modificando le chiavi di ricerca
+  const card = document.querySelector(`[data-attr-id="${attrId}"]`);
+  if (card && /chiav[ei].*ricerca|keyword/i.test(card.dataset.nome || '')) {
+    clearTimeout(kwBadgeDebounce);
+    kwBadgeDebounce = setTimeout(() => {
+      if (!currentSections) return;
+      const titleBulletWords = buildTitleBulletWords();
+      const kwTokens = tokenize(el.value.trim());
+      const dupCount = new Set(kwTokens.filter(w => titleBulletWords.has(w))).size;
+      updateKwBadge(dupCount, attrId);
+    }, 600);
+  }
 }
 
 function updateCharCounter(attrId, value) {
@@ -548,10 +561,16 @@ function updateCharCounter(attrId, value) {
   const len = useBytes ? getByteLength(value) : value.length;
   const label = useBytes ? 'byte' : 'car.';
 
+  // Salva il badge prima di sovrascrivere (textContent rimuoverebbe anche il badge span)
+  const existingBadge = counter.querySelector('.kw-dup-badge');
+
   counter.textContent = `${len} / ${limit} ${label}`;
   counter.className = 'char-counter';
   if (len > limit) counter.classList.add('over');
   else if (len > limit * 0.85) counter.classList.add('warn');
+
+  // Ri-aggiungi il badge se era presente
+  if (existingBadge) counter.appendChild(existingBadge);
 }
 
 // =============================================
@@ -825,31 +844,61 @@ function applyFilter() {
 // DUPLICATE KEYWORD CHECKER
 // =============================================
 
-/** Parole da ignorare nel confronto (stop words italiane + articoli/prep.) */
+/**
+ * Stop words italiane pure: articoli, preposizioni, congiunzioni.
+ * NON includere parole core tipo arte/stampa/opera → quelle sono in CORE_FRONT_WORDS.
+ */
 const STOP_WORDS_IT = new Set([
   'di', 'e', 'su', 'il', 'la', 'un', 'per', 'con', 'da', 'in', 'a', 'al',
   'del', 'della', 'delle', 'dei', 'gli', 'le', 'lo', 'che', 'si', 'non',
   'come', 'questo', 'questa', 'ad', 'ed', 'o', 'ma', 'se', 'ne', 'ci',
   'tra', 'fra', 'ai', 'agli', 'uno', 'una', 'anche', 'più', 'sono', 'ha',
-  'sua', 'suo', 'alle', 'all', 'agli', 'allo', 'sulle', 'sulla', 'sullo',
-  'degli', 'nei', 'nella', 'nelle', 'nello', 'nei', 'col', 'coi',
+  'sua', 'suo', 'alle', 'all', 'allo', 'sulle', 'sulla', 'sullo',
+  'degli', 'nei', 'nella', 'nelle', 'nello', 'col', 'coi',
 ]);
 
 /**
- * Estrae parole significative da un testo (≥3 char, no stop words)
+ * Parole core sempre presenti nel fronte (titolo/bullet).
+ * Vengono aggiunte FORZATAMENTE al set titleBulletWords, così qualsiasi
+ * occorrenza nelle Chiavi di ricerca viene sempre flaggata come duplicato.
  */
-function extractSignificantWords(text) {
-  if (!text) return new Set();
-  return new Set(
-    text.toLowerCase()
-      .replace(/[^\wàèìòùáéíóúâêîôûäëïöü\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length >= 3 && !STOP_WORDS_IT.has(w))
-  );
+const CORE_FRONT_WORDS = new Set([
+  'stampa', 'tela', 'canvas', 'quadro', 'quadri',
+  'arte', 'artista', 'pittura', 'opera', 'poster',
+  'print', 'wall', 'dipinto', 'appendere', 'decorazione',
+]);
+
+/**
+ * Parole deboli che da sole hanno scarsa rilevanza SEO.
+ * Vengono rimosse come orfane se erano adiacenti (indice ±1 nell'array
+ * tokenizzato) a un token rimosso come duplicato.
+ */
+const WEAK_STANDALONE_WORDS = new Set([
+  'moderno', 'moderna', 'moderni', 'moderne',
+  'stile', 'design', 'effetto', 'elegante', 'bello', 'bella',
+  'colore', 'colori', 'ispirato', 'ispirata',
+  'parete', 'pareti',
+]);
+
+/** Handle per debounce del badge on-input */
+let kwBadgeDebounce = null;
+
+/**
+ * Tokenizza testo: apostrofi→spazio, punteggiatura→spazio, lowercase,
+ * filtro stop words, filtro min 3 char.
+ * Restituisce array ordinato (non Set) per poter fare adiacenza.
+ */
+function tokenize(text) {
+  if (!text) return [];
+  return text.toLowerCase()
+    .replace(/['']/g, ' ')                           // apostrofi curvi e dritti → spazio
+    .replace(/[^\wàèìòùáéíóúâêîôûäëïöü\s]/g, ' ')   // punteggiatura → spazio
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !STOP_WORDS_IT.has(w));
 }
 
 /**
- * Trova l'attr delle chiavi di ricerca nelle sezioni correnti
+ * Trova il campo "Chiavi di ricerca" nelle sezioni correnti.
  */
 function findKeywordAttr() {
   if (!currentSections) return null;
@@ -861,24 +910,9 @@ function findKeywordAttr() {
 }
 
 /**
- * Controlla le parole duplicate tra Chiavi di ricerca e Titolo/Bullet.
- * Mostra un pannello sotto il campo Chiavi di ricerca.
+ * Costruisce il set titleBulletWords: parole da titolo+bullet + CORE_FRONT_WORDS forzate.
  */
-function checkKeywordDuplicates() {
-  // Rimuovi eventuale pannello precedente
-  const existing = document.getElementById('kw-duplicate-panel');
-  if (existing) existing.remove();
-
-  const kwAttr = findKeywordAttr();
-  if (!kwAttr) return;
-
-  const kwEl = document.getElementById(`attr-${kwAttr.id}`);
-  if (!kwEl) return;
-
-  const kwText = kwEl.value.trim();
-  if (!kwText) return;
-
-  // Raccoglie testo da "Nome dell'articolo" + tutti i "Punto elenco N"
+function buildTitleBulletWords() {
   let sourceText = '';
   for (const attrs of Object.values(currentSections)) {
     for (const attr of attrs) {
@@ -892,14 +926,73 @@ function checkKeywordDuplicates() {
       }
     }
   }
+  return new Set([...tokenize(sourceText), ...CORE_FRONT_WORDS]);
+}
 
-  const titleBulletWords = extractSignificantWords(sourceText);
+/**
+ * Aggiorna il badge OK/WARN inline nel char-counter del campo chiavi.
+ * @param {number} dupCount - numero di duplicati rimanenti
+ * @param {number|null} attrId - id attributo (se null, lo cerca automaticamente)
+ */
+function updateKwBadge(dupCount, attrId = null) {
+  if (attrId === null) {
+    const kwAttr = findKeywordAttr();
+    if (!kwAttr) return;
+    attrId = kwAttr.id;
+  }
+  const counter = document.getElementById(`counter-${attrId}`);
+  if (!counter) return;
 
-  // Parole nelle chiavi (separate da spazio, come vuole Amazon)
-  const kwWords = kwText.split(/\s+/).filter(w => w.length >= 3);
-  const duplicates = [
-    ...new Set(kwWords.filter(w => titleBulletWords.has(w.toLowerCase())))
-  ];
+  // Rimuovi badge precedente
+  const oldBadge = counter.querySelector('.kw-dup-badge');
+  if (oldBadge) oldBadge.remove();
+
+  const badge = document.createElement('span');
+  badge.className = 'kw-dup-badge';
+  if (dupCount === 0) {
+    badge.style.cssText = 'margin-left:8px;background:#d1fae5;color:#065f46;' +
+      'padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;';
+    badge.textContent = '🟢 OK';
+  } else {
+    badge.style.cssText = 'margin-left:8px;background:#fef3c7;color:#92400e;' +
+      'padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;';
+    badge.textContent = `🟡 ${dupCount} dup.`;
+    badge.title = 'Clicca per aprire il pannello duplicati';
+    badge.addEventListener('click', () => checkKeywordDuplicates());
+  }
+  counter.appendChild(badge);
+}
+
+/**
+ * Controlla le parole duplicate tra Chiavi di ricerca e Titolo/Bullet.
+ * Mostra un pannello sotto il campo e aggiorna il badge OK/WARN.
+ */
+function checkKeywordDuplicates() {
+  // Rimuovi eventuale pannello precedente
+  const existing = document.getElementById('kw-duplicate-panel');
+  if (existing) existing.remove();
+
+  const kwAttr = findKeywordAttr();
+  if (!kwAttr) return;
+
+  const kwEl = document.getElementById(`attr-${kwAttr.id}`);
+  if (!kwEl) return;
+
+  const kwText = kwEl.value.trim();
+  if (!kwText) {
+    updateKwBadge(0, kwAttr.id);
+    return;
+  }
+
+  // titleBulletWords = parole estratte da titolo/bullet + CORE_FRONT_WORDS forzate
+  const titleBulletWords = buildTitleBulletWords();
+
+  // Token delle chiavi (array per adiacenza, Set per deduplicare i chip)
+  const kwTokens = tokenize(kwText);
+  const duplicates = [...new Set(kwTokens.filter(w => titleBulletWords.has(w)))];
+
+  // Aggiorna badge
+  updateKwBadge(duplicates.length, kwAttr.id);
 
   if (duplicates.length === 0) return;
 
@@ -915,8 +1008,8 @@ function checkKeywordDuplicates() {
   panel.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;
                 flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-      <span style="font-weight:600;color:#92400e;">
-        ⚠️ ${duplicates.length} parol${duplicates.length === 1 ? 'a già' : 'e già'} nel titolo/bullet:
+      <span id="kw-dup-header" style="font-weight:600;color:#92400e;">
+        ⚠️ ${duplicates.length} duplicat${duplicates.length === 1 ? 'o trovato' : 'i trovati'}:
       </span>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button onclick="removeDuplicateKeywords()"
@@ -951,35 +1044,39 @@ function checkKeywordDuplicates() {
 }
 
 /**
- * Rimuove TUTTE le parole duplicate dalle chiavi di ricerca
+ * Rimuove tutti i duplicati dalle chiavi + orphan cleanup.
+ * Orphan: WEAK_STANDALONE_WORDS adiacenti (indice ±1) a un token rimosso.
  */
 function removeDuplicateKeywords() {
   const kwAttr = findKeywordAttr();
   if (!kwAttr) return;
-
   const kwEl = document.getElementById(`attr-${kwAttr.id}`);
   if (!kwEl) return;
 
-  // Ricostruisce il set di parole titolo/bullet
-  let sourceText = '';
-  for (const attrs of Object.values(currentSections)) {
-    for (const attr of attrs) {
-      if (/nome.*articolo/i.test(attr.nome)) {
-        const el = document.getElementById(`attr-${attr.id}`);
-        sourceText += ' ' + (el ? el.value : (attr.value || ''));
-      }
-      if (/punto\s*elenco/i.test(attr.nome)) {
-        const el = document.getElementById(`attr-${attr.id}`);
-        sourceText += ' ' + (el ? el.value : (attr.value || ''));
-      }
-    }
-  }
+  const titleBulletWords = buildTitleBulletWords();
 
-  const titleBulletWords = extractSignificantWords(sourceText);
-  const cleaned = kwEl.value.trim()
-    .split(/\s+/)
-    .filter(w => !titleBulletWords.has(w.toLowerCase()))
-    .join(' ');
+  // Costruiamo array di coppie { raw, token } mantenendo l'ordine originale
+  const rawWords = kwEl.value.trim().split(/\s+/).filter(Boolean);
+  const pairs = rawWords.map(w => ({ raw: w, token: tokenize(w)[0] || null }));
+
+  // Set di token rimossi (duplicati)
+  const removedSet = new Set(
+    pairs.filter(p => p.token && titleBulletWords.has(p.token)).map(p => p.token)
+  );
+
+  // Indici dei token rimossi (per adiacenza orphan check)
+  const removedIndices = new Set(
+    pairs.reduce((acc, p, i) => { if (p.token && removedSet.has(p.token)) acc.push(i); return acc; }, [])
+  );
+
+  // Filtra: mantieni solo token non duplicati e non orfani deboli
+  const cleaned = pairs.filter((p, i) => {
+    if (!p.token) return false;                  // stop word / troppo corta → salta
+    if (removedSet.has(p.token)) return false;   // duplicato → rimuovi
+    if (WEAK_STANDALONE_WORDS.has(p.token) &&
+        (removedIndices.has(i - 1) || removedIndices.has(i + 1))) return false; // orfano debole
+    return true;
+  }).map(p => p.raw).join(' ');
 
   kwEl.value = cleaned;
   handleInput(kwAttr.id, kwEl);
@@ -987,36 +1084,42 @@ function removeDuplicateKeywords() {
   const panel = document.getElementById('kw-duplicate-panel');
   if (panel) panel.remove();
 
+  updateKwBadge(0, kwAttr.id);
   showToast('🔧 Termini duplicati rimossi dalle chiavi di ricerca!', 'success');
 }
 
 /**
- * Rimuove UNA SINGOLA parola dalle chiavi di ricerca
+ * Rimuove UNA SINGOLA parola dalle chiavi di ricerca (via chip).
  */
 function removeSingleDuplicateKeyword(word) {
   const kwAttr = findKeywordAttr();
   if (!kwAttr) return;
-
   const kwEl = document.getElementById(`attr-${kwAttr.id}`);
   if (!kwEl) return;
 
-  const cleaned = kwEl.value.trim()
-    .split(/\s+/)
-    .filter(w => w.toLowerCase() !== word.toLowerCase())
+  // Rimuovi il token corrispondente dalla stringa raw
+  const rawWords = kwEl.value.trim().split(/\s+/).filter(Boolean);
+  const cleaned = rawWords
+    .filter(w => (tokenize(w)[0] || '') !== word.toLowerCase())
     .join(' ');
 
   kwEl.value = cleaned;
   handleInput(kwAttr.id, kwEl);
 
-  // Rimuovi il chip corrispondente
+  // Rimuovi il chip
   const chip = document.querySelector(`#kw-dup-chips [data-word="${word}"]`);
   if (chip) chip.remove();
 
-  // Se non ci sono più chip → rimuovi l'intero pannello
   const remaining = document.querySelectorAll('#kw-dup-chips .dup-chip');
   if (remaining.length === 0) {
     const panel = document.getElementById('kw-duplicate-panel');
     if (panel) panel.remove();
+    updateKwBadge(0, kwAttr.id);
+  } else {
+    const n = remaining.length;
+    const header = document.getElementById('kw-dup-header');
+    if (header) header.innerHTML = `⚠️ ${n} duplicat${n === 1 ? 'o trovato' : 'i trovati'}:`;
+    updateKwBadge(n, kwAttr.id);
   }
 
   showToast(`✅ "${word}" rimosso dalle chiavi di ricerca`, 'success');
