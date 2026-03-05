@@ -8,13 +8,21 @@ let currentProduct = null;
 let currentSections = null;           // { sezione: [attr, ...] }
 let pendingChanges = {};              // { attribute_id: new_value }
 let minedKeywords = [];
+let currentTab = 'identità';          // tab attivo corrente
+let variantsDirty = false;            // traccia modifiche varianti
 
-// Limiti caratteri noti (Amazon Italy)
+// Limiti caratteri noti (Amazon Italy) — nomi allineati al seed
 const CHAR_LIMITS = {
-  'Nome articolo': 200,
+  // identità
+  "Nome dell'articolo": 200,
+  // descrizione
+  'Descrizione del prodotto': 2000,
   'Punto elenco 1': 500, 'Punto elenco 2': 500,
   'Punto elenco 3': 500, 'Punto elenco 4': 500,
   'Punto elenco 5': 500,
+  'Chiavi di ricerca': 250,
+  // backward compat per varianti seed precedenti
+  'Nome articolo': 200,
   'Descrizione prodotto': 2000,
   'Chiavi ricerca': 250,
   'Chiavi ricerca 1': 250, 'Chiavi ricerca 2': 250,
@@ -179,9 +187,208 @@ function checkIfEmpty() {
   if (!hasAnyValue) {
     document.getElementById('generateBanner').classList.remove('d-none');
     document.getElementById('listingToolbar').style.display = 'none';
+    document.getElementById('listingTabBar').style.display = 'none';
+    document.getElementById('variantsCard').style.display = 'none';
+    document.getElementById('sectionsContainer').style.display = '';
   } else {
     document.getElementById('generateBanner').classList.add('d-none');
     document.getElementById('listingToolbar').style.display = '';
+    document.getElementById('listingTabBar').style.display = '';
+    // Applica il tab corrente
+    switchListingTab(currentTab);
+  }
+}
+
+// =============================================
+// TAB SWITCHING
+// =============================================
+function switchListingTab(tab) {
+  currentTab = tab;
+
+  // Aggiorna pulsanti tab
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+
+  const sectionsContainer = document.getElementById('sectionsContainer');
+  const variantsCard     = document.getElementById('variantsCard');
+  const keywordSection   = document.getElementById('keywordSection');
+  const toolbar          = document.getElementById('listingToolbar');
+
+  if (tab === 'variazioni') {
+    // Tab speciale: mostra varianti, nascondi sezioni e keyword
+    sectionsContainer.style.display = 'none';
+    keywordSection.style.display = 'none';
+    toolbar.style.display = 'none';
+    variantsCard.style.display = '';
+    renderVariantsCard(currentProduct);
+  } else {
+    // Tab normale: mostra sezioni filtrate per tab
+    variantsCard.style.display = 'none';
+    sectionsContainer.style.display = '';
+    toolbar.style.display = '';
+    // Nascondi keywordSection se non siamo in descrizione
+    if (tab !== 'descrizione') {
+      keywordSection.style.display = 'none';
+    }
+    applyFilter();
+  }
+}
+
+// =============================================
+// RENDER VARIANTS CARD
+// =============================================
+function renderVariantsCard(product) {
+  const card = document.getElementById('variantsCard');
+  if (!product) return;
+
+  const hasVariants = product.sku_max || product.misura_max;
+  if (!hasVariants) {
+    card.innerHTML = `
+      <div class="product-info-card" style="text-align:center;padding:40px;">
+        <p style="font-size:32px;margin-bottom:12px;">⚠️</p>
+        <p style="color:var(--gray-600);font-weight:600;">Questo prodotto non ha varianti configurate.</p>
+        <p style="font-size:13px;color:var(--gray-400);margin-top:6px;">Importa il catalogo Sivigliart con colonne Taglia Grande/Media/Piccola per abilitare le varianti.</p>
+      </div>`;
+    return;
+  }
+
+  const sizes = [
+    { label: 'Grande',  misura: product.misura_max,   sku: product.sku_max,   prezzo: product.prezzo_max,   eanKey: 'ean_max',   imgKey: 'immagine_max'   },
+    { label: 'Media',   misura: product.misura_media, sku: product.sku_media, prezzo: product.prezzo_media, eanKey: 'ean_media', imgKey: 'immagine_media' },
+    { label: 'Piccola', misura: product.misura_mini,  sku: product.sku_mini,  prezzo: product.prezzo_mini,  eanKey: 'ean_mini',  imgKey: 'immagine_mini'  },
+  ].filter(s => s.misura || s.sku);
+
+  // Riga SKU padre
+  const skuPadreHtml = product.sku_padre ? `
+    <div class="sku-padre-bar">
+      <strong>SKU Padre:</strong>
+      <span class="sku-tag">${escHtml(product.sku_padre)}</span>
+      <button onclick="copyText('${escHtml(product.sku_padre)}', this)"
+              style="background:none;border:none;cursor:pointer;font-size:13px;" title="Copia SKU padre">📋</button>
+      <span class="badge-source FIXED" style="font-size:10px;">📌 FISSO</span>
+    </div>` : '';
+
+  const rows = [
+    {
+      label: 'Taglia', badge: '⚙️ AUTO', badgeCls: 'AUTO',
+      cells: sizes.map(s =>
+        `<span style="font-weight:600;color:var(--gray-800);">${escHtml(s.misura || '—')}</span>`)
+    },
+    {
+      label: 'SKU variante', badge: '⚙️ AUTO', badgeCls: 'AUTO',
+      cells: sizes.map(s =>
+        `<span style="font-family:monospace;font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px;">${escHtml(s.sku || '—')}</span>` +
+        (s.sku ? ` <button onclick="copyText('${escHtml(s.sku)}', this)" style="background:none;border:none;cursor:pointer;font-size:11px;vertical-align:middle;" title="Copia SKU">📋</button>` : ''))
+    },
+    {
+      label: 'Tipo ID', badge: '📌 FISSO', badgeCls: 'FIXED',
+      cells: sizes.map(() => `<span style="font-weight:600;">EAN</span>`)
+    },
+    {
+      label: 'ID esterna (EAN)', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s =>
+        `<input type="text" class="var-input" id="var-${s.eanKey}"
+           value="${escHtml(product[s.eanKey] || '')}"
+           placeholder="es. 8056715291234"
+           maxlength="14"
+           oninput="variantsDirty=true;" />`)
+    },
+    {
+      label: 'URL Immagine variante', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s =>
+        `<input type="url" class="var-input url-input" id="var-${s.imgKey}"
+           value="${escHtml(product[s.imgKey] || '')}"
+           placeholder="https://..."
+           oninput="variantsDirty=true;" />`)
+    },
+    {
+      label: 'Condizione', badge: '📌 FISSO', badgeCls: 'FIXED',
+      cells: sizes.map(() => `<span style="font-weight:600;">Nuovo</span>`)
+    },
+    {
+      label: 'Prezzo', badge: '⚙️ AUTO', badgeCls: 'AUTO',
+      cells: sizes.map(s =>
+        `<span style="font-weight:700;color:var(--gray-800);">€${s.prezzo ? parseFloat(s.prezzo).toFixed(2) : '—'}</span>`)
+    },
+    {
+      label: 'Quantità', badge: '📌 FISSO', badgeCls: 'FIXED',
+      cells: sizes.map(() => `<span style="font-weight:600;">100</span>`)
+    },
+  ];
+
+  const theadCols = sizes.map(s =>
+    `<th>${escHtml(s.label)}<div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:2px;">${escHtml(s.misura || '')}</div></th>`
+  ).join('');
+
+  const tbodyRows = rows.map((row, i) => `
+    <tr style="background:${i % 2 === 0 ? 'var(--white)' : 'var(--gray-50)'};">
+      <td>
+        <div class="row-label">
+          <span>${escHtml(row.label)}</span>
+          <span class="badge-source ${row.badgeCls}" style="font-size:10px;">${row.badge}</span>
+        </div>
+      </td>
+      ${row.cells.map(c => `<td>${c}</td>`).join('')}
+    </tr>`).join('');
+
+  card.innerHTML = `
+    <div class="product-info-card" style="overflow-x:auto;">
+      <h3 style="margin-bottom:16px;">🔀 Variazioni Prodotto</h3>
+      ${skuPadreHtml}
+      <div style="overflow-x:auto;">
+        <table class="variants-table">
+          <thead>
+            <tr>
+              <th style="min-width:180px;">Campo</th>
+              ${theadCols}
+            </tr>
+          </thead>
+          <tbody>${tbodyRows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;align-items:center;">
+        <span id="variantsSaveNote" style="font-size:12px;color:var(--gray-400);">EAN e immagini sono salvate separatamente dagli attributi listing.</span>
+        <button class="btn btn-success" id="saveVariantsBtn" onclick="saveVariants()">💾 Salva variazioni</button>
+      </div>
+    </div>`;
+}
+
+// =============================================
+// SAVE VARIANTS
+// =============================================
+async function saveVariants() {
+  const btn = document.getElementById('saveVariantsBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Salvataggio...'; }
+
+  const body = {
+    ean_max:        document.getElementById('var-ean_max')?.value.trim()        || null,
+    ean_media:      document.getElementById('var-ean_media')?.value.trim()      || null,
+    ean_mini:       document.getElementById('var-ean_mini')?.value.trim()       || null,
+    immagine_max:   document.getElementById('var-immagine_max')?.value.trim()   || null,
+    immagine_media: document.getElementById('var-immagine_media')?.value.trim() || null,
+    immagine_mini:  document.getElementById('var-immagine_mini')?.value.trim()  || null,
+  };
+
+  try {
+    const res = await fetch(`/api/products/${productId}/variants`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Errore salvataggio varianti');
+
+    // Aggiorna currentProduct con i nuovi valori
+    Object.assign(currentProduct, body);
+    variantsDirty = false;
+
+    showToast('✅ Variazioni salvate!', 'success');
+  } catch (err) {
+    showToast(`Errore: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '💾 Salva variazioni'; }
   }
 }
 
@@ -533,26 +740,38 @@ function updateProgress() {
 }
 
 // =============================================
-// FILTER
+// FILTER  (rispetta il tab corrente)
 // =============================================
 function applyFilter() {
+  if (currentTab === 'variazioni') return;
+
   const onlyMandatory = document.getElementById('filterMandatory').checked;
-  const hideReadonly = document.getElementById('filterHideReadonly').checked;
+  const hideReadonly  = document.getElementById('filterHideReadonly').checked;
 
   document.getElementById('filterChip').classList.toggle('active', onlyMandatory);
   document.getElementById('filterReadonlyChip').classList.toggle('active', hideReadonly);
 
+  // Prefisso di match per il tab corrente (prime 5 lettere sono univoche)
+  const tabPrefix = currentTab.slice(0, 5).toLowerCase();
+
   document.querySelectorAll('.attr-card').forEach(card => {
     const prio = card.dataset.priorita;
-    const src = card.dataset.source;
+    const src  = card.dataset.source;
     let visible = true;
     if (onlyMandatory && prio !== 'obbligatorio') visible = false;
     if (hideReadonly && (src === 'FIXED' || src === 'AUTO')) visible = false;
     card.style.display = visible ? '' : 'none';
   });
 
-  // Nascondi sezioni vuote dopo il filtro
+  // Mostra/nascondi section-block in base al tab + carte visibili
   document.querySelectorAll('.section-block').forEach(block => {
+    const sectionName = (block.dataset.section || '').toLowerCase();
+    const tabMatch = sectionName.includes(tabPrefix);
+
+    if (!tabMatch) {
+      block.style.display = 'none';
+      return;
+    }
     const visibleCards = [...block.querySelectorAll('.attr-card')].filter(
       c => c.style.display !== 'none'
     );
