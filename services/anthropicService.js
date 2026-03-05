@@ -42,21 +42,23 @@ ISTRUZIONI:
 
 ### NOME DELL'ARTICOLO (max 200 caratteri):
 - Inizia con la keyword principale più cercata dagli acquirenti (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno")
-- Poi segue: [Soggetto] - Stampa su Tela [Dimensioni] - [Caratteristica distintiva]
+- Poi segue: [Soggetto] - Stampa su Tela - [Caratteristica distintiva]
 - NON iniziare genericamente con "Stampa su Tela" — metti la keyword ad alto volume subito
+- ⚠️ IMPORTANTE: se il prodotto ha varianti di taglia (più misure disponibili), NON includere NESSUNA misura specifica nel titolo. Il titolo è del prodotto padre (parent ASIN) e vale per tutte le varianti.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
 - Racconta l'opera con linguaggio evocativo
 - Suggerisci contesti d'uso e destinatari
-- Se il testo menziona misure/taglie alternative (es. "disponibile in tre misure: X, Y, Z"), RIPORTALE esplicitamente alla fine della descrizione con una frase tipo: "Disponibile nelle misure: [misure]."
-- Chiudi sempre con una frase che invita all'acquisto
+- ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI chiudere SEMPRE la descrizione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti.
+- Chiudi dopo le misure con una frase che invita all'acquisto
 
-### CHIAVI DI RICERCA (campo backend Amazon):
-- NON ripetere parole già presenti nel Nome dell'articolo
-- Includi sinonimi, varianti di ricerca, contesti d'uso
-- Sfrutta al massimo i 250 caratteri disponibili — la stringa deve essere LUNGA
-- Formato: keyword1, keyword2, keyword3, ... (virgola + spazio tra le keyword)
-- Almeno 8-12 keyword diverse
+### CHIAVI DI RICERCA (campo backend Search Terms — max 250 byte UTF-8):
+- ⚠️ Formato OBBLIGATORIO: solo spazi tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini
+- 20-30 termini brevi (singole parole o coppie), tutti minuscoli, separati da un singolo spazio
+- Riempi esattamente 240-250 byte — NON lasciare spazio inutilizzato
+- NON ripetere NESSUNA parola già presente nel Nome dell'articolo, nei Punti elenco o nel nome del marchio
+- Includi: sinonimi dell'opera, varianti di ricerca, ambienti, materiali, target, long tail
+- Esempio corretto: "quadro tela arte moderna stampe canvas decorazione pareti soggiorno regalo bambini cameretta figurativo"
 
 ### PUNTI ELENCO:
 - Inizia ogni punto con una keyword in MAIUSCOLO seguita da " – "
@@ -124,16 +126,21 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT:\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
 
+  // Calcola misure varianti per la guida (se disponibili)
+  const misureVarianti = (product.misura_mini && product.misura_media && product.misura_max)
+    ? `${product.misura_mini}, ${product.misura_media}, ${product.misura_max} cm`
+    : null;
+
   const guideMap = {
-    "Nome dell'articolo": `max 200 caratteri. IMPORTANTE: inizia con la keyword principale più cercata (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno") — NON iniziare con "Stampa su Tela". Poi: [Soggetto] - Stampa su Tela [Dimensioni] - [Caratteristica].`,
+    "Nome dell'articolo": `max 200 caratteri. Inizia con la keyword principale più cercata (es. "Quadro Moderno", "Stampa Arte", "Quadro Soggiorno") — NON iniziare con "Stampa su Tela". Poi: [Soggetto] - Stampa su Tela - [Caratteristica]. ⚠️ IMPORTANTE: se il prodotto ha varianti di taglia, NON includere NESSUNA misura specifica nel titolo (è un parent ASIN valido per tutte le varianti).`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
-    "Descrizione del prodotto": `200-2000 caratteri. Racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. Se il testo menziona misure alternative (es. "disponibile in tre misure"), RIPORTALE esplicitamente alla fine con "Disponibile nelle misure: X, Y, Z." Chiudi con frase che invita all'acquisto.`,
+    "Descrizione del prodotto": `200-2000 caratteri. Racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
     "Punto elenco 1": 'inizia con keyword MAIUSCOLA – qualità e caratteristiche della stampa',
     "Punto elenco 2": 'inizia con keyword MAIUSCOLA – palette cromatica e impatto visivo',
     "Punto elenco 3": 'inizia con keyword MAIUSCOLA – processo artigianale (ritocchi acrilici, fissativo)',
     "Punto elenco 4": 'inizia con keyword MAIUSCOLA – info pratiche (dimensioni, telaio, pronta da appendere)',
     "Punto elenco 5": 'inizia con "ACQUISTO SICURO –" e menziona garanzia Sivigliart, imballaggio protettivo, reso entro 30 giorni',
-    "Chiavi di ricerca": `NON ripetere parole già nel titolo. Includi sinonimi, varianti, contesti d'uso. Sfrutta al massimo i 250 caratteri. Formato: keyword1, keyword2, keyword3, ... Almeno 8-12 keyword diverse.`,
+    "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8. ⚠️ Formato OBBLIGATORIO: solo spazi tra i termini — ZERO virgole, ZERO punteggiatura. 20-30 termini brevi (parole singole o coppie), tutti minuscoli. Riempi 240-250 byte. NON ripetere parole dal titolo/bullet/marchio. Esempio: "quadro tela arte moderna stampe canvas decorazione pareti soggiorno regalo bambini cameretta figurativo"`,
     "Edizione": 'breve descrizione dell\'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")',
     "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto, Figurativo...)',
     "Tema": 'tema/i dell\'opera separati da virgola (es. Natura, Ritratto, Paesaggio, Astratto...)',

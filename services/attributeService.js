@@ -135,10 +135,41 @@ async function compileFixedAndAuto(productId, product) {
   return compiled;
 }
 
+// Nomi degli attributi per cui applichiamo il trim a 250 byte UTF-8
+const BYTE_TRIM_FIELDS = new Set([
+  'Chiavi di ricerca', 'Chiavi ricerca',
+  'Chiavi ricerca 1', 'Chiavi ricerca 2', 'Chiavi ricerca 3',
+]);
+
 /**
- * Salva (insert or update) un valore attributo
+ * Taglia una stringa al massimo di maxBytes byte UTF-8,
+ * senza spezzare caratteri multi-byte.
+ */
+function trimToBytes(str, maxBytes = 250) {
+  if (!str) return str;
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode(str);
+  if (encoded.length <= maxBytes) return str;
+  // Decoder con fatal=false tollera sequenze incomplete
+  const trimmed = encoded.slice(0, maxBytes);
+  return new TextDecoder('utf-8', { fatal: false }).decode(trimmed).replace(/\uFFFD$/, '').trimEnd();
+}
+
+/**
+ * Salva (insert or update) un valore attributo.
+ * Per i campi "Chiavi di ricerca" applica automaticamente
+ * il trim a 250 byte UTF-8 prima del salvataggio.
  */
 async function upsertAttributeValue(productId, attributeId, value, compiledBy) {
+  // Recupera il nome attributo per sapere se fare il trim
+  if (value && value.length > 0) {
+    const attrRes = await query('SELECT nome_attributo FROM attribute_definitions WHERE id = $1', [attributeId]);
+    const nome = attrRes.rows[0]?.nome_attributo || '';
+    if (BYTE_TRIM_FIELDS.has(nome)) {
+      value = trimToBytes(value, 250);
+    }
+  }
+
   await query(`
     INSERT INTO product_attribute_values (product_id, attribute_id, value, compiled_by, updated_at)
     VALUES ($1, $2, $3, $4, NOW())

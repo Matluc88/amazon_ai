@@ -29,6 +29,20 @@ const CHAR_LIMITS = {
   'Chiavi ricerca 3': 250,
 };
 
+// Campi per cui il contatore mostra BYTE UTF-8 invece di caratteri
+// (Amazon conta i byte, non i caratteri — importante per le vocali accentate)
+const BYTE_COUNTER_FIELDS = new Set([
+  'Chiavi di ricerca', 'Chiavi ricerca', 'Chiavi ricerca 1',
+  'Chiavi ricerca 2', 'Chiavi ricerca 3',
+]);
+
+/**
+ * Calcola la dimensione in byte UTF-8 di una stringa
+ */
+function getByteLength(str) {
+  return new TextEncoder().encode(str).length;
+}
+
 // Icone sezioni
 const SECTION_ICONS = {
   'Titolo e Descrizione': '📝',
@@ -478,8 +492,13 @@ function createAttrCard(attr) {
     : `<input type="text" id="${inputId}" class="attr-input" ${isReadonly ? 'readonly' : ''}
         value="${escHtml(attr.value || '')}" oninput="handleInput(${attr.id}, this)" />`;
 
+  const useBytes = BYTE_COUNTER_FIELDS.has(attr.nome);
+  const currentCount = useBytes
+    ? getByteLength(attr.value || '')
+    : (attr.value || '').length;
+  const counterLabel = useBytes ? 'byte' : 'car.';
   const counterHtml = charLimit
-    ? `<div class="char-counter" id="counter-${attr.id}">${(attr.value || '').length} / ${charLimit}</div>`
+    ? `<div class="char-counter" id="counter-${attr.id}">${currentCount} / ${charLimit} ${counterLabel}</div>`
     : '';
 
   const manualHint = isManualEmpty
@@ -520,14 +539,16 @@ function updateCharCounter(attrId, value) {
   const counter = document.getElementById(`counter-${attrId}`);
   if (!counter) return;
 
-  // Find the limit from the card nome
   const card = document.querySelector(`[data-attr-id="${attrId}"]`);
   const nome = card ? card.dataset.nome : '';
   const limit = CHAR_LIMITS[nome];
   if (!limit) return;
 
-  const len = value.length;
-  counter.textContent = `${len} / ${limit}`;
+  const useBytes = BYTE_COUNTER_FIELDS.has(nome);
+  const len = useBytes ? getByteLength(value) : value.length;
+  const label = useBytes ? 'byte' : 'car.';
+
+  counter.textContent = `${len} / ${limit} ${label}`;
   counter.className = 'char-counter';
   if (len > limit) counter.classList.add('over');
   else if (len > limit * 0.85) counter.classList.add('warn');
