@@ -1,6 +1,5 @@
 /* =============================================
    AMAZON AI LISTING TOOL — Dashboard JS
-   Sistema attributi dinamico + Auth
    ============================================= */
 
 let allProducts = [];
@@ -10,7 +9,7 @@ let allProducts = [];
 // =============================================
 document.addEventListener('DOMContentLoaded', () => {
   initAuth();
-  initUpload();
+  initCatalogUpload();
   loadProducts();
 });
 
@@ -20,19 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initAuth() {
   try {
     const res = await fetch('/api/auth/me');
-    if (!res.ok) {
-      window.location.href = '/login.html';
-      return;
-    }
+    if (!res.ok) { window.location.href = '/login.html'; return; }
     const user = await res.json();
     const badge = document.getElementById('userBadge');
-    if (badge) {
-      badge.textContent = `👤 ${user.nome || user.email}`;
-    }
+    if (badge) badge.textContent = `👤 ${user.nome || user.email}`;
   } catch {
     window.location.href = '/login.html';
   }
-
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login.html';
@@ -52,6 +45,7 @@ async function loadProducts() {
     allProducts = await res.json();
     renderProducts(allProducts);
     updateStats(allProducts);
+    populateDescDropdown(allProducts);
   } catch (err) {
     showToast('Errore nel caricamento dei prodotti', 'error');
   }
@@ -61,15 +55,22 @@ function updateStats(products) {
   const totali = products.length;
   const conListing = products.filter(p => parseInt(p.attributi_compilati) > 0).length;
   const senzaListing = totali - conListing;
+  const senzaDescrizione = products.filter(p => !p.descrizione_raw).length;
 
   document.getElementById('statTotali').textContent = totali;
   document.getElementById('statConListing').textContent = conListing;
   document.getElementById('statSenzaListing').textContent = senzaListing;
+  document.getElementById('statSenzaDescrizione').textContent = senzaDescrizione;
 
   const generateAllBtn = document.getElementById('generateAllBtn');
-  if (senzaListing > 0) {
+  // Mostra "Genera tutti" solo per prodotti con descrizione ma senza listing
+  const daGenerare = products.filter(p =>
+    parseInt(p.attributi_compilati) === 0 && p.descrizione_raw
+  ).length;
+
+  if (daGenerare > 0) {
     generateAllBtn.style.display = 'inline-flex';
-    generateAllBtn.textContent = `✨ Genera tutti (${senzaListing})`;
+    generateAllBtn.textContent = `✨ Genera tutti (${daGenerare})`;
     generateAllBtn.onclick = generateAll;
   } else {
     generateAllBtn.style.display = 'none';
@@ -84,7 +85,7 @@ function renderProducts(products) {
       <div class="empty-state">
         <span class="empty-icon">🎨</span>
         <h3>Nessun prodotto ancora</h3>
-        <p>Carica un file per iniziare ad importare i tuoi prodotti.</p>
+        <p>Carica il catalogo Excel per iniziare.</p>
       </div>`;
     return;
   }
@@ -93,10 +94,13 @@ function renderProducts(products) {
     const compiled = parseInt(p.attributi_compilati) || 0;
     const total = parseInt(p.attributi_totali) || 0;
     const hasListing = compiled > 0;
+    const hasDesc = !!p.descrizione_raw;
     const pct = total > 0 ? Math.round(compiled / total * 100) : 0;
 
     let statusBadge;
-    if (!hasListing) {
+    if (!hasDesc) {
+      statusBadge = `<span class="badge" style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">📝 Manca descrizione</span>`;
+    } else if (!hasListing) {
       statusBadge = `<span class="badge badge-status-pending">⏳ Da generare</span>`;
     } else if (pct < 100) {
       statusBadge = `
@@ -110,10 +114,13 @@ function renderProducts(products) {
       statusBadge = `<span class="badge badge-status-done">✅ Completo</span>`;
     }
 
+    // SKU info
+    const skuInfo = p.sku_padre
+      ? `<span style="font-size:11px;color:var(--gray-400);">SKU: ${escHtml(p.sku_padre)}</span>`
+      : '';
+
     const createdAt = p.created_at
-      ? new Date(p.created_at).toLocaleDateString('it-IT', {
-          day: '2-digit', month: '2-digit', year: 'numeric'
-        })
+      ? new Date(p.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : '—';
 
     return `
@@ -121,18 +128,31 @@ function renderProducts(products) {
         <td>
           <span class="product-title">${escHtml(p.titolo_opera || '—')}</span>
           <span class="product-subtitle">${escHtml(p.autore || '—')}</span>
+          ${skuInfo}
         </td>
-        <td>${escHtml(p.dimensioni || '—')}</td>
-        <td>${escHtml(p.tecnica || '—')}</td>
-        <td>${p.prezzo ? `€${parseFloat(p.prezzo).toFixed(2)}` : '—'}</td>
+        <td>
+          ${p.misura_max ? `<div style="font-size:12px;">
+            <div>Grande: ${escHtml(p.misura_max)}</div>
+            ${p.misura_media ? `<div style="color:var(--gray-500);">Media: ${escHtml(p.misura_media)}</div>` : ''}
+            ${p.misura_mini ? `<div style="color:var(--gray-500);">Mini: ${escHtml(p.misura_mini)}</div>` : ''}
+          </div>` : escHtml(p.dimensioni || '—')}
+        </td>
+        <td>
+          ${p.prezzo_max ? `<div style="font-size:12px;">
+            <div>€${parseFloat(p.prezzo_max).toFixed(0)}</div>
+            ${p.prezzo_media ? `<div style="color:var(--gray-500);">€${parseFloat(p.prezzo_media).toFixed(0)}</div>` : ''}
+            ${p.prezzo_mini ? `<div style="color:var(--gray-500);">€${parseFloat(p.prezzo_mini).toFixed(0)}</div>` : ''}
+          </div>` : (p.prezzo ? `€${parseFloat(p.prezzo).toFixed(2)}` : '—')}
+        </td>
         <td>${statusBadge}</td>
         <td>${createdAt}</td>
         <td>
           <div class="actions-cell">
             <a href="/listing?id=${p.id}" class="btn btn-outline btn-sm">📄 Apri</a>
-            ${!hasListing
-              ? `<button class="btn btn-primary btn-sm" onclick="generateListing(${p.id}, this)">✨ Genera</button>`
-              : ''
+            ${!hasDesc
+              ? `<button class="btn btn-secondary btn-sm" onclick="quickAddDesc(${p.id}, '${escHtml(p.titolo_opera || '').replace(/'/g, "\\'")}')">📝 Desc.</button>`
+              : hasListing ? ''
+              : `<button class="btn btn-primary btn-sm" onclick="generateListing(${p.id}, this)">✨ Genera</button>`
             }
             <button class="btn btn-secondary btn-sm" onclick="deleteProduct(${p.id}, this)" title="Elimina">🗑️</button>
           </div>
@@ -145,10 +165,9 @@ function renderProducts(products) {
       <table>
         <thead>
           <tr>
-            <th>Opera / Autore</th>
-            <th>Dimensioni</th>
-            <th>Tecnica</th>
-            <th>Prezzo</th>
+            <th>Opera / SKU</th>
+            <th>Misure</th>
+            <th>Prezzi</th>
             <th>Stato</th>
             <th>Importato il</th>
             <th>Azioni</th>
@@ -166,19 +185,14 @@ async function generateListing(productId, btn) {
   const originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
-
   showLoading('Generazione listing...', 'Claude sta creando gli attributi Amazon');
 
   try {
     const res = await fetch(`/api/listings/generate/${productId}`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Errore sconosciuto');
-
     showToast('✅ Listing generato!', 'success');
-    setTimeout(() => {
-      window.location.href = `/listing?id=${productId}`;
-    }, 600);
-
+    setTimeout(() => { window.location.href = `/listing?id=${productId}`; }, 600);
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
     btn.disabled = false;
@@ -188,7 +202,9 @@ async function generateListing(productId, btn) {
 }
 
 async function generateAll() {
-  const toGenerate = allProducts.filter(p => parseInt(p.attributi_compilati) === 0);
+  const toGenerate = allProducts.filter(p =>
+    parseInt(p.attributi_compilati) === 0 && p.descrizione_raw
+  );
   if (toGenerate.length === 0) return;
 
   showLoading(
@@ -196,29 +212,19 @@ async function generateAll() {
     'Claude sta lavorando. Potrebbe richiedere qualche minuto.'
   );
 
-  let success = 0;
-  let errors = 0;
-
+  let success = 0, errors = 0;
   for (const product of toGenerate) {
     try {
       const res = await fetch(`/api/listings/generate/${product.id}`, { method: 'POST' });
-      if (res.ok) success++;
-      else errors++;
-    } catch {
-      errors++;
-    }
+      if (res.ok) success++; else errors++;
+    } catch { errors++; }
     document.getElementById('loadingSubtitle').textContent =
       `Completati: ${success + errors} / ${toGenerate.length}`;
   }
 
   hideLoading();
-
-  if (errors === 0) {
-    showToast(`✅ Tutti i ${success} listing generati!`, 'success');
-  } else {
-    showToast(`⚠️ ${success} generati, ${errors} errori.`, 'warning');
-  }
-
+  if (errors === 0) showToast(`✅ Tutti i ${success} listing generati!`, 'success');
+  else showToast(`⚠️ ${success} generati, ${errors} errori.`, 'warning');
   loadProducts();
 }
 
@@ -227,7 +233,6 @@ async function generateAll() {
 // =============================================
 async function deleteProduct(productId, btn) {
   if (!confirm('Eliminare questo prodotto e tutti i suoi attributi? L\'operazione non è reversibile.')) return;
-
   btn.disabled = true;
   try {
     const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
@@ -242,25 +247,185 @@ async function deleteProduct(productId, btn) {
 }
 
 // =============================================
-// IMPORT TAB SWITCHING
+// TAB SWITCHING (3 tab)
 // =============================================
 function switchImportTab(tab) {
-  const isFile = tab === 'file';
-  document.getElementById('tabFile').style.display = isFile ? '' : 'none';
-  document.getElementById('tabPaste').style.display = isFile ? 'none' : '';
+  const tabs = ['catalog', 'desc', 'paste'];
+  const btns = {
+    catalog: document.getElementById('tabCatalogBtn'),
+    desc: document.getElementById('tabDescBtn'),
+    paste: document.getElementById('tabPasteBtn'),
+  };
+  const panels = {
+    catalog: document.getElementById('tabCatalog'),
+    desc: document.getElementById('tabDesc'),
+    paste: document.getElementById('tabPaste'),
+  };
 
-  const fileBtn = document.getElementById('tabFileBtn');
-  const pasteBtn = document.getElementById('tabPasteBtn');
+  tabs.forEach(t => {
+    const isActive = t === tab;
+    panels[t].style.display = isActive ? '' : 'none';
+    btns[t].style.color = isActive ? 'var(--primary)' : 'var(--gray-500)';
+    btns[t].style.borderBottom = isActive ? '2px solid var(--primary)' : '2px solid transparent';
+  });
 
-  fileBtn.style.color = isFile ? 'var(--primary)' : 'var(--gray-500)';
-  fileBtn.style.borderBottom = isFile ? '2px solid var(--primary)' : '2px solid transparent';
-
-  pasteBtn.style.color = isFile ? 'var(--gray-500)' : 'var(--primary)';
-  pasteBtn.style.borderBottom = isFile ? '2px solid transparent' : '2px solid var(--primary)';
+  // Quando si apre il tab descrizione, aggiorna il dropdown
+  if (tab === 'desc') populateDescDropdown(allProducts);
 }
 
 // =============================================
-// SUBMIT PASTED TEXT
+// TAB 1 — CATALOGO UPLOAD
+// =============================================
+function initCatalogUpload() {
+  const uploadArea = document.getElementById('catalogUploadArea');
+  const fileInput = document.getElementById('catalogFileInput');
+
+  uploadArea.addEventListener('click', () => fileInput.click());
+
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) handleCatalogFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleCatalogFile(e.target.files[0]);
+    fileInput.value = '';
+  });
+}
+
+async function handleCatalogFile(file) {
+  const allowed = ['.xlsx', '.xls', '.csv'];
+  const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+  if (!allowed.includes(ext)) {
+    showToast(`Formato non supportato per il catalogo: ${ext}. Usa XLSX o CSV.`, 'error');
+    return;
+  }
+
+  showLoading('Importazione catalogo...', `Elaborazione di: ${file.name}`);
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/upload/catalog', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    hideLoading();
+    showToast(data.message, 'success');
+    loadProducts();
+  } catch (err) {
+    hideLoading();
+    showToast(`Errore importazione: ${err.message}`, 'error');
+  }
+}
+
+// =============================================
+// TAB 2 — AGGIUNGI DESCRIZIONE
+// =============================================
+function populateDescDropdown(products) {
+  const select = document.getElementById('productSelect');
+  if (!select) return;
+
+  const current = select.value;
+  select.innerHTML = '<option value="">— Seleziona un\'opera —</option>';
+
+  products.forEach(p => {
+    const hasDesc = !!p.descrizione_raw;
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = `${p.titolo_opera || '—'}${hasDesc ? ' ✅' : ' ⚠️ manca descrizione'}`;
+    if (current && current == p.id) option.selected = true;
+    select.appendChild(option);
+  });
+
+  select.onchange = () => showSelectedProductInfo(select.value);
+}
+
+function showSelectedProductInfo(productId) {
+  const infoDiv = document.getElementById('selectedProductInfo');
+  if (!productId) { infoDiv.style.display = 'none'; return; }
+
+  const product = allProducts.find(p => p.id == productId);
+  if (!product) { infoDiv.style.display = 'none'; return; }
+
+  const hasDesc = !!product.descrizione_raw;
+  infoDiv.style.display = 'block';
+  infoDiv.innerHTML = `
+    <strong>${escHtml(product.titolo_opera || '—')}</strong>
+    ${product.sku_padre ? `<span style="color:var(--gray-500);margin-left:8px;">SKU padre: ${escHtml(product.sku_padre)}</span>` : ''}
+    <div style="margin-top:4px;color:var(--gray-600);">
+      ${product.misura_max ? `Misure: ${escHtml(product.misura_max)}${product.misura_media ? `, ${escHtml(product.misura_media)}` : ''}${product.misura_mini ? `, ${escHtml(product.misura_mini)}` : ''}` : ''}
+    </div>
+    <div style="margin-top:4px;">
+      ${hasDesc
+        ? `<span style="color:#16a34a;font-size:12px;">✅ Descrizione già presente — verrà sovrascritta</span>`
+        : `<span style="color:#92400e;font-size:12px;">⚠️ Nessuna descrizione — verrà aggiunta</span>`
+      }
+    </div>`;
+}
+
+// Shortcut: dal pulsante "📝 Desc." nella tabella
+function quickAddDesc(productId, titoloOpera) {
+  switchImportTab('desc');
+  const select = document.getElementById('productSelect');
+  if (select) {
+    select.value = productId;
+    showSelectedProductInfo(productId);
+  }
+  document.getElementById('descTextarea').focus();
+  document.querySelector('.card:first-of-type').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function submitDescription() {
+  const productId = document.getElementById('productSelect').value;
+  const testo = document.getElementById('descTextarea').value.trim();
+
+  if (!productId) {
+    showToast('Seleziona prima un\'opera dal menu', 'warning');
+    return;
+  }
+  if (!testo) {
+    showToast('Incolla la descrizione prima di salvare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('submitDescBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvataggio...';
+
+  try {
+    const res = await fetch(`/api/products/${productId}/description`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ testo })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    showToast('✅ Descrizione salvata!', 'success');
+    document.getElementById('descTextarea').value = '';
+    document.getElementById('productSelect').value = '';
+    document.getElementById('selectedProductInfo').style.display = 'none';
+    loadProducts();
+  } catch (err) {
+    showToast(`Errore: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+// =============================================
+// TAB 3 — TESTO LIBERO (crea nuovo prodotto)
 // =============================================
 async function submitPastedText() {
   const textarea = document.getElementById('pasteTextarea');
@@ -275,13 +440,10 @@ async function submitPastedText() {
   const originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Importazione...';
-
   showLoading('Importazione testo...', 'Analisi della descrizione in corso');
 
-  // Crea un file .txt virtuale dal testo incollato
   const blob = new Blob([text], { type: 'text/plain' });
   const file = new File([blob], 'prodotto.txt', { type: 'text/plain' });
-
   const formData = new FormData();
   formData.append('file', file);
 
@@ -300,65 +462,6 @@ async function submitPastedText() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalText;
-  }
-}
-
-// =============================================
-// UPLOAD FILE
-// =============================================
-function initUpload() {
-  const uploadArea = document.getElementById('uploadArea');
-  const fileInput = document.getElementById('fileInput');
-
-  uploadArea.addEventListener('click', () => fileInput.click());
-
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('dragover');
-  });
-
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('dragover');
-  });
-
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    const files = e.dataTransfer.files;
-    if (files.length > 0) handleFile(files[0]);
-  });
-
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) handleFile(e.target.files[0]);
-    fileInput.value = '';
-  });
-}
-
-async function handleFile(file) {
-  const allowed = ['.xlsx', '.xls', '.csv', '.txt'];
-  const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-
-  if (!allowed.includes(ext)) {
-    showToast(`Formato non supportato: ${ext}. Usa XLSX, CSV o TXT.`, 'error');
-    return;
-  }
-
-  showLoading('Importazione...', `Elaborazione di: ${file.name}`);
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    hideLoading();
-    showToast(`✅ ${data.message}`, 'success');
-    loadProducts();
-  } catch (err) {
-    hideLoading();
-    showToast(`Errore importazione: ${err.message}`, 'error');
   }
 }
 

@@ -13,6 +13,14 @@ async function generateAllAiAttributes(product, keywords = []) {
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
 
+  // Sezione varianti per il prompt
+  const variantiSection = (product.misura_max || product.sku_max)
+    ? `\nVARIANTI DISPONIBILI (3 taglie):
+- Grande: ${product.misura_max || '—'} — €${product.prezzo_max || '—'} (SKU: ${product.sku_max || '—'})
+- Media: ${product.misura_media || '—'} — €${product.prezzo_media || '—'} (SKU: ${product.sku_media || '—'})
+- Piccola: ${product.misura_mini || '—'} — €${product.prezzo_mini || '—'} (SKU: ${product.sku_mini || '—'})\n`
+    : '';
+
   const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
 Il tuo compito è analizzare il testo di un'opera d'arte e generare TUTTI gli attributi necessari per un listing Amazon ottimizzato per stampe su tela.
@@ -21,9 +29,10 @@ TESTO DELL'OPERA:
 """
 ${product.descrizione_raw || 'Nessuna descrizione fornita'}
 """
-${product.dimensioni ? `\nDIMENSIONI: ${product.dimensioni}` : ''}
+${product.dimensioni ? `\nDIMENSIONI (taglia grande): ${product.dimensioni}` : ''}
 ${product.autore ? `\nAUTORE: ${product.autore}` : ''}
 ${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
+${variantiSection}
 ${keywordsSection}
 
 ISTRUZIONI:

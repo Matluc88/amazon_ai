@@ -107,12 +107,63 @@ function renderProductInfo(product) {
     { k: 'Descrizione', v: product.descrizione_raw },
   ].filter(f => f.v);
 
+  // Sezione varianti SKU
+  let variantiHtml = '';
+  if (product.sku_max || product.misura_max) {
+    variantiHtml = `
+      <div class="product-info-row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
+        <span class="info-key">🏷️ Varianti:</span>
+        <span class="info-val">
+          <table style="font-size:12px;border-collapse:collapse;width:100%;max-width:480px;">
+            <thead>
+              <tr style="color:var(--gray-500);">
+                <th style="text-align:left;padding:3px 8px 3px 0;">Taglia</th>
+                <th style="text-align:left;padding:3px 8px;">Misura</th>
+                <th style="text-align:left;padding:3px 8px;">Prezzo</th>
+                <th style="text-align:left;padding:3px 8px;">SKU variante</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${product.misura_max ? `<tr>
+                <td style="padding:3px 8px 3px 0;font-weight:600;">Grande</td>
+                <td style="padding:3px 8px;">${escHtml(product.misura_max)}</td>
+                <td style="padding:3px 8px;">€${product.prezzo_max ? parseFloat(product.prezzo_max).toFixed(0) : '—'}</td>
+                <td style="padding:3px 8px;font-family:monospace;">${escHtml(product.sku_max || '—')}
+                  <button onclick="copyText('${escHtml(product.sku_max || '')}', this)" style="background:none;border:none;cursor:pointer;font-size:12px;" title="Copia SKU">📋</button>
+                </td>
+              </tr>` : ''}
+              ${product.misura_media ? `<tr>
+                <td style="padding:3px 8px 3px 0;font-weight:600;">Media</td>
+                <td style="padding:3px 8px;">${escHtml(product.misura_media)}</td>
+                <td style="padding:3px 8px;">€${product.prezzo_media ? parseFloat(product.prezzo_media).toFixed(0) : '—'}</td>
+                <td style="padding:3px 8px;font-family:monospace;">${escHtml(product.sku_media || '—')}
+                  <button onclick="copyText('${escHtml(product.sku_media || '')}', this)" style="background:none;border:none;cursor:pointer;font-size:12px;" title="Copia SKU">📋</button>
+                </td>
+              </tr>` : ''}
+              ${product.misura_mini ? `<tr>
+                <td style="padding:3px 8px 3px 0;font-weight:600;">Piccola</td>
+                <td style="padding:3px 8px;">${escHtml(product.misura_mini)}</td>
+                <td style="padding:3px 8px;">€${product.prezzo_mini ? parseFloat(product.prezzo_mini).toFixed(0) : '—'}</td>
+                <td style="padding:3px 8px;font-family:monospace;">${escHtml(product.sku_mini || '—')}
+                  <button onclick="copyText('${escHtml(product.sku_mini || '')}', this)" style="background:none;border:none;cursor:pointer;font-size:12px;" title="Copia SKU">📋</button>
+                </td>
+              </tr>` : ''}
+            </tbody>
+          </table>
+          ${product.sku_padre ? `<div style="margin-top:8px;"><strong>SKU padre:</strong>
+            <span style="font-family:monospace;background:var(--gray-100);padding:2px 6px;border-radius:4px;">${escHtml(product.sku_padre)}</span>
+            <button onclick="copyText('${escHtml(product.sku_padre)}', this)" style="background:none;border:none;cursor:pointer;font-size:12px;" title="Copia">📋</button>
+          </div>` : ''}
+        </span>
+      </div>`;
+  }
+
   if (fields.length) {
     document.getElementById('productInfoRows').innerHTML = fields.map(f => `
       <div class="product-info-row">
         <span class="info-key">${f.k}:</span>
         <span class="info-val">${escHtml(f.v)}</span>
-      </div>`).join('');
+      </div>`).join('') + variantiHtml;
     document.getElementById('productInfoCard').style.display = 'block';
   }
 }
@@ -261,6 +312,21 @@ function updateCharCounter(attrId, value) {
   counter.className = 'char-counter';
   if (len > limit) counter.classList.add('over');
   else if (len > limit * 0.85) counter.classList.add('warn');
+}
+
+// =============================================
+// COPY TEXT (helper generico per SKU e testi brevi)
+// =============================================
+function copyText(text, btn) {
+  if (!text) { showToast('Nessun testo da copiare', 'warning'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅';
+    setTimeout(() => { btn.innerHTML = orig; }, 1200);
+    showToast('📋 Copiato!', 'success');
+  }).catch(() => {
+    showToast('Copia non riuscita', 'error');
+  });
 }
 
 // =============================================

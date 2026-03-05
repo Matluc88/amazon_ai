@@ -65,50 +65,105 @@
           <div class="stat-label">Da generare</div>
         </div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-content">
+          <div class="stat-value" id="statSenzaDescrizione">0</div>
+          <div class="stat-label">Senza descrizione</div>
+        </div>
+      </div>
     </div>
 
-    <!-- UPLOAD CARD -->
+    <!-- IMPORT CARD -->
     <div class="card mb-4" style="margin-bottom: 24px;">
       <div class="card-header">
-        <h2>📁 Importa prodotti</h2>
+        <h2>📥 Importa dati</h2>
       </div>
       <div class="card-body">
+
         <!-- TAB BAR -->
         <div style="display:flex;gap:0;border-bottom:2px solid var(--gray-200);margin-bottom:20px;">
-          <button id="tabFileBtn" onclick="switchImportTab('file')"
-            style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px;">
-            📁 Carica file
+          <button id="tabCatalogBtn" onclick="switchImportTab('catalog')"
+            style="padding:10px 18px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px;">
+            📊 Catalogo XLSX/CSV
+          </button>
+          <button id="tabDescBtn" onclick="switchImportTab('desc')"
+            style="padding:10px 18px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-2px;">
+            📋 Aggiungi descrizione
           </button>
           <button id="tabPasteBtn" onclick="switchImportTab('paste')"
-            style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-2px;">
-            📋 Incolla testo
+            style="padding:10px 18px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-2px;">
+            📝 Testo libero
           </button>
         </div>
 
-        <!-- TAB: FILE -->
-        <div id="tabFile">
-          <div class="upload-area" id="uploadArea">
-            <span class="upload-icon">☁️</span>
-            <h3>Trascina qui il file oppure clicca per selezionarlo</h3>
-            <p>Un prodotto per file (testo libero) oppure file tabellare con più prodotti</p>
+        <!-- TAB: CATALOGO -->
+        <div id="tabCatalog">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">
+            Carica il file <strong>Excel (.xlsx)</strong> o <strong>CSV</strong> con il catalogo delle opere.
+            Il sistema rileva automaticamente il formato Sivigliart (titolo, 3 misure, 3 prezzi, SKU varianti)
+            e genera lo <strong>SKU padre</strong> automaticamente.
+            Se il prodotto esiste già (stesso SKU), <strong>aggiorna i dati senza sovrascrivere la descrizione</strong>.
+          </p>
+          <div class="upload-area" id="catalogUploadArea">
+            <span class="upload-icon">📊</span>
+            <h3>Trascina qui il catalogo oppure clicca per selezionarlo</h3>
+            <p>Formato atteso: Titolo | Misura | Prezzo | SKU varianti (3 righe per opera)</p>
             <div class="format-badges">
-              <span class="badge badge-format">TXT</span>
               <span class="badge badge-format">XLSX</span>
               <span class="badge badge-format">CSV</span>
             </div>
           </div>
-          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" />
+          <input type="file" id="catalogFileInput" accept=".xlsx,.xls,.csv" style="display:none" />
+        </div>
 
-          <div class="file-template" style="margin-top:16px;">
-            <strong>📊 Formato tabellare (.xlsx/.csv):</strong>
-            colonne: <code>titolo_opera</code> <code>autore</code> <code>dimensioni</code> <code>tecnica</code> <code>descrizione_raw</code> <code>prezzo</code>
+        <!-- TAB: AGGIUNGI DESCRIZIONE -->
+        <div id="tabDesc" style="display:none;">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px;">
+            Seleziona un'opera già presente nel database e aggiungi la descrizione copiandola da
+            <strong>Pages, Word o Notes</strong>. Non sovrascrive misure, prezzi o SKU.
+          </p>
+
+          <div style="margin-bottom:14px;">
+            <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:6px;">
+              🖼️ Seleziona opera:
+            </label>
+            <select id="productSelect"
+              style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-300);border-radius:var(--radius);font-size:14px;font-family:inherit;background:white;cursor:pointer;">
+              <option value="">— Carica lista prodotti... —</option>
+            </select>
+          </div>
+
+          <div id="selectedProductInfo" style="display:none;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:13px;">
+          </div>
+
+          <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:6px;">
+            📄 Descrizione dell'opera:
+          </label>
+          <textarea id="descTextarea"
+            style="width:100%;height:180px;padding:14px;border:1.5px solid var(--gray-300);border-radius:var(--radius);font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;"
+            placeholder="Incolla qui la descrizione dal file Pages, Word o Notes...
+
+Es:
+Donne in Battaglia — coraggio
+Stampa su tela ritoccata con colori acrilici e fissativo lucido.
+Dimensioni: 90x135 cm, 70x105 cm, 50x75 cm.
+..."></textarea>
+
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="submitDescBtn" onclick="submitDescription()">
+              💾 Salva descrizione
+            </button>
+            <span style="font-size:12px;color:var(--gray-500);">
+              Solo la descrizione verrà aggiornata — misure e SKU restano invariati
+            </span>
           </div>
         </div>
 
-        <!-- TAB: INCOLLA TESTO -->
+        <!-- TAB: TESTO LIBERO -->
         <div id="tabPaste" style="display:none;">
           <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">
-            Copia il testo da <strong>Pages, Word, Notes</strong> o qualsiasi app e incollalo qui sotto.
+            Crea un <strong>nuovo prodotto</strong> incollando testo libero da <strong>Pages, Word, Notes</strong>.
             La prima riga sarà usata come titolo dell'opera.
           </p>
           <textarea id="pasteTextarea"
@@ -117,15 +172,15 @@
 Es:
 L'abbraccio - Gustav Klimt
 Stampa artistica su tela di alta qualità. Dimensioni: 90x120 cm.
-Tecnica: stampa digitale UV su canvas con telaio in legno.
-Prezzo: 49,90"></textarea>
+Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
             <button class="btn btn-primary" id="submitPasteBtn" onclick="submitPastedText()">
-              ✨ Importa testo
+              ✨ Importa come nuovo prodotto
             </button>
-            <span style="font-size:12px;color:var(--gray-500);">Il testo verrà processato come un singolo prodotto</span>
+            <span style="font-size:12px;color:var(--gray-500);">Crea un nuovo prodotto (senza varianti SKU)</span>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -143,7 +198,7 @@ Prezzo: 49,90"></textarea>
         <div class="empty-state">
           <span class="empty-icon">🎨</span>
           <h3>Nessun prodotto ancora</h3>
-          <p>Carica un file per iniziare ad importare i tuoi prodotti.</p>
+          <p>Carica il catalogo Excel per iniziare.</p>
         </div>
       </div>
     </div>

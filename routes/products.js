@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/db');
+const { parseFreeText } = require('../services/fileParser');
 
 // GET /api/products — lista tutti i prodotti
 router.get('/', async (req, res) => {
@@ -27,6 +28,53 @@ router.get('/:id', async (req, res) => {
     if (!result.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
     res.json(result.rows[0]);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================================
+// PATCH /api/products/:id/description
+// Aggiunge/aggiorna la descrizione di un prodotto esistente.
+// Usato dal tab "Aggiungi descrizione" della dashboard.
+// =============================================
+router.patch('/:id/description', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { testo } = req.body;
+
+    if (!testo || !testo.trim()) {
+      return res.status(400).json({ error: 'Il testo della descrizione è obbligatorio' });
+    }
+
+    // Verifica che il prodotto esista
+    const existing = await query('SELECT * FROM products WHERE id = $1', [id]);
+    if (!existing.rows[0]) {
+      return res.status(404).json({ error: 'Prodotto non trovato' });
+    }
+
+    // Estrai autore e tecnica dal testo (se non già presenti)
+    const parsed = parseFreeText(testo.trim());
+    const parsedProduct = parsed[0] || {};
+
+    const product = existing.rows[0];
+
+    // Aggiorna: descrizione_raw sempre, autore/tecnica solo se vuoti nel DB
+    const newAutore = product.autore || parsedProduct.autore || null;
+    const newTecnica = product.tecnica || parsedProduct.tecnica || 'Stampa su tela';
+
+    await query(`
+      UPDATE products SET
+        descrizione_raw = $1,
+        autore = $2,
+        tecnica = $3
+      WHERE id = $4
+    `, [testo.trim(), newAutore, newTecnica, id]);
+
+    const updated = await query('SELECT * FROM products WHERE id = $1', [id]);
+    res.json({ success: true, product: updated.rows[0] });
+
+  } catch (err) {
+    console.error('Errore aggiornamento descrizione:', err);
     res.status(500).json({ error: err.message });
   }
 });

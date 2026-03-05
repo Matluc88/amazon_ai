@@ -76,6 +76,28 @@ async function initDatabase() {
       )
     `);
 
+    // Colonne varianti prodotto (catalogo Sivigliart)
+    const variantCols = [
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sku_padre VARCHAR(100)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS misura_max VARCHAR(50)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS prezzo_max DECIMAL(10,2)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sku_max VARCHAR(100)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS misura_media VARCHAR(50)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS prezzo_media DECIMAL(10,2)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sku_media VARCHAR(100)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS misura_mini VARCHAR(50)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS prezzo_mini DECIMAL(10,2)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sku_mini VARCHAR(100)`,
+    ];
+    for (const col of variantCols) {
+      await client.query(col);
+    }
+    // Indice univoco su sku_max (usato per UPSERT catalogo)
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_products_sku_max
+      ON products (sku_max) WHERE sku_max IS NOT NULL AND sku_max != ''
+    `);
+
     // Tabella definizioni attributi Amazon
     await client.query(`
       CREATE TABLE IF NOT EXISTS attribute_definitions (
