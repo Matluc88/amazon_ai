@@ -43,6 +43,40 @@ function getByteLength(str) {
   return new TextEncoder().encode(str).length;
 }
 
+/**
+ * Normalizza i Search Terms lato client (stessa logica di normalizeSearchTerms backend).
+ * Usa regex Unicode /\p{L}/u con fallback per browser datati.
+ */
+function normalizeSearchTermsClient(str) {
+  if (!str) return str;
+  const CORE = ['quadro', 'stampa', 'tela', 'decorazione', 'parete'];
+
+  let cleaned;
+  try {
+    // Unicode-safe (tutti i browser moderni supportano /\p{L}/u)
+    cleaned = str.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ');
+  } catch (e) {
+    // Fallback: regex classica con lettere accentate italiane
+    cleaned = str.toLowerCase().replace(/[^a-zàèìòùáéíóúâêîôûäëïöü0-9\s]/g, ' ');
+  }
+
+  const words = cleaned.split(/\s+/).filter(w => w.length >= 2);
+  const seen = new Set();
+  const unique = words.filter(w => (seen.has(w) ? false : (seen.add(w), true)));
+
+  const missingCore = CORE.filter(t => !seen.has(t));
+  const joined = [...missingCore, ...unique].join(' ');
+
+  // Trim a 250 byte UTF-8
+  const encoder = new TextEncoder();
+  if (encoder.encode(joined).length <= 250) return joined;
+  let trimmed = joined;
+  while (encoder.encode(trimmed).length > 250) {
+    trimmed = trimmed.slice(0, trimmed.length - 1);
+  }
+  return trimmed.trimEnd();
+}
+
 // Icone sezioni
 const SECTION_ICONS = {
   'Titolo e Descrizione': '📝',
@@ -105,6 +139,7 @@ async function loadListing() {
     renderSections(currentSections);
     updateProgress();
     checkIfEmpty();
+    setTimeout(() => initTitleBadges(), 100);
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
     setTimeout(() => window.location.href = '/', 2500);
@@ -483,6 +518,9 @@ function createAttrCard(attr) {
   const regenBtn = attr.source === 'AI'
     ? `<button class="btn-regen" onclick="regenerateAttr(${attr.id}, '${escHtml(attr.nome).replace(/'/g, "\\'")}', this)" title="Rigenera con AI">🔄 Rigenera</button>`
     : '';
+  const ottimizzaBtn = BYTE_COUNTER_FIELDS.has(attr.nome)
+    ? `<button class="btn-ottimizza" onclick="ottimizzaChiavi(${attr.id})" title="Normalizza: rimuovi punteggiatura, dedup, aggiungi core terms (quadro stampa tela decorazione parete)">⚡ Ottimizza</button>`
+    : '';
 
   // Input element
   const inputId = `attr-${attr.id}`;
@@ -501,6 +539,12 @@ function createAttrCard(attr) {
     ? `<div class="char-counter" id="counter-${attr.id}">${currentCount} / ${charLimit} ${counterLabel}</div>`
     : '';
 
+  // Badge qualità titolo (solo per "Nome dell'articolo")
+  const isTitleField = /nome.*articolo/i.test(attr.nome);
+  const titleBadgesHtml = isTitleField
+    ? `<div class="title-quality-badges" id="title-badges-${attr.id}"></div>`
+    : '';
+
   const manualHint = isManualEmpty
     ? `<div style="font-size:11px;color:#92400e;margin-top:4px;">⚠️ Campo manuale — inserire valore</div>`
     : '';
@@ -514,12 +558,14 @@ function createAttrCard(attr) {
       </div>
       <div class="attr-header-right">
         ${regenBtn}
+        ${ottimizzaBtn}
         ${copyBtn}
       </div>
     </div>
     <div class="attr-body">
       ${inputEl}
       ${counterHtml}
+      ${titleBadgesHtml}
       ${manualHint}
     </div>`;
 
@@ -534,9 +580,16 @@ function handleInput(attrId, el) {
   updateCharCounter(attrId, el.value);
   showSaveBar();
 
-  // Aggiorna il badge OK/WARN con debounce 600ms se stiamo modificando le chiavi di ricerca
   const card = document.querySelector(`[data-attr-id="${attrId}"]`);
-  if (card && /chiav[ei].*ricerca|keyword/i.test(card.dataset.nome || '')) {
+  const nomeCampo = card ? card.dataset.nome || '' : '';
+
+  // Aggiorna badge qualità titolo (live)
+  if (/nome.*articolo/i.test(nomeCampo)) {
+    updateTitleQualityBadges(attrId, el.value);
+  }
+
+  // Aggiorna il badge OK/WARN con debounce 600ms se stiamo modificando le chiavi di ricerca
+  if (/chiav[ei].*ricerca|keyword/i.test(nomeCampo)) {
     clearTimeout(kwBadgeDebounce);
     kwBadgeDebounce = setTimeout(() => {
       if (!currentSections) return;
@@ -734,9 +787,10 @@ async function generateListing() {
 
     showToast('✅ Listing generato con successo!', 'success');
 
-    // Controlla automaticamente i duplicati nelle chiavi di ricerca
+    // Controlla automaticamente i duplicati nelle chiavi di ricerca e badge titolo
     // (piccolo timeout per dare tempo al DOM di aggiornarsi)
     setTimeout(() => checkKeywordDuplicates(), 300);
+    setTimeout(() => initTitleBadges(), 150);
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
   } finally {
@@ -1143,6 +1197,92 @@ function removeSingleDuplicateKeyword(word) {
   }
 
   showToast(`✅ "${word}" rimosso dalle chiavi di ricerca`, 'success');
+}
+
+// =============================================
+// OTTIMIZZA CHIAVI DI RICERCA
+// =============================================
+
+/**
+ * Applica normalizeSearchTermsClient alle Chiavi di ricerca (lato client).
+ * Rimuove punteggiatura, deduplica, aggiunge core terms mancanti, taglia a 250 byte.
+ */
+function ottimizzaChiavi(attrId) {
+  const el = document.getElementById(`attr-${attrId}`);
+  if (!el) return;
+  const original = el.value;
+  const normalized = normalizeSearchTermsClient(original);
+  if (!normalized || normalized === original) {
+    showToast('✅ Le chiavi sono già ottimizzate!', 'info');
+    return;
+  }
+  el.value = normalized;
+  handleInput(attrId, el);
+  showToast('⚡ Chiavi ottimizzate: punteggiatura rimossa, dedup applicato, core terms verificati', 'success');
+}
+
+// =============================================
+// BADGE QUALITÀ TITOLO
+// =============================================
+
+/**
+ * Aggiorna i badge di qualità per il campo "Nome dell'articolo":
+ * - Badge lunghezza: target 150–180 char
+ * - Badge autore: controlla se il nome autore è nel titolo
+ */
+function updateTitleQualityBadges(attrId, value) {
+  const container = document.getElementById(`title-badges-${attrId}`);
+  if (!container) return;
+
+  const len = value.length;
+
+  // Badge lunghezza
+  let lenBadge = '';
+  if (len === 0) {
+    lenBadge = '';
+  } else if (len > 200) {
+    lenBadge = `<span class="title-quality-badge badge-over">🔴 ${len} car. (max 200)</span>`;
+  } else if (len > 180) {
+    lenBadge = `<span class="title-quality-badge badge-warn">🟡 ${len} car. (target 150-180)</span>`;
+  } else if (len >= 150) {
+    lenBadge = `<span class="title-quality-badge badge-ok">✅ ${len} car.</span>`;
+  } else {
+    lenBadge = `<span class="title-quality-badge badge-warn">🟡 ${len} car. (target 150-180)</span>`;
+  }
+
+  // Badge autore — usa currentProduct.autore se disponibile
+  let autoreBadge = '';
+  if (currentProduct && currentProduct.autore && value) {
+    const autoreNorm = currentProduct.autore.toLowerCase().trim();
+    const titleNorm = value.toLowerCase();
+    // Controlla se almeno una parola dell'autore (>3 char) appare nel titolo
+    const autoreWords = autoreNorm.split(/\s+/).filter(w => w.length > 3);
+    const found = autoreWords.some(w => titleNorm.includes(w));
+    if (found) {
+      autoreBadge = `<span class="title-quality-badge badge-over">⚠️ Autore nel titolo</span>`;
+    } else {
+      autoreBadge = `<span class="title-quality-badge badge-ok">✅ No autore</span>`;
+    }
+  }
+
+  container.innerHTML = autoreBadge + (autoreBadge && lenBadge ? '&nbsp;' : '') + lenBadge;
+}
+
+/**
+ * Inizializza i badge qualità titolo per tutti i campi titolo presenti nel DOM.
+ * Da chiamare dopo renderSections.
+ */
+function initTitleBadges() {
+  if (!currentSections) return;
+  for (const attrs of Object.values(currentSections)) {
+    for (const attr of attrs) {
+      if (/nome.*articolo/i.test(attr.nome)) {
+        const el = document.getElementById(`attr-${attr.id}`);
+        if (el) updateTitleQualityBadges(attr.id, el.value);
+        return;
+      }
+    }
+  }
 }
 
 // =============================================

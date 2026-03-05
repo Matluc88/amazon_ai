@@ -876,3 +876,72 @@ input.field-input:focus {
 .align-center { align-items: center; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
+
+/* =============================================
+   CHAR COUNTER — stati okay / warn / over
+   ============================================= */
+.char-counter.okay { color: #059669; font-weight: 600; }
+.char-counter.warn  { color: #d97706; font-weight: 600; }
+.char-counter.over  { color: #dc2626; font-weight: 700; }
+
+/* =============================================
+   PULSANTE OTTIMIZZA CHIAVI DI RICERCA
+   ============================================= */
+.btn-ottimizza {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-ottimizza:hover {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #7c3aed;
+}
+.btn-ottimizza:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =============================================
+   BADGE QUALITÀ TITOLO
+   ============================================= */
+.title-quality-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.title-quality-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.title-quality-badge.badge-ok {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+.title-quality-badge.badge-warn {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.title-quality-badge.badge-over {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}

@@ -80,7 +80,8 @@ ESEMPI CORRETTI:
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
-- La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." — sostituisci [autore] con il nome reale
+- La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dell'artista [autore]." — sostituisci [autore] con il nome reale (usa "dell'artista", NON "dipinta dall'artista")
+- ⚠️ REGOLA TECNICA: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano. VIETATO: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto venduto
 - ⚠️ VIETATO nel corpo della descrizione: "dipinto da [autore]", "quadro di [autore]", "opera di [autore]" — usa SEMPRE "stampa artistica su tela dell'opera originale di [autore]" o formulazioni equivalenti che chiariscono che è una stampa, non un originale
 - Prosegui raccontando l'opera con linguaggio evocativo
 - Suggerisci contesti d'uso e destinatari
@@ -117,14 +118,20 @@ REGOLE CRITICHE:
 - ESEMPIO CORRETTO: "quadro stampa tela stampa artistica canvas famiglia bambino genitori figlio neonato arte figurativa arte contemporanea quadro moderno decorazione parete arredamento casa soggiorno camera bambino quadro grande arancione arte italiana"
 
 ### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
+⚠️ REGOLA TECNICA per TUTTI i bullet: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano.
+VIETATO in qualsiasi bullet: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto.
+Max 220 caratteri per bullet (leggibilità mobile). NON fare keyword stuffing.
+
 Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 
-- Punto elenco 1 — MATERIALE: inizia con "STAMPA SU TELA CANVAS –" e usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore], su tela di alta qualità montata su telaio in legno e pronta da appendere." (sostituisci [autore] con il nome reale; chiarisce che non è un dipinto a mano)
-- ⚠️ La formulazione "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]" deve comparire SOLO nel Punto elenco 1 e nella Descrizione — NON nei bullet 2-5
-- Punto elenco 2 — STILE/ARTE: inizia con "ARTE [STILE] –" e descrivi l'opera, i colori, l'impatto visivo
+- Punto elenco 1 — MATERIALE: usa SEMPRE questa formulazione esatta:
+  "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista [autore], montata su telaio in legno e pronta da appendere."
+  (sostituisci [autore] con il nome reale; chiarisce che è una riproduzione, non un originale)
+- ⚠️ La formulazione "Riproduzione su tela dell'opera originale dell'artista [autore]" deve comparire SOLO nel Punto elenco 1 — NON nei bullet 2-5
+- Punto elenco 2 — STILE/ARTE: inizia con "ARTE [STILE] –" e descrivi l'opera, i colori dominanti, l'impatto visivo
 - Punto elenco 3 — AMBIENTI: inizia con "DECORAZIONE PARETE –" e indica i contesti ideali (soggiorno, camera da letto, ufficio, studio, corridoio...)
-- Punto elenco 4 — INSTALLAZIONE: inizia con "PRONTO DA APPENDERE –" e descrivi telaio in legno, ganci, misure disponibili
-- Punto elenco 5 — REGALO/GARANZIA: inizia con "IDEA REGALO –" menziona occasioni regalo e garanzia Sivigliart (imballaggio protettivo, reso gratuito 30 giorni)
+- Punto elenco 4 — INSTALLAZIONE: inizia con "PRONTO DA APPENDERE –" e descrivi telaio in legno, ganci inclusi, misure disponibili
+- Punto elenco 5 — REGALO/GARANZIA: inizia con "IDEA REGALO –" menziona occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo; chiudi SEMPRE con: "Reso entro 30 giorni secondo le condizioni Amazon."
 
 ### ALTRI CAMPI:
 - "Personaggio rappresentato": se non applicabile, scrivi "N/D"
@@ -219,12 +226,12 @@ VIETATO:
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
-    "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." (sostituisci [autore] con il nome reale). Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
-    "Punto elenco 1": `MATERIALE — usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore], su tela di alta qualità montata su telaio in legno e pronta da appendere." Sostituisci [autore] con il nome reale. Questa formulazione chiarisce che non è un dipinto a mano. ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
+    "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dell'artista [autore]." (sostituisci [autore] con il nome reale; usa "dell'artista", NON "dipinta dall'artista"). REGOLA TECNICA: VIETATO "dipinto", "tela dipinta" come attributo del prodotto. Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
+    "Punto elenco 1": `MATERIALE — usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista [autore], montata su telaio in legno e pronta da appendere." Sostituisci [autore] con il nome reale. VIETATO: "dipinto", "tela dipinta" — usa sempre "riproduzione su tela". ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
     "Punto elenco 2": 'STILE/ARTE — inizia con "ARTE [STILE] –" e descrivi l\'opera, i colori principali, l\'impatto visivo ed emotivo',
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie)',
-    "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (compleanno, anniversario, inaugurazione casa), garanzia Sivigliart, imballaggio protettivo, reso gratuito 30 giorni',
+    "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo per spedizione sicura; chiudi SEMPRE con: "Reso entro 30 giorni secondo le condizioni Amazon."',
     "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8.
 Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 240–250 byte esatti.
 NON ripetere parole già nel titolo, nei bullet o nel brand.

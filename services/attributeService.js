@@ -138,11 +138,14 @@ async function compileFixedAndAuto(productId, product) {
   return compiled;
 }
 
-// Nomi degli attributi per cui applichiamo il trim a 250 byte UTF-8
+// Nomi degli attributi per cui applichiamo la normalizzazione + trim a 250 byte UTF-8
 const BYTE_TRIM_FIELDS = new Set([
   'Chiavi di ricerca', 'Chiavi ricerca',
   'Chiavi ricerca 1', 'Chiavi ricerca 2', 'Chiavi ricerca 3',
 ]);
+
+// Core terms Wall Art Amazon.it — inseriti in testa se mancanti
+const SEARCH_TERMS_CORE = ['quadro', 'stampa', 'tela', 'decorazione', 'parete'];
 
 /**
  * Taglia una stringa al massimo di maxBytes byte UTF-8,
@@ -155,17 +158,46 @@ function trimToBytes(str, maxBytes = 250) {
 }
 
 /**
+ * Normalizza una stringa per i campi Search Terms di Amazon:
+ * - Rimuove punteggiatura, emoji, simboli (regex Unicode-safe con flag /u)
+ * - Converte in minuscolo
+ * - Dedup con Set (O(n))
+ * - Inserisce in testa i core terms mancanti (quadro, stampa, tela, decorazione, parete)
+ * - Taglia a 250 byte UTF-8
+ */
+function normalizeSearchTerms(str) {
+  if (!str) return str;
+
+  // Unicode-safe: mantiene lettere (inclusi accenti), numeri e spazi
+  const words = str
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 2);
+
+  // Dedup con Set (O(n))
+  const seen = new Set();
+  const unique = words.filter(w => (seen.has(w) ? false : (seen.add(w), true)));
+
+  // Inserisci core terms mancanti in testa
+  const missingCore = SEARCH_TERMS_CORE.filter(t => !seen.has(t));
+  const result = [...missingCore, ...unique].join(' ');
+
+  return trimToBytes(result, 250);
+}
+
+/**
  * Salva (insert or update) un valore attributo.
  * Per i campi "Chiavi di ricerca" applica automaticamente
- * il trim a 250 byte UTF-8 prima del salvataggio.
+ * normalizeSearchTerms (normalizzazione + dedup + core terms + trim 250 byte UTF-8).
  */
 async function upsertAttributeValue(productId, attributeId, value, compiledBy) {
-  // Recupera il nome attributo per sapere se fare il trim
+  // Recupera il nome attributo per sapere se normalizzare
   if (value && value.length > 0) {
     const attrRes = await query('SELECT nome_attributo FROM attribute_definitions WHERE id = $1', [attributeId]);
     const nome = attrRes.rows[0]?.nome_attributo || '';
     if (BYTE_TRIM_FIELDS.has(nome)) {
-      value = trimToBytes(value, 250);
+      value = normalizeSearchTerms(value);
     }
   }
 
