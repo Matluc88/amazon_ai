@@ -176,6 +176,54 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
 }
 
 /**
+ * Genera keyword Amazon.it ottimizzate con Claude AI
+ * Sostituisce il mining via Amazon autocomplete (bloccato per IP server)
+ *
+ * @param {object} product
+ * @returns {string[]} array di keyword ordinate per rilevanza
+ */
+async function generateKeywordsWithAI(product) {
+  const prompt = `Sei un esperto SEO per Amazon Italia (marketplace IT), specializzato in arte e decorazione.
+
+Analizza questo prodotto e genera le migliori keyword di ricerca che i clienti italiani userebbero su Amazon.it per trovarlo.
+
+PRODOTTO:
+- Opera: ${product.titolo_opera || ''}
+- Autore: ${product.autore || ''}
+- Dimensioni: ${product.dimensioni || product.misura_max || ''}
+- Tecnica: ${product.tecnica || 'Stampa su tela'}
+- Descrizione: ${(product.descrizione_raw || '').slice(0, 600)}
+
+ISTRUZIONI:
+1. Genera esattamente 40 keyword in ITALIANO che i clienti cercano su Amazon.it
+2. Includi: termini generici popolari, termini specifici dell'opera, dimensioni, ambienti, occasioni regalo
+3. Ordina per volume di ricerca stimato (dalla più cercata alla meno cercata)
+4. Ogni keyword deve essere una frase di ricerca reale (1-5 parole)
+5. NON includere keyword in altre lingue
+6. Focus su: decorazione casa, quadri, stampe, soggetti specifici, ambienti (soggiorno, camera, ecc.)
+
+Rispondi SOLO con un JSON array di stringhe:
+["keyword1", "keyword2", "keyword3", ...]`;
+
+  const message = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 1000,
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const text = message.content[0].text;
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) return [];
+
+  try {
+    const arr = JSON.parse(match[0]);
+    return Array.isArray(arr) ? arr.map(k => String(k).toLowerCase().trim()).filter(k => k.length > 2) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Estrae e parsa la risposta JSON di Claude
  */
 function parseJsonResponse(text) {
@@ -190,4 +238,4 @@ function parseJsonResponse(text) {
   }
 }
 
-module.exports = { generateAllAiAttributes, regenerateSingleAttribute };
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI };
