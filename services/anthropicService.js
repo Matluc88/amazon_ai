@@ -21,6 +21,14 @@ async function generateAllAiAttributes(product, keywords = []) {
 - Piccola: ${product.misura_mini || '—'} — €${product.prezzo_mini || '—'} (SKU: ${product.sku_mini || '—'})\n`
     : '';
 
+  // hasSizeVariants: robusto contro null / "" / "—" / "0"
+  const hasSizeVariants = typeof product.misura_max === 'string'
+    ? product.misura_max.trim().length > 0 && product.misura_max.trim() !== '—'
+    : Boolean(product.misura_max);
+
+  // Dimensione taglia grande per single ASIN (es. "70x100")
+  const dimensioneSingle = product.dimensioni || product.misura_max || '';
+
   const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
 Il tuo compito è analizzare il testo di un'opera d'arte e generare TUTTI gli attributi necessari per un listing Amazon ottimizzato per stampe su tela.
@@ -40,19 +48,36 @@ ISTRUZIONI:
 - Genera contenuti SEO ottimizzati per Amazon Italia, algoritmo A9
 - Tutti i campi DEVONO essere in ITALIANO
 
-### NOME DELL'ARTICOLO (120-170 caratteri — MAI oltre 200):
-Usa UNA di queste due strutture naturali (scegli quella più adatta allo stile dell'opera):
+### NOME DELL'ARTICOLO (Amazon - Titolo):
+Obiettivo: titolo CTR-first + SEO, leggibile su mobile, italiano naturale senza keyword stuffing.
+Range TARGET: 150–180 caratteri. MAI oltre 200. Mira ai 160–170.
 
-OPZIONE A: "Stampa su Tela Canvas Quadro [Stile], Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere"
-OPZIONE B: "Quadro [Stile] Stampa su Tela Canvas, Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere"
+STRUTTURA OBBLIGATORIA (segui quest'ordine esatto, massimo 3 virgole interne):
+"Stampa su Tela {soggetto}, {stile} dai Colori {colore1} e {colore2}, Decorazione Parete per {stanza1} e {stanza2}, Pronto da Appendere{DIMENSIONE}"
 
-Regole OBBLIGATORIE:
-- "Decorazione Parete" deve essere sempre presente (è la keyword con più traffico per canvas in Italia)
-- Il nome dell'autore/artista va VERSO LA FINE (dopo le keyword commerciali)
-- 4-6 keyword principali — NO keyword stuffing
-- Parole VIETATE: migliore, premium, super qualità, gratis, spedizione veloce, esclusivo
-- Amazon indicizza automaticamente i plurali: NON ripetere quadri/stampe
-- ⚠️ Se il prodotto ha varianti di taglia, NON includere NESSUNA misura specifica nel titolo (è un parent ASIN valido per tutte le varianti)
+Dove:
+- {soggetto}: 2–5 parole descrittive dell'opera (es. "Coppia Romantica", "Paesaggio Astratto", "Figura Femminile al Mare")
+- {stile}: es. "Quadro Moderno", "Quadro Astratto Moderno", "Quadro Contemporaneo"
+- {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
+- {stanza1} e {stanza2}: le 2 stanze più coerenti con l'opera (es. "Soggiorno e Camera da Letto", "Soggiorno e Ufficio")
+- {DIMENSIONE}:
+  - hasSizeVariants = ${hasSizeVariants}
+  - Se hasSizeVariants è TRUE (prodotto parent con 3 taglie): NON aggiungere NESSUNA dimensione nel titolo
+  - Se hasSizeVariants è FALSE (single ASIN): aggiungi ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
+
+VIETATO (tassativo):
+- Inserire autore, artista o "Arte di [Autore]" nel titolo — il nome dell'autore NON va mai nel titolo
+- Inserire il brand "Sivigliart" nel titolo (è già nel campo "Nome del marchio" separato)
+- ⚠️ Se nel testo dell'opera compare un autore o un nome di brand, IGNORALO completamente nel titolo
+- Keyword stuffing: nessun elenco di parole separate da virgola senza senso compiuto
+- MAIUSCOLO totale su più parole consecutive
+- Parole vietate: migliore, premium, super qualità, gratis, spedizione veloce, esclusivo
+
+ESEMPI CORRETTI:
+- Single: "Stampa su Tela Coppia Romantica, Quadro Moderno dai Colori Turchese e Verde Petrolio, Decorazione Parete per Soggiorno e Camera da Letto, Pronto da Appendere, 70x100 cm" (167 car.)
+- Parent: "Stampa su Tela Astratto Geometrico, Quadro Moderno dai Colori Nero e Oro, Decorazione Parete per Soggiorno e Ufficio, Pronto da Appendere" (138 car.)
+
+Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
 - La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." — sostituisci [autore] con il nome reale
@@ -144,8 +169,33 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     ? `${product.misura_mini}, ${product.misura_media}, ${product.misura_max} cm`
     : null;
 
+  // hasSizeVariants per regenerate (stessa logica di generateAllAiAttributes)
+  const hasSizeVariantsRegen = typeof product.misura_max === 'string'
+    ? product.misura_max.trim().length > 0 && product.misura_max.trim() !== '—'
+    : Boolean(product.misura_max);
+  const dimensioneSingleRegen = product.dimensioni || product.misura_max || '';
+
   const guideMap = {
-    "Nome dell'articolo": `120-170 caratteri. Usa UNA di queste strutture: "Stampa su Tela Canvas Quadro [Stile], Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere" OPPURE "Quadro [Stile] Stampa su Tela Canvas, Decorazione Parete per Soggiorno, Camera da Letto o Ufficio, Arte di [Autore], Pronta da Appendere". Regole: "Decorazione Parete" sempre presente; autore verso la fine; 4-6 keyword; NO parole vietate (migliore, premium, super qualità, gratis); NO misure specifiche se prodotto con varianti.`,
+    "Nome dell'articolo": `Titolo Amazon CTR-first + SEO. Range TARGET: 150–180 caratteri, MAI oltre 200.
+
+STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
+"Stampa su Tela {soggetto}, {stile} dai Colori {colore1} e {colore2}, Decorazione Parete per {stanza1} e {stanza2}, Pronto da Appendere{DIMENSIONE}"
+
+Dove:
+- {soggetto}: 2–5 parole descrittive dell'opera (es. "Coppia Romantica", "Paesaggio Astratto")
+- {stile}: es. "Quadro Moderno", "Quadro Contemporaneo", "Quadro Astratto Moderno"
+- {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
+- {stanza1} e {stanza2}: le 2 stanze più coerenti con l'opera
+- hasSizeVariants = ${hasSizeVariantsRegen}
+- {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → aggiungi ", ${dimensioneSingleRegen} cm"
+
+VIETATO:
+- Autore, "Arte di [Autore]" o nome dell'artista nel titolo
+- Brand "Sivigliart" nel titolo
+- Se nel testo compare autore o brand, IGNORALI completamente
+- Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
+
+Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
     "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." (sostituisci [autore] con il nome reale). Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
     "Punto elenco 1": `MATERIALE — usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore], su tela di alta qualità montata su telaio in legno e pronta da appendere." Sostituisci [autore] con il nome reale. Questa formulazione chiarisce che non è un dipinto a mano. ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
