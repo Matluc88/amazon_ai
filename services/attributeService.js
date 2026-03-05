@@ -112,6 +112,9 @@ async function compileFixedAndAuto(productId, product) {
           value = dims.lunghezza; compiledBy = 'AUTO';
         } else if (nome === 'Larghezza imballaggio') {
           value = dims.larghezza; compiledBy = 'AUTO';
+        } else if (nome.startsWith("Dimensioni dell'articolo")) {
+          // Campo display combinato: "lunghezza x larghezza cm" (es. "135 x 90 cm")
+          value = `${dims.lunghezza} x ${dims.larghezza} cm`; compiledBy = 'AUTO';
         }
       }
 
@@ -242,11 +245,12 @@ async function getProductListing(productId, product = null) {
     if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)')
       return product.prezzo_max ? parseFloat(product.prezzo_max).toFixed(2) : '';
     if (dims) {
-      if (nome.includes('più lungo'))     return dims.lunghezza;
-      if (nome.includes('più corto'))     return dims.larghezza;
-      if (nome === 'Orientamento')        return dims.orientamento;
-      if (nome === 'Lunghezza imballaggio') return dims.lunghezza;
-      if (nome === 'Larghezza imballaggio') return dims.larghezza;
+      if (nome.includes('più lungo'))              return dims.lunghezza;
+      if (nome.includes('più corto'))              return dims.larghezza;
+      if (nome === 'Orientamento')                 return dims.orientamento;
+      if (nome === 'Lunghezza imballaggio')        return dims.lunghezza;
+      if (nome === 'Larghezza imballaggio')        return dims.larghezza;
+      if (nome.startsWith("Dimensioni dell'articolo")) return `${dims.lunghezza} x ${dims.larghezza} cm`;
     }
     return '';
   }

@@ -86,6 +86,7 @@ Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 - "Tema": tema/i dell'opera separati da virgola (es. "Coppia romantica, Estate, Amore")
 - "Tipo di stanza": ambienti consigliati separati da virgola (es. "Soggiorno, Camera da letto")
 - "Usi consigliati per il prodotto": usi pratici separati da virgola (es. "Decorazione parete, Regalo")
+- "Tema animali": SOLO se il soggetto principale dell'opera è un animale, indicare il tipo (es. "Cane", "Gatto", "Cavallo", "Uccello", "Leone"). Se l'opera non rappresenta animali, scrivi "N/D"
 - "Edizione": breve descrizione dell'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")
 
 Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esattamente questi campi:
@@ -113,7 +114,8 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
   "Edizione": "...",
   "Stagioni": "...",
   "Utilizzo in ambienti interni ed esterni": "...",
-  "forma decorazione da parete": "..."
+  "forma decorazione da parete": "...",
+  "Tema animali": "..."
 }`;
 
   const message = await client.messages.create({
@@ -160,6 +162,7 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     "Colore": 'colori principali dell\'opera separati da virgola',
     "Motivo": 'motivo decorativo (es. Floreale, Astratto, Geometrico, Figurativo...)',
     "Usi consigliati per il prodotto": 'usi pratici separati da virgola (es. Decorazione parete, Regalo, Arredamento...)',
+    "Tema animali": 'SOLO se il soggetto principale dell\'opera è un animale: indicare il tipo (es. "Cane", "Gatto", "Cavallo", "Uccello", "Leone"). Se l\'opera non rappresenta animali, scrivi "N/D".',
   };
 
   const guide = guideMap[nomeAttributo] || 'campo testo libero per listing Amazon Italia';

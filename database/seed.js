@@ -82,6 +82,10 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: 'Utilizzo in ambienti interni ed esterni', sezione: 'dettagli', priorita: 'facoltativo',    source: 'AI',     ordine: 77 },
   { nome: 'forma decorazione da parete',     sezione: 'dettagli',    priorita: 'facoltativo',         source: 'AI',     ordine: 78 },
   { nome: 'Numero di confezioni',            sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 79, fixedValue: '1' },
+  // — Dimensioni combinate display (lunghezza x larghezza, estratto da misura_max)
+  { nome: "Dimensioni dell'articolo, lunghezza x larghezza", sezione: 'dettagli', priorita: 'seo', source: 'AUTO', ordine: 80 },
+  // — Tema animali (rilevante per opere con soggetti animali)
+  { nome: 'Tema animali',                    sezione: 'dettagli',    priorita: 'facoltativo',         source: 'AI',     ordine: 81 },
 
   // ─── TAB: OFFERTA ─────────────────────────────────────────
   // SKU viene dal sku_padre (generato automaticamente dall'import catalogo)
