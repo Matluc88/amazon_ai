@@ -6,17 +6,18 @@ const { query } = require('../database/db');
 
 /**
  * Estrae le dimensioni dal testo grezzo
- * Es: "90x135 cm" → { larghezza: 90, lunghezza: 135, orientamento: 'Verticale' }
+ * Es: "90x135 cm", "130x90", "130 x 90 cm" → { larghezza, lunghezza, orientamento }
  */
 function extractDimensions(text) {
   if (!text) return null;
 
-  // Pattern: NxM cm, N x M cm, N×M cm
-  const match = text.match(/(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*cm/i);
+  // Pattern: NxM cm, N x M cm, N×M cm, NxM (cm opzionale)
+  const match = text.match(/(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?/i);
   if (!match) return null;
 
   const a = parseFloat(match[1].replace(',', '.'));
   const b = parseFloat(match[2].replace(',', '.'));
+  if (isNaN(a) || isNaN(b) || a === 0 || b === 0) return null;
 
   const larghezza = Math.min(a, b);  // bordo più corto
   const lunghezza = Math.max(a, b);  // bordo più lungo
@@ -72,38 +73,62 @@ async function loadProductAttributeValues(productId) {
 /**
  * Compila i valori FIXED e AUTO per un prodotto
  * Salva nel DB e ritorna i valori compilati
+ *
+ * AUTO gestiti:
+ * - SKU                                    → product.sku_padre
+ * - Prezzo al pubblico consigliato          → product.prezzo_max
+ * - Lunghezza/Larghezza bordo articolo      → estratti da misura_max (o descrizione_raw)
+ * - Orientamento                            → calcolato dalle dimensioni
+ * - Lunghezza/Larghezza imballaggio         → stesse del prodotto grande
  */
 async function compileFixedAndAuto(productId, product) {
   const attrs = await loadAttributeDefinitions();
-  const dims = extractDimensions(product.descrizione_raw || '');
+
+  // Estrai dimensioni: priorità a misura_max (es. "130x90"), poi descrizione_raw
+  const dimsSource = product.misura_max || product.descrizione_raw || '';
+  const dims = extractDimensions(dimsSource);
 
   const compiled = [];
 
   for (const attr of attrs) {
     let value = null;
     let compiledBy = null;
+    const nome = attr.nome_attributo;
 
     if (attr.source === 'FIXED') {
       value = attr.fixed_value || '';
       compiledBy = 'FIXED';
+
     } else if (attr.source === 'AUTO') {
+      // Dimensioni articolo
       if (dims) {
-        if (attr.nome_attributo.includes('più lungo')) {
-          value = dims.lunghezza;
-          compiledBy = 'AUTO';
-        } else if (attr.nome_attributo.includes('più corto')) {
-          value = dims.larghezza;
-          compiledBy = 'AUTO';
-        } else if (attr.nome_attributo === 'Orientamento') {
-          value = dims.orientamento;
-          compiledBy = 'AUTO';
+        if (nome.includes('più lungo')) {
+          value = dims.lunghezza; compiledBy = 'AUTO';
+        } else if (nome.includes('più corto')) {
+          value = dims.larghezza; compiledBy = 'AUTO';
+        } else if (nome === 'Orientamento') {
+          value = dims.orientamento; compiledBy = 'AUTO';
+        } else if (nome === 'Lunghezza imballaggio') {
+          value = dims.lunghezza; compiledBy = 'AUTO';
+        } else if (nome === 'Larghezza imballaggio') {
+          value = dims.larghezza; compiledBy = 'AUTO';
         }
+      }
+
+      // SKU padre del prodotto
+      if (nome === 'SKU' && product.sku_padre) {
+        value = product.sku_padre; compiledBy = 'AUTO';
+      }
+
+      // Prezzo taglia grande come prezzo di riferimento
+      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)' && product.prezzo_max) {
+        value = parseFloat(product.prezzo_max).toFixed(2); compiledBy = 'AUTO';
       }
     }
 
     if (value !== null) {
       await upsertAttributeValue(productId, attr.id, value, compiledBy);
-      compiled.push({ nome: attr.nome_attributo, value, compiledBy });
+      compiled.push({ nome, value, compiledBy });
     }
   }
 
@@ -166,17 +191,25 @@ async function getProductListing(productId) {
   `, [productId]);
 
   // Raggruppa per sezione
+  // Per attributi FIXED/AUTO: usa il valore da pav se presente,
+  // altrimenti usa fixed_value come fallback (visibili anche PRIMA della generazione)
   const sections = {};
   for (const row of result.rows) {
     if (!sections[row.sezione]) sections[row.sezione] = [];
+
+    // Calcola il valore effettivo da mostrare
+    const displayValue = row.value
+      || (row.source === 'FIXED' ? (row.fixed_value || '') : '')
+      || '';
+
     sections[row.sezione].push({
       id: row.id,
       nome: row.nome_attributo,
       priorita: row.priorita,
       source: row.source,
-      value: row.value || '',
+      value: displayValue,
       compiled_by: row.compiled_by || row.source,
-      is_compiled: !!row.value
+      is_compiled: !!displayValue
     });
   }
 

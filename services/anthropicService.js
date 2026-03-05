@@ -68,11 +68,12 @@ ISTRUZIONI:
 
 ### ALTRI CAMPI:
 - "Personaggio rappresentato": se non applicabile, scrivi "N/D"
-- "Colore": elenca i colori principali separati da virgola
-- "Stile": stile artistico
-- "Tema": tema dell'opera
-- "Tipo di stanza": ambienti consigliati separati da virgola
-- "Usi consigliati per il prodotto": usi pratici separati da virgola
+- "Colore": elenca i colori principali separati da virgola (es. "Turchese, Verde Petrolio, Giallo")
+- "Stile": stile artistico (es. "Cubista", "Impressionista", "Arte Moderna", "Astratto")
+- "Tema": tema/i dell'opera separati da virgola (es. "Coppia romantica, Estate, Amore")
+- "Tipo di stanza": ambienti consigliati separati da virgola (es. "Soggiorno, Camera da letto")
+- "Usi consigliati per il prodotto": usi pratici separati da virgola (es. "Decorazione parete, Regalo")
+- "Edizione": breve descrizione dell'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")
 
 Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esattamente questi campi:
 
@@ -96,6 +97,7 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
   "Motivo": "...",
   "Colore": "...",
   "Supporti di stampa": "Stampa su tela canvas",
+  "Edizione": "...",
   "Stagioni": "...",
   "Utilizzo in ambienti interni ed esterni": "...",
   "forma decorazione da parete": "..."
@@ -132,8 +134,9 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     "Punto elenco 4": 'inizia con keyword MAIUSCOLA – info pratiche (dimensioni, telaio, pronta da appendere)',
     "Punto elenco 5": 'inizia con "ACQUISTO SICURO –" e menziona garanzia Sivigliart, imballaggio protettivo, reso entro 30 giorni',
     "Chiavi di ricerca": `NON ripetere parole già nel titolo. Includi sinonimi, varianti, contesti d'uso. Sfrutta al massimo i 250 caratteri. Formato: keyword1, keyword2, keyword3, ... Almeno 8-12 keyword diverse.`,
+    "Edizione": 'breve descrizione dell\'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")',
     "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto, Figurativo...)',
-    "Tema": 'tema dell\'opera (es. Natura, Ritratto, Paesaggio, Astratto...)',
+    "Tema": 'tema/i dell\'opera separati da virgola (es. Natura, Ritratto, Paesaggio, Astratto...)',
     "Tipo di stanza": 'ambienti consigliati separati da virgola (es. Salotto, Camera, Ufficio...)',
     "Famiglia di colori": 'palette dominante (es. Blu e verde, Caldi, Pastello, Multicolore...)',
     "Colore": 'colori principali dell\'opera separati da virgola',

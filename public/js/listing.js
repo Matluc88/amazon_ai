@@ -182,20 +182,32 @@ function renderProductInfo(product) {
 function checkIfEmpty() {
   if (!currentSections) return;
   const allAttrs = Object.values(currentSections).flat();
+
+  // Il banner "Genera" si mostra solo se NESSUN attributo AI è stato compilato.
+  // Gli attributi FIXED/AUTO hanno sempre un valore → non li contiamo per questa logica.
+  const aiAttrs = allAttrs.filter(a => a.source === 'AI');
+  const hasAiValues = aiAttrs.length === 0 || aiAttrs.some(a => a.value && a.value.trim().length > 0);
+
+  // La tab bar si mostra se esistono attributi (inclusi FIXED)
   const hasAnyValue = allAttrs.some(a => a.value && a.value.trim().length > 0);
 
-  if (!hasAnyValue) {
+  if (!hasAiValues) {
+    // Nessun attributo AI generato → mostra banner
     document.getElementById('generateBanner').classList.remove('d-none');
+  } else {
+    document.getElementById('generateBanner').classList.add('d-none');
+  }
+
+  if (hasAnyValue) {
+    // Mostra tab bar e toolbar (anche solo con FIXED visibili)
+    document.getElementById('listingToolbar').style.display = '';
+    document.getElementById('listingTabBar').style.display = '';
+    switchListingTab(currentTab);
+  } else {
     document.getElementById('listingToolbar').style.display = 'none';
     document.getElementById('listingTabBar').style.display = 'none';
     document.getElementById('variantsCard').style.display = 'none';
     document.getElementById('sectionsContainer').style.display = '';
-  } else {
-    document.getElementById('generateBanner').classList.add('d-none');
-    document.getElementById('listingToolbar').style.display = '';
-    document.getElementById('listingTabBar').style.display = '';
-    // Applica il tab corrente
-    switchListingTab(currentTab);
   }
 }
 
