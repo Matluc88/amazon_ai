@@ -81,6 +81,7 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
 - La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dipinta dall'artista [autore]." — sostituisci [autore] con il nome reale
+- ⚠️ VIETATO nel corpo della descrizione: "dipinto da [autore]", "quadro di [autore]", "opera di [autore]" — usa SEMPRE "stampa artistica su tela dell'opera originale di [autore]" o formulazioni equivalenti che chiariscono che è una stampa, non un originale
 - Prosegui raccontando l'opera con linguaggio evocativo
 - Suggerisci contesti d'uso e destinatari
 - ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI chiudere SEMPRE la descrizione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti.
@@ -93,8 +94,9 @@ NON ripetere parole già nel Nome dell'articolo, nei Punti elenco o nel brand.
 
 STRUTTURA A 5 BLOCCHI LOGICI (concatena tutto separato da spazio):
 
-BLOCCO 1 — PRODOTTO BASE (sempre incluso):
-quadro stampa tela stampa artistica canvas
+BLOCCO 1 — PRODOTTO BASE (sempre incluso, SEMPRE LE PRIME PAROLE della stringa):
+quadro stampa tela decorazione parete artistica canvas
+↑ Queste 6 parole devono essere ESATTAMENTE le prime della stringa — sono le keyword con il massimo volume di ricerca per la categoria Wall Art su Amazon.it
 
 BLOCCO 2 — SOGGETTO (2–6 parole specifiche del contenuto dell'opera):
 es. famiglia bambino genitori figlio neonato / paesaggio mare spiaggia tramonto / astratto geometrico forme / coppia romantica amore
@@ -126,7 +128,7 @@ Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 
 ### ALTRI CAMPI:
 - "Personaggio rappresentato": se non applicabile, scrivi "N/D"
-- "Colore": elenca i colori principali separati da virgola (es. "Turchese, Verde Petrolio, Giallo")
+- "Colore": se l'opera ha 1-2 colori dominanti elencali (es. "Arancione, Rosso"); se ha 3 o più colori usa "Multicolore" — Amazon lo gestisce meglio nei filtri di ricerca
 - "Stile": stile artistico (es. "Cubista", "Impressionista", "Arte Moderna", "Astratto")
 - "Tema": tema/i dell'opera separati da virgola (es. "Coppia romantica, Estate, Amore")
 - "Tipo di stanza": ambienti consigliati separati da virgola (es. "Soggiorno, Camera da letto")
@@ -228,7 +230,7 @@ Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trat
 NON ripetere parole già nel titolo, nei bullet o nel brand.
 
 STRUTTURA A 5 BLOCCHI (concatena separato da spazio):
-BLOCCO 1 — PRODOTTO BASE (sempre): quadro stampa tela stampa artistica canvas
+BLOCCO 1 — PRODOTTO BASE (sempre, PRIME PAROLE della stringa): quadro stampa tela decorazione parete artistica canvas
 BLOCCO 2 — SOGGETTO (2–6 parole specifiche del contenuto dell'opera)
 BLOCCO 3 — STILE: arte figurativa arte contemporanea quadro moderno [stile specifico]
 BLOCCO 4 — UTILIZZO: decorazione parete arredamento casa soggiorno camera [stanza specifica]
