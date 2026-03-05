@@ -564,10 +564,30 @@ function updateCharCounter(attrId, value) {
   // Salva il badge prima di sovrascrivere (textContent rimuoverebbe anche il badge span)
   const existingBadge = counter.querySelector('.kw-dup-badge');
 
-  counter.textContent = `${len} / ${limit} ${label}`;
+  // Soglie e indicatori
+  let indicator = '';
   counter.className = 'char-counter';
-  if (len > limit) counter.classList.add('over');
-  else if (len > limit * 0.85) counter.classList.add('warn');
+
+  if (useBytes) {
+    // Campi byte (Chiavi di ricerca): soglie SEO Amazon specifiche
+    if (len > limit) {
+      counter.classList.add('over');
+      indicator = ' 🔴';
+    } else if (len === limit) {
+      counter.classList.add('warn');
+      indicator = ' 🟡';
+    } else if (len >= 230) {
+      counter.classList.add('okay');
+      indicator = ' 🟢';
+    }
+    // < 230: neutro, nessun indicatore
+  } else {
+    // Campi carattere: soglie standard
+    if (len > limit) counter.classList.add('over');
+    else if (len > limit * 0.85) counter.classList.add('warn');
+  }
+
+  counter.textContent = `${len} / ${limit} ${label}${indicator}`;
 
   // Ri-aggiungi il badge se era presente
   if (existingBadge) counter.appendChild(existingBadge);

@@ -147,15 +147,11 @@ const BYTE_TRIM_FIELDS = new Set([
 /**
  * Taglia una stringa al massimo di maxBytes byte UTF-8,
  * senza spezzare caratteri multi-byte.
+ * Buffer.from().toString('utf8') gestisce automaticamente le sequenze incomplete.
  */
 function trimToBytes(str, maxBytes = 250) {
   if (!str) return str;
-  const encoder = new TextEncoder();
-  const encoded = encoder.encode(str);
-  if (encoded.length <= maxBytes) return str;
-  // Decoder con fatal=false tollera sequenze incomplete
-  const trimmed = encoded.slice(0, maxBytes);
-  return new TextDecoder('utf-8', { fatal: false }).decode(trimmed).replace(/\uFFFD$/, '').trimEnd();
+  return Buffer.from(str, 'utf8').slice(0, maxBytes).toString('utf8').trimEnd();
 }
 
 /**

@@ -87,12 +87,32 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 - Chiudi dopo le misure con una frase che invita all'acquisto
 
 ### CHIAVI DI RICERCA (campo backend Search Terms — max 250 byte UTF-8):
-- ⚠️ Formato OBBLIGATORIO: solo spazi tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini
-- 20-30 termini brevi (singole parole o coppie), tutti minuscoli, separati da un singolo spazio
-- Riempi esattamente 240-250 byte — NON lasciare spazio inutilizzato
-- NON ripetere NESSUNA parola già presente nel Nome dell'articolo, nei Punti elenco o nel nome del marchio
-- Includi: sinonimi dell'opera, varianti di ricerca, ambienti, materiali, target, long tail
-- Esempio corretto: "quadro tela arte moderna stampe canvas decorazione pareti soggiorno regalo bambini cameretta figurativo"
+Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo.
+Riempi 240–250 byte esatti. NON lasciare spazio inutilizzato.
+NON ripetere parole già nel Nome dell'articolo, nei Punti elenco o nel brand.
+
+STRUTTURA A 5 BLOCCHI LOGICI (concatena tutto separato da spazio):
+
+BLOCCO 1 — PRODOTTO BASE (sempre incluso):
+quadro stampa tela stampa artistica canvas
+
+BLOCCO 2 — SOGGETTO (2–6 parole specifiche del contenuto dell'opera):
+es. famiglia bambino genitori figlio neonato / paesaggio mare spiaggia tramonto / astratto geometrico forme / coppia romantica amore
+
+BLOCCO 3 — STILE:
+es. arte figurativa arte contemporanea quadro moderno / astratto moderno arte italiana / impressionismo
+
+BLOCCO 4 — UTILIZZO E STANZA:
+es. decorazione parete arredamento casa soggiorno camera bambino / ufficio studio corridoio ingresso
+
+BLOCCO 5 — ATTRIBUTI SPECIFICI:
+es. quadro grande + colore dominante + arte italiana (aggiungi solo ciò che non è già presente nei blocchi precedenti)
+
+REGOLE CRITICHE:
+- Parole VIETATE (le persone NON le cercano su Amazon): emozione, tenerezza, sentimento, caldo, evocativo, magia, poetico, romantico come aggettivo generico
+- Amazon indicizza le singole parole: "quadro famiglia" indicizza ANCHE "quadro" e "famiglia" — NON serve ripetere
+- Dopo aver assemblato i 5 blocchi: rimuovi le parole già presenti nel titolo/bullet, poi taglia a 250 byte
+- ESEMPIO CORRETTO: "quadro stampa tela stampa artistica canvas famiglia bambino genitori figlio neonato arte figurativa arte contemporanea quadro moderno decorazione parete arredamento casa soggiorno camera bambino quadro grande arancione arte italiana"
 
 ### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
 Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
@@ -203,7 +223,21 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie)',
     "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (compleanno, anniversario, inaugurazione casa), garanzia Sivigliart, imballaggio protettivo, reso gratuito 30 giorni',
-    "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8. ⚠️ Formato OBBLIGATORIO: solo spazi — ZERO virgole, ZERO punteggiatura. 20-30 termini brevi, tutti minuscoli. IMPORTANTE: Amazon indicizza già le parole nel titolo e nei bullet → usa SOLO sinonimi e long-tail non ancora indicizzati. Riempi 240-250 byte. Esempio: "decorazione parete astratta canvas wall art arredamento arte contemporanea telaio legno regalo casa stampa artistica moderna"`,
+    "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8.
+Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 240–250 byte esatti.
+NON ripetere parole già nel titolo, nei bullet o nel brand.
+
+STRUTTURA A 5 BLOCCHI (concatena separato da spazio):
+BLOCCO 1 — PRODOTTO BASE (sempre): quadro stampa tela stampa artistica canvas
+BLOCCO 2 — SOGGETTO (2–6 parole specifiche del contenuto dell'opera)
+BLOCCO 3 — STILE: arte figurativa arte contemporanea quadro moderno [stile specifico]
+BLOCCO 4 — UTILIZZO: decorazione parete arredamento casa soggiorno camera [stanza specifica]
+BLOCCO 5 — ATTRIBUTI: quadro grande [colore dominante] arte italiana
+
+PAROLE VIETATE (nessuno le cerca su Amazon): emozione, tenerezza, sentimento, caldo, evocativo, magia, poetico
+ESEMPIO: "quadro stampa tela stampa artistica canvas famiglia bambino genitori figlio neonato arte figurativa arte contemporanea quadro moderno decorazione parete arredamento casa soggiorno camera bambino quadro grande arancione arte italiana"
+
+Output: UNA sola riga di testo, senza virgolette esterne.`,
     "Edizione": 'breve descrizione dell\'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")',
     "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto, Figurativo...)',
     "Tema": 'tema/i dell\'opera separati da virgola (es. Natura, Ritratto, Paesaggio, Astratto...)',
