@@ -60,7 +60,9 @@ function extractDimensions(text) {
 
   const larghezza = Math.min(a, b);  // bordo più corto
   const lunghezza = Math.max(a, b);  // bordo più lungo
-  const orientamento = a > b ? 'Orizzontale' : a < b ? 'Verticale' : 'Quadrato';
+  // Le misure sono altezza × base: a=altezza, b=base
+  // Verticale se altezza > base, Orizzontale se base > altezza
+  const orientamento = a > b ? 'Verticale' : a < b ? 'Orizzontale' : 'Quadrato';
 
   return { larghezza: String(larghezza), lunghezza: String(lunghezza), orientamento };
 }
@@ -169,9 +171,9 @@ async function compileFixedAndAuto(productId, product) {
         value = product.sku_padre; compiledBy = 'AUTO';
       }
 
-      // Prezzo taglia grande come prezzo di riferimento
-      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)' && product.prezzo_max) {
-        value = parseFloat(product.prezzo_max).toFixed(2); compiledBy = 'AUTO';
+      // Prezzo al pubblico consigliato: nessun listino separato → 0 (policy Amazon)
+      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)') {
+        value = '0'; compiledBy = 'AUTO';
       }
     }
 
@@ -316,8 +318,8 @@ async function getProductListing(productId, product = null) {
     function autoFallback(nome) {
       if (!product) return '';
       if (nome === 'SKU') return product.sku_padre || '';
-      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)')
-        return product.prezzo_max ? parseFloat(product.prezzo_max).toFixed(2) : '';
+      // Prezzo al pubblico consigliato: nessun listino separato → 0 (policy Amazon)
+      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)') return '0';
       if (nome === "Peso dell'articolo") {
         const pesoSource = product.misura_max || product.descrizione_raw || '';
         return lookupWeight(pesoSource) || '';
@@ -325,6 +327,7 @@ async function getProductListing(productId, product = null) {
       if (dims) {
         if (nome.includes('più lungo'))              return dims.lunghezza;
         if (nome.includes('più corto'))              return dims.larghezza;
+        if (nome === 'Orientamento')                 return dims.orientamento;
         if (nome === 'Lunghezza imballaggio')        return dims.lunghezza;
         if (nome === 'Larghezza imballaggio')        return dims.larghezza;
         if (nome.startsWith("Dimensioni dell'articolo")) return `${dims.lunghezza} x ${dims.larghezza} cm`;

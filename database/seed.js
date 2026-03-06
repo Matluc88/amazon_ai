@@ -65,7 +65,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: 'Numero di articoli',              sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 61, fixedValue: '1' },
   { nome: 'Descrizione della fascia di età', sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 62, fixedValue: 'Adulto' },
   // — Attributi tecnici specifici Wall Art
-  { nome: 'Orientamento',                    sezione: 'dettagli',    priorita: 'seo',                 source: 'MANUAL', ordine: 63 },
+  { nome: 'Orientamento',                    sezione: 'dettagli',    priorita: 'seo',                 source: 'AUTO',   ordine: 63 },
   { nome: 'Supporti di stampa',              sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 64 },
   { nome: 'Edizione',                        sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 65 },
   { nome: 'Tipo di vernice',                 sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 66, fixedValue: 'Stampa su tela' },
