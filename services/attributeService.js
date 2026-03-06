@@ -5,6 +5,45 @@
 const { query } = require('../database/db');
 
 /**
+ * Lookup table dimensioni → peso (kg) per stampe su tela Sivigliart.
+ * Le chiavi sono normalizzate come "minDim_maxDim" (es. "50_70").
+ * Usata per compilare automaticamente "Peso dell'articolo".
+ */
+const WEIGHT_LOOKUP = {
+  '50_70':  '1.5',
+  '50_75':  '1.6',
+  '50_80':  '1.7',
+  '50_85':  '1.8',
+  '70_100': '2.9',
+  '70_105': '3.1',
+  '70_110': '3.2',
+  '70_120': '3.5',
+  '90_130': '4.9',
+  '90_135': '5.0',
+  '90_145': '5.4',
+  '90_150': '5.6',
+  '100_70': '2.9',  // alias → normalizzato sotto
+  '130_90': '4.9',  // alias → normalizzato sotto
+};
+
+/**
+ * Calcola il peso in kg dato un testo con dimensioni (es. "70x100 cm", "130x90").
+ * Normalizza sempre min×max per la lookup.
+ * @returns {string|null} peso come stringa decimale con punto (es. "2.9"), o null se non trovato
+ */
+function lookupWeight(text) {
+  if (!text) return null;
+  const match = text.match(/(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i);
+  if (!match) return null;
+  const a = Math.round(parseFloat(match[1].replace(',', '.')));
+  const b = Math.round(parseFloat(match[2].replace(',', '.')));
+  if (isNaN(a) || isNaN(b)) return null;
+  const min = Math.min(a, b);
+  const max = Math.max(a, b);
+  return WEIGHT_LOOKUP[`${min}_${max}`] || null;
+}
+
+/**
  * Estrae le dimensioni dal testo grezzo
  * Es: "90x135 cm", "130x90", "130 x 90 cm" → { larghezza, lunghezza, orientamento }
  */
@@ -116,6 +155,13 @@ async function compileFixedAndAuto(productId, product) {
           // Campo display combinato: "lunghezza x larghezza cm" (es. "135 x 90 cm")
           value = `${dims.lunghezza} x ${dims.larghezza} cm`; compiledBy = 'AUTO';
         }
+      }
+
+      // Peso dell'articolo (lookup tabella fissa dimensioni→kg)
+      if (nome === "Peso dell'articolo") {
+        const pesoSource = product.misura_max || product.descrizione_raw || '';
+        const peso = lookupWeight(pesoSource);
+        if (peso) { value = peso; compiledBy = 'AUTO'; }
       }
 
       // SKU padre del prodotto
@@ -267,21 +313,24 @@ async function getProductListing(productId, product = null) {
    * Fallback per attributi AUTO non ancora scritti nel DB.
    * Replica la logica di compileFixedAndAuto senza scrivere nulla.
    */
-  function autoFallback(nome) {
-    if (!product) return '';
-    if (nome === 'SKU') return product.sku_padre || '';
-    if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)')
-      return product.prezzo_max ? parseFloat(product.prezzo_max).toFixed(2) : '';
-    if (dims) {
-      if (nome.includes('più lungo'))              return dims.lunghezza;
-      if (nome.includes('più corto'))              return dims.larghezza;
-      if (nome === 'Orientamento')                 return dims.orientamento;
-      if (nome === 'Lunghezza imballaggio')        return dims.lunghezza;
-      if (nome === 'Larghezza imballaggio')        return dims.larghezza;
-      if (nome.startsWith("Dimensioni dell'articolo")) return `${dims.lunghezza} x ${dims.larghezza} cm`;
+    function autoFallback(nome) {
+      if (!product) return '';
+      if (nome === 'SKU') return product.sku_padre || '';
+      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)')
+        return product.prezzo_max ? parseFloat(product.prezzo_max).toFixed(2) : '';
+      if (nome === "Peso dell'articolo") {
+        const pesoSource = product.misura_max || product.descrizione_raw || '';
+        return lookupWeight(pesoSource) || '';
+      }
+      if (dims) {
+        if (nome.includes('più lungo'))              return dims.lunghezza;
+        if (nome.includes('più corto'))              return dims.larghezza;
+        if (nome === 'Lunghezza imballaggio')        return dims.lunghezza;
+        if (nome === 'Larghezza imballaggio')        return dims.larghezza;
+        if (nome.startsWith("Dimensioni dell'articolo")) return `${dims.lunghezza} x ${dims.larghezza} cm`;
+      }
+      return '';
     }
-    return '';
-  }
 
   // Raggruppa per sezione
   const sections = {};

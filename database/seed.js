@@ -65,13 +65,13 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: 'Numero di articoli',              sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 61, fixedValue: '1' },
   { nome: 'Descrizione della fascia di età', sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 62, fixedValue: 'Adulto' },
   // — Attributi tecnici specifici Wall Art
-  { nome: 'Orientamento',                    sezione: 'dettagli',    priorita: 'seo',                 source: 'AUTO',   ordine: 63 },
+  { nome: 'Orientamento',                    sezione: 'dettagli',    priorita: 'seo',                 source: 'MANUAL', ordine: 63 },
   { nome: 'Supporti di stampa',              sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 64 },
   { nome: 'Edizione',                        sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 65 },
   { nome: 'Tipo di vernice',                 sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 66, fixedValue: 'Stampa su tela' },
-  { nome: 'Tipo di finitura',                sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 67, fixedValue: 'Lucida' },
+  { nome: 'Tipo di finitura',                sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 67, fixedValue: 'Laccato' },
   { nome: 'Materiale',                       sezione: 'dettagli',    priorita: 'seo_importante',      source: 'FIXED',  ordine: 68, fixedValue: 'Tela' },
-  { nome: 'Tipo di telaio',                  sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 69, fixedValue: 'Con telaio' },
+  { nome: 'Tipo di telaio',                  sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 69, fixedValue: 'Canvas intelaiato' },
   { nome: "È personalizzabile?",             sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 70, fixedValue: 'No' },
   { nome: "Profondità dell'articolo",        sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 71, fixedValue: '2' },
   { nome: 'Tipo di confezione',              sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 72, fixedValue: 'Pronto da appendere' },
@@ -108,7 +108,7 @@ const ATTRIBUTE_DEFINITIONS = [
 
   // ─── TAB: CONFORMITÀ E SICUREZZA ──────────────────────────
   { nome: 'Paese/Regione di origine',        sezione: 'conformità',  priorita: 'obbligatorio',        source: 'FIXED',  ordine: 130, fixedValue: 'Italia' },
-  { nome: "Peso dell'articolo",              sezione: 'conformità',  priorita: 'obbligatorio',        source: 'MANUAL', ordine: 131 },
+  { nome: "Peso dell'articolo",              sezione: 'conformità',  priorita: 'obbligatorio',        source: 'AUTO',   ordine: 131 },
   { nome: "Unità di peso dell'articolo",     sezione: 'conformità',  priorita: 'obbligatorio',        source: 'FIXED',  ordine: 132, fixedValue: 'chilogrammi' },
   { nome: 'Attestazione di sicurezza GPSR',  sezione: 'conformità',  priorita: 'sicurezza_importante', source: 'FIXED', ordine: 133, fixedValue: 'Sì' },
   { nome: "Questo prodotto è soggetto a restrizioni di età per l'acquirente?", sezione: 'conformità', priorita: 'sicurezza_importante', source: 'FIXED', ordine: 134, fixedValue: 'No' },

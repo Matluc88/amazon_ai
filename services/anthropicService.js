@@ -139,6 +139,7 @@ Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 - "Stile": stile artistico (es. "Cubista", "Impressionista", "Arte Moderna", "Astratto")
 - "Tema": tema/i dell'opera separati da virgola (es. "Coppia romantica, Estate, Amore")
 - "Tipo di stanza": ambienti consigliati separati da virgola (es. "Soggiorno, Camera da letto")
+- "Famiglia di colori": SCEGLI ESATTAMENTE UNO di questi valori (nessun altro valore è accettato): "Bianco" | "Bianco e nero" | "Caldi" | "Freddi" | "Luminosi" | "Neutro" | "Pastelli" | "Scala di grigi" | "Tonalità della terra" | "Toni gioiello". Scegli il valore che meglio descrive la palette dominante dell'opera.
 - "Usi consigliati per il prodotto": usi pratici separati da virgola (es. "Decorazione parete, Regalo")
 - "Tema animali": SOLO se il soggetto principale dell'opera è un animale, indicare il tipo (es. "Cane", "Gatto", "Cavallo", "Uccello", "Leone"). Se l'opera non rappresenta animali, scrivi "N/D"
 - "Edizione": breve descrizione dell'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")
@@ -251,7 +252,7 @@ Output: UNA sola riga di testo, senza virgolette esterne.`,
     "Stile": 'stile artistico (es. Impressionismo, Arte moderna, Astratto, Figurativo...)',
     "Tema": 'tema/i dell\'opera separati da virgola (es. Natura, Ritratto, Paesaggio, Astratto...)',
     "Tipo di stanza": 'ambienti consigliati separati da virgola (es. Salotto, Camera, Ufficio...)',
-    "Famiglia di colori": 'palette dominante (es. Blu e verde, Caldi, Pastello, Multicolore...)',
+    "Famiglia di colori": 'SCEGLI ESATTAMENTE UNO di questi valori (nessun altro valore è accettato): "Bianco" | "Bianco e nero" | "Caldi" | "Freddi" | "Luminosi" | "Neutro" | "Pastelli" | "Scala di grigi" | "Tonalità della terra" | "Toni gioiello". Scegli il valore che meglio descrive la palette dominante dell\'opera.',
     "Colore": 'colori principali dell\'opera separati da virgola',
     "Motivo": 'motivo decorativo (es. Floreale, Astratto, Geometrico, Figurativo...)',
     "Usi consigliati per il prodotto": 'usi pratici separati da virgola (es. Decorazione parete, Regalo, Arredamento...)',
