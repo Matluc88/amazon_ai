@@ -15,6 +15,18 @@ const path = require('path');
 // =============================================
 
 /**
+ * Converte una misura da altezza×base a base×altezza.
+ * Il cliente consegna le misure come altezza×base (es. "50x75 cm").
+ * Il sistema le salva come base×altezza (es. "75x50 cm").
+ * @param {string} misura - es. "50x75 cm"
+ * @returns {string} - es. "75x50 cm"
+ */
+function swapDimensions(misura) {
+  if (!misura) return misura;
+  return misura.replace(/^(\d+)(x)(\d+)(.*)/i, '$3$2$1$4');
+}
+
+/**
  * Genera lo SKU padre dallo SKU max rimuovendo il suffisso -max / _max
  */
 function generateSkuPadre(skuMax) {
@@ -67,17 +79,19 @@ function parseSivigliartRows(rawRows, meta) {
 
     if (titolo) {
       // Nuovo prodotto — taglia grande (max)
+      // Il cliente consegna altezza×base → swappare a base×altezza
+      const misuraSwapped = swapDimensions(misura);
       current = {
         titolo_opera: titolo,
         autore: '',
-        dimensioni: misura,           // dimensioni = misura grande (per compatibilità listing AI)
+        dimensioni: misuraSwapped,    // dimensioni = misura grande (per compatibilità listing AI)
         tecnica: 'Stampa su tela',
         descrizione_raw: null,        // verrà aggiunta dall'utente separatamente
         prezzo: parseFloat(prezzo.replace(',', '.')) || null,
         quantita: 1,
         // Varianti
         sku_padre: generateSkuPadre(skuVariante),
-        misura_max: misura,
+        misura_max: misuraSwapped,
         prezzo_max: parseFloat(prezzo.replace(',', '.')) || null,
         sku_max: skuVariante,
         misura_media: null, prezzo_media: null, sku_media: null,
@@ -87,11 +101,11 @@ function parseSivigliartRows(rawRows, meta) {
     } else if (current) {
       // Riga variante della stessa opera
       if (!current.misura_media) {
-        current.misura_media = misura;
+        current.misura_media = swapDimensions(misura);
         current.prezzo_media = parseFloat(prezzo.replace(',', '.')) || null;
         current.sku_media = skuVariante;
       } else if (!current.misura_mini) {
-        current.misura_mini = misura;
+        current.misura_mini = swapDimensions(misura);
         current.prezzo_mini = parseFloat(prezzo.replace(',', '.')) || null;
         current.sku_mini = skuVariante;
       }

@@ -60,9 +60,9 @@ function extractDimensions(text) {
 
   const larghezza = Math.min(a, b);  // bordo più corto
   const lunghezza = Math.max(a, b);  // bordo più lungo
-  // Le misure sono altezza × base: a=altezza, b=base
-  // Verticale se altezza > base, Orizzontale se base > altezza
-  const orientamento = a > b ? 'Verticale' : a < b ? 'Orizzontale' : 'Quadrato';
+  // Le misure sono ora base × altezza: a=base, b=altezza
+  // Orizzontale se base > altezza, Verticale se altezza > base
+  const orientamento = a > b ? 'Orizzontale' : a < b ? 'Verticale' : 'Quadrato';
 
   return { larghezza: String(larghezza), lunghezza: String(lunghezza), orientamento };
 }
