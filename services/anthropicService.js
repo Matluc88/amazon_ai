@@ -47,6 +47,7 @@ ISTRUZIONI:
 - Analizza il testo e comprendi il soggetto, lo stile e il contesto dell'opera
 - Genera contenuti SEO ottimizzati per Amazon Italia, algoritmo A9
 - Tutti i campi DEVONO essere in ITALIANO
+- ⚠️ REGOLA CRITICA — AMAZON POLICY: VIETATO TASSATIVO in qualsiasi campo generato: "contenuti per adulti", "per adulti", "adult", "erotico", "sensuale", "intimo", "sexy", "piccante" o qualsiasi termine che Amazon potrebbe classificare come adult content. Opere con soggetti romantici (baci, coppie, abbracci, figure nude artistiche): usa ESCLUSIVAMENTE termini come "romantico", "coppia", "amore", "sentimentale", "passione artistica", "arte figurativa". Violare questa regola causa la sospensione del listing su Amazon.
 
 ### NOME DELL'ARTICOLO (Amazon - Titolo):
 Obiettivo: titolo CTR-first + SEO, leggibile su mobile, italiano naturale senza keyword stuffing.
@@ -276,6 +277,8 @@ ${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
 VALORE ATTUALE (da migliorare):
 ${currentValue || 'Non presente'}
 ${keywordsSection}
+⚠️ REGOLA CRITICA — AMAZON POLICY: VIETATO TASSATIVO in qualsiasi campo: "contenuti per adulti", "per adulti", "adult", "erotico", "sensuale", "intimo", "sexy" o qualsiasi termine che Amazon possa classificare come adult content. Per soggetti romantici (baci, coppie, abbracci): usa SOLO "romantico", "coppia", "amore", "sentimentale", "arte figurativa".
+
 GUIDA SPECIFICA PER QUESTO CAMPO:
 ${guide}
 
