@@ -161,6 +161,9 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   setCellValue(sheet, 0, rowIdx, sku || '');
   setCellValue(sheet, 1, rowIdx, 'WALL_ART');
   // Col 2 (azione) → vuota = default "Crea o sostituisci"
+  setCellValue(sheet, 8,  rowIdx, 'Esenzione GTIN'); // Tipo ID di prodotto (no EAN)
+  setCellValue(sheet, 10, rowIdx, '20690426031');     // Nodo navigazione: Casa e cucina > Arte > Poster e stampe
+  setCellValue(sheet, 15, rowIdx, 'Unità');           // Livello di aggregazione: singolo pezzo
 
   if (isParent) {
     setCellValue(sheet, 3, rowIdx, 'Articolo parent');
