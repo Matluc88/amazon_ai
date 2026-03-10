@@ -217,7 +217,7 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 190, rowIdx, 'Nuovo');
     // Offerta
     setCellValue(sheet, 215, rowIdx, 'DEFAULT');    // canale gestione = FBM Italia
-    setCellValue(sheet, 216, rowIdx, 1);             // quantità
+    setCellValue(sheet, 216, rowIdx, 100);           // quantità
     setCellValue(sheet, 217, rowIdx, 7);             // tempo di gestione = 7 giorni
     if (prezzo) setCellValue(sheet, 220, rowIdx, Number(prezzo) + 10); // prezzo Amazon = prezzo DB + €10
     setCellValue(sheet, 229, rowIdx, 'studio');      // gruppo spedizione venditore
