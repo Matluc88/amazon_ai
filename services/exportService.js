@@ -63,7 +63,7 @@ const ATTR_COL = {
   "Punto elenco 3":                                             40,
   "Punto elenco 4":                                             41,
   "Punto elenco 5":                                             42,
-  "Chiavi di ricerca":                                          43,
+  // "Chiavi di ricerca" NON è in questa mappa — viene splittata su 5 colonne (43-47) da splitKeywords()
   "Funzioni speciali":                                          48,
   "Stile":                                                      53,
   "Descrizione della fascia di età":                            54,
@@ -137,6 +137,44 @@ function clearDataRows(sheet) {
   }
 }
 
+// ─── Split keyword su 5 slot Amazon (cols 43-47, max 250 byte UTF-8 ciascuno) ─
+/**
+ * Prende la stringa "Chiavi di ricerca" (parole separate da spazi) e la
+ * distribuisce su fino a 5 slot da 250 byte, rispettando i confini di parola.
+ * Restituisce un array di 5 stringhe (vuote se non necessarie).
+ */
+function splitKeywordsTo5Slots(keywordsStr) {
+  const MAX_BYTES = 250;
+  const NUM_SLOTS = 5;
+  const slots = Array(NUM_SLOTS).fill('');
+  if (!keywordsStr) return slots;
+
+  const words = keywordsStr.trim().split(/\s+/);
+  let slotIdx = 0;
+  let current = '';
+
+  for (const word of words) {
+    if (slotIdx >= NUM_SLOTS) break;
+    const candidate = current ? current + ' ' + word : word;
+    // Controllo byte UTF-8
+    if (Buffer.byteLength(candidate, 'utf8') <= MAX_BYTES) {
+      current = candidate;
+    } else {
+      // Salva slot corrente e vai al prossimo
+      slots[slotIdx] = current;
+      slotIdx++;
+      if (slotIdx >= NUM_SLOTS) break;
+      // Inizia il nuovo slot con la parola corrente (se entra da sola)
+      current = Buffer.byteLength(word, 'utf8') <= MAX_BYTES ? word : word.substring(0, MAX_BYTES);
+    }
+  }
+  // Salva l'ultimo slot in lavorazione
+  if (slotIdx < NUM_SLOTS && current) {
+    slots[slotIdx] = current;
+  }
+  return slots;
+}
+
 // ─── Costruzione riga dati ─────────────────────────────────────────────────────
 /**
  * Scrive una riga (parent o child) nel foglio.
@@ -192,6 +230,12 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
       setCellValue(sheet, col, rowIdx, val);
     }
   }
+
+  // ── Chiavi di ricerca → 5 slot (cols 43-47, max 250 byte ciascuno) ──────────
+  const kwSlots = splitKeywordsTo5Slots(attrs['Chiavi di ricerca'] || '');
+  kwSlots.forEach((slot, i) => {
+    setCellValue(sheet, 43 + i, rowIdx, slot); // cols 43, 44, 45, 46, 47
+  });
 
   // ── Dimensioni variante (sovrascrivono AUTO del parent) ──
   if (dims) {

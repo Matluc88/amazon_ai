@@ -89,9 +89,9 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 - ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI chiudere SEMPRE la descrizione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti.
 - Chiudi dopo le misure con una frase che invita all'acquisto
 
-### CHIAVI DI RICERCA (campo backend Search Terms — max 250 byte UTF-8):
+### CHIAVI DI RICERCA (campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali):
 Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo.
-Riempi 240–250 byte esatti. NON lasciare spazio inutilizzato.
+Riempi 1100–1200 byte totali — ogni blocco deve essere ampio e dettagliato. Il testo verrà distribuito automaticamente su 5 slot da 250 byte.
 NON ripetere parole già nel Nome dell'articolo, nei Punti elenco o nel brand.
 
 STRUTTURA A 5 BLOCCHI LOGICI (concatena tutto separato da spazio):
@@ -234,8 +234,8 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie). ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.',
     "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo per spedizione sicura; chiudi SEMPRE con: "Reso entro 30 giorni secondo le condizioni Amazon."',
-    "Chiavi di ricerca": `Campo backend Search Terms — max 250 byte UTF-8.
-Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 240–250 byte esatti.
+    "Chiavi di ricerca": `Campo backend Search Terms — 5 slot da 250 byte = 1250 byte totali.
+Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 1100–1200 byte totali (saranno distribuiti su 5 slot da 250 byte nell'export).
 NON ripetere parole già nel titolo, nei bullet o nel brand.
 
 STRUTTURA A 5 BLOCCHI (concatena separato da spazio):
