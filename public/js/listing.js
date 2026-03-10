@@ -358,10 +358,17 @@ function renderVariantsCard(product) {
     {
       label: 'URL Immagine variante', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
       cells: sizes.map(s =>
-        `<input type="url" class="var-input url-input" id="var-${s.imgKey}"
+        `<input type="file" id="varfile-${s.imgKey}" accept="image/*" style="display:none"
+               onchange="handleVariantImageSelect('${s.imgKey}', '${s.label}', this)">
+         <input type="url" class="var-input url-input" id="var-${s.imgKey}"
            value="${escHtml(product[s.imgKey] || '')}"
            placeholder="https://..."
-           oninput="variantsDirty=true;" />`)
+           oninput="variantsDirty=true;" />
+         <button class="var-upload-btn" id="varbtn-${s.imgKey}"
+                 onclick="document.getElementById('varfile-${s.imgKey}').click()"
+                 title="Carica immagine su Cloudinary">
+           📤
+         </button>`)
     },
     {
       label: 'Condizione', badge: '📌 FISSO', badgeCls: 'FIXED',
@@ -487,6 +494,8 @@ function createAttrCard(attr) {
   const isManualEmpty = attr.source === 'MANUAL' && isEmpty;
   const charLimit = CHAR_LIMITS[attr.nome] || null;
   const isTextarea = /descrizione|punto elenco|elenco puntato|informazioni|caratteristiche/i.test(attr.nome);
+  // Campo immagine: aggiunge upload button + preview
+  const isImageField = /^immagine\s/i.test(attr.nome);
 
   const card = document.createElement('div');
   card.className = [
@@ -549,6 +558,25 @@ function createAttrCard(attr) {
     ? `<div style="font-size:11px;color:#92400e;margin-top:4px;">⚠️ Campo manuale — inserire valore</div>`
     : '';
 
+  // Upload immagine per campi immagine (MANUAL)
+  const imageUploadHtml = isImageField ? `
+    <div class="img-upload-wrap">
+      <img class="img-preview${attr.value ? '' : ' hidden'}"
+           id="imgpreview-${attr.id}"
+           src="${escHtml(attr.value || '')}"
+           onclick="window.open(this.src,'_blank')"
+           title="Clicca per aprire in piena risoluzione" />
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <input type="file" id="imgfile-${attr.id}" accept="image/*" style="display:none"
+               onchange="handleImageFileSelect(${attr.id}, this, '${escHtml(attr.nome).replace(/'/g, "\\'")}')">
+        <button class="btn-upload-img" id="imgbtn-${attr.id}"
+                onclick="document.getElementById('imgfile-${attr.id}').click()">
+          📤 Carica immagine
+        </button>
+        <span style="font-size:11px;color:var(--gray-400);">JPG/PNG/WebP, max 10MB</span>
+      </div>
+    </div>` : '';
+
   card.innerHTML = `
     <div class="attr-header">
       <div class="attr-header-left">
@@ -567,6 +595,7 @@ function createAttrCard(attr) {
       ${counterHtml}
       ${titleBadgesHtml}
       ${manualHint}
+      ${imageUploadHtml}
     </div>`;
 
   return card;
@@ -1393,6 +1422,112 @@ function injectKeywords() {
 
   showToast(`✨ ${toAdd.length} keyword aggiunte!`, 'success');
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// =============================================
+// CLOUDINARY IMAGE UPLOAD
+// =============================================
+
+/**
+ * Carica un file immagine su Cloudinary via backend.
+ * @param {File}   file    - File selezionato
+ * @param {string} name    - Nome pubblico del file (senza estensione)
+ * @param {string} folder  - Cartella Cloudinary
+ * @returns {Promise<string>} URL pubblico Cloudinary
+ */
+async function uploadImageToCloudinary(file, name, folder) {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('name', name);
+  formData.append('folder', folder);
+
+  const res = await fetch('/api/images/upload', { method: 'POST', body: formData });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Upload fallito');
+  return data.url;
+}
+
+/**
+ * Gestisce la selezione file per un attributo immagine.
+ * Mostra preview locale → carica su Cloudinary → salva URL nell'input.
+ * @param {number} attrId    - ID attributo
+ * @param {HTMLInputElement} input    - Il file input
+ * @param {string} nomeCampo - Nome dell'attributo (es. "Immagine principale")
+ */
+async function handleImageFileSelect(attrId, input, nomeCampo) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const btn     = document.getElementById(`imgbtn-${attrId}`);
+  const preview = document.getElementById(`imgpreview-${attrId}`);
+  const urlInput = document.getElementById(`attr-${attrId}`);
+
+  // Mostra preview locale immediatamente
+  const localUrl = URL.createObjectURL(file);
+  if (preview) {
+    preview.src = localUrl;
+    preview.classList.remove('hidden');
+  }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="upload-spinner"></span> Caricamento...'; }
+
+  try {
+    const sku    = currentProduct?.sku_padre || `prod-${productId}`;
+    const slug   = nomeCampo.toLowerCase().replace(/\s+/g, '-');
+    const name   = `${sku}-${slug}-${Date.now()}`;
+    const folder = `amazon-ai/${sku}`;
+
+    const url = await uploadImageToCloudinary(file, name, folder);
+
+    if (urlInput) {
+      urlInput.value = url;
+      handleInput(attrId, urlInput);
+    }
+    if (preview) preview.src = url; // sostituisce la preview locale con l'URL Cloudinary
+
+    URL.revokeObjectURL(localUrl);
+    showToast('✅ Immagine caricata!', 'success');
+  } catch (err) {
+    showToast(`❌ Upload fallito: ${err.message}`, 'error');
+    if (preview && !(urlInput && urlInput.value)) preview.classList.add('hidden');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '📤 Carica immagine'; }
+    input.value = ''; // resetta il file input
+  }
+}
+
+/**
+ * Gestisce upload immagine per le varianti (immagine_max/media/mini).
+ * @param {string} imgKey - 'immagine_max' | 'immagine_media' | 'immagine_mini'
+ * @param {string} label  - 'Grande' | 'Media' | 'Piccola'
+ * @param {HTMLInputElement} input - file input
+ */
+async function handleVariantImageSelect(imgKey, label, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const btn      = document.getElementById(`varbtn-${imgKey}`);
+  const urlInput = document.getElementById(`var-${imgKey}`);
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="upload-spinner"></span>'; }
+
+  try {
+    const sku    = currentProduct?.sku_padre || `prod-${productId}`;
+    const name   = `${sku}-variante-${label.toLowerCase()}-${Date.now()}`;
+    const folder = `amazon-ai/${sku}`;
+
+    const url = await uploadImageToCloudinary(file, name, folder);
+
+    if (urlInput) { urlInput.value = url; variantsDirty = true; }
+    if (currentProduct) currentProduct[imgKey] = url;
+
+    showToast(`✅ Immagine variante ${label} caricata!`, 'success');
+  } catch (err) {
+    showToast(`❌ Upload fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '📤'; }
+    input.value = '';
+  }
 }
 
 // =============================================

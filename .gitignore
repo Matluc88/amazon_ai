@@ -9,3 +9,5 @@ uploads/
 *.db-wal
 .DS_Store
 **/.DS_Store
+~$*.xlsm
+~$*.xlsx

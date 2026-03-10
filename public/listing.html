@@ -350,6 +350,76 @@
       font-size: 12px;
     }
 
+    /* ---- Image Upload ---- */
+    .img-upload-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .img-preview {
+      width: 90px;
+      height: 68px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--gray-200);
+      display: block;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.2s;
+    }
+    .img-preview:hover { opacity: 0.85; }
+    .img-preview.hidden { display: none; }
+    .btn-upload-img {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      font-size: 12px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .btn-upload-img:hover:not(:disabled) { opacity: 0.85; }
+    .btn-upload-img:disabled { opacity: 0.5; cursor: not-allowed; }
+    .upload-spinner {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Upload button inside variants table */
+    .var-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 9px;
+      font-size: 11px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: inherit;
+      white-space: nowrap;
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+    .var-upload-btn:hover:not(:disabled) { opacity: 0.85; }
+    .var-upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     @media (max-width: 640px) {
       .attr-header { flex-direction: column; align-items: flex-start; }
       .listing-toolbar { flex-direction: column; align-items: flex-start; }

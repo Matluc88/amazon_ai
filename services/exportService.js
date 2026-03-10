@@ -164,6 +164,8 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   setCellValue(sheet, 8,  rowIdx, 'Esenzione GTIN'); // Tipo ID di prodotto (no EAN)
   setCellValue(sheet, 10, rowIdx, '20690426031');     // Nodo navigazione: Casa e cucina > Arte > Poster e stampe
   setCellValue(sheet, 15, rowIdx, 'Unità');           // Livello di aggregazione: singolo pezzo
+  setCellValue(sheet, 275, rowIdx, 'No');             // Le batterie sono necessarie?
+  setCellValue(sheet, 276, rowIdx, 'No');             // Le batterie sono incluse?
 
   if (isParent) {
     setCellValue(sheet, 3, rowIdx, 'Articolo parent');
