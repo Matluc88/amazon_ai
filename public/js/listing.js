@@ -257,6 +257,8 @@ function checkIfEmpty() {
     document.getElementById('listingTabBar').style.display = 'none';
     document.getElementById('variantsCard').style.display = 'none';
     document.getElementById('sectionsContainer').style.display = '';
+    const _pic = document.getElementById('productImagesCard');
+    if (_pic) _pic.style.display = 'none';
   }
 }
 
@@ -276,21 +278,29 @@ function switchListingTab(tab) {
   const keywordSection   = document.getElementById('keywordSection');
   const toolbar          = document.getElementById('listingToolbar');
 
+  const picCard = document.getElementById('productImagesCard');
+
   if (tab === 'variazioni') {
     // Tab speciale: mostra varianti, nascondi sezioni e keyword
     sectionsContainer.style.display = 'none';
     keywordSection.style.display = 'none';
     toolbar.style.display = 'none';
     variantsCard.style.display = '';
+    if (picCard) picCard.style.display = 'none';
     renderVariantsCard(currentProduct);
   } else {
     // Tab normale: mostra sezioni filtrate per tab
     variantsCard.style.display = 'none';
     sectionsContainer.style.display = '';
     toolbar.style.display = '';
-    // Nascondi keywordSection se non siamo in descrizione
-    if (tab !== 'descrizione') {
+    if (tab === 'descrizione') {
+      // Tab descrizione: mostra anche card immagini prodotto
+      renderProductImagesCard();
+      if (picCard) picCard.style.display = '';
+    } else {
+      // Altri tab: nascondi keyword section e card immagini
       keywordSection.style.display = 'none';
+      if (picCard) picCard.style.display = 'none';
     }
     applyFilter();
   }
@@ -513,11 +523,14 @@ function renderSections(sections) {
     const icon = getSectionIcon(sectionName);
     block.innerHTML = `<div class="section-title">${icon} ${escHtml(sectionName)}</div>`;
 
+    let hasCards = false;
     for (const attr of attrs) {
+      if (/^immagine\s/i.test(attr.nome)) continue; // mostrate nella card immagini dedicata
       block.appendChild(createAttrCard(attr));
+      hasCards = true;
     }
 
-    container.appendChild(block);
+    if (hasCards) container.appendChild(block);
   }
 }
 
@@ -1584,6 +1597,170 @@ async function handleVariantImageSelect(imgKey, label, imgType, input, misura) {
     showToast(`❌ Upload fallito: ${err.message}`, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '📤'; }
+    input.value = '';
+  }
+}
+
+// =============================================
+// PRODUCT IMAGES CARD
+// =============================================
+
+/**
+ * Slug per naming Cloudinary delle immagini prodotto.
+ * "Immagine principale" → "principale" | "Immagine 2" → "img2" | ecc.
+ */
+function getImageTipo(nomeCampo) {
+  if (/principale/i.test(nomeCampo)) return 'principale';
+  const m = nomeCampo.match(/(\d+)$/);
+  if (m) return `img${m[1]}`;
+  return nomeCampo.toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
+ * Renderizza la card dedicata delle immagini prodotto (riga parent).
+ * Estrae gli attributi "Immagine *" da currentSections e li mostra in griglia 3×3.
+ * Le card salvano tramite handleInput → pendingChanges → saveChanges (stesso flusso degli attributi).
+ */
+function renderProductImagesCard() {
+  const card = document.getElementById('productImagesCard');
+  if (!card) return;
+
+  // Estrai e ordina attributi immagine
+  const imageAttrs = [];
+  if (currentSections) {
+    for (const attrs of Object.values(currentSections)) {
+      for (const attr of attrs) {
+        if (/^immagine\s/i.test(attr.nome)) imageAttrs.push(attr);
+      }
+    }
+  }
+  imageAttrs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0));
+
+  if (imageAttrs.length === 0) {
+    card.innerHTML = '';
+    card.style.display = 'none';
+    return;
+  }
+
+  const sku = currentProduct?.sku_padre || `prod-${productId}`;
+
+  const slots = imageAttrs.map(attr => {
+    const hasValue = attr.value && attr.value.trim();
+    const tipo = getImageTipo(attr.nome);
+    const nomeEsempio = `${sku}_${tipo}`;
+
+    return `
+      <div class="prod-img-slot">
+        <div class="prod-img-preview-wrap" onclick="prodImgPreviewClick(${attr.id})">
+          <img id="prod-imgpreview-${attr.id}"
+               class="prod-img-preview${hasValue ? '' : ' hidden'}"
+               src="${escHtml(attr.value || '')}"
+               title="Clicca per aprire in piena risoluzione" />
+          <div id="prod-imgplaceholder-${attr.id}"
+               class="prod-img-placeholder${hasValue ? ' hidden' : ''}">🖼️</div>
+        </div>
+        <div class="prod-img-label">${escHtml(attr.nome)}</div>
+        <div class="prod-img-name-hint" title="Nome Cloudinary: ${escHtml(nomeEsempio)}">${escHtml(nomeEsempio)}</div>
+        <input type="file" id="prod-imgfile-${attr.id}" accept="image/*" style="display:none"
+               onchange="handleProductImageFileSelect(${attr.id}, this, '${tipo}')">
+        <button class="prod-img-upload-btn" id="prod-imgbtn-${attr.id}"
+                onclick="document.getElementById('prod-imgfile-${attr.id}').click()">
+          📤 Carica
+        </button>
+        <input type="url" id="attr-${attr.id}" class="prod-img-url"
+               value="${escHtml(attr.value || '')}"
+               placeholder="https://..."
+               oninput="handleInput(${attr.id}, this); prodImgUrlChanged(${attr.id});" />
+      </div>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="product-info-card" style="margin-bottom:20px;">
+      <h3 style="margin-bottom:4px;">🖼️ Immagini Prodotto</h3>
+      <p style="font-size:12px;color:var(--gray-400);margin-bottom:16px;">
+        Immagini della riga <strong>parent</strong> nell'export Amazon (colonne 21–29).
+        Naming automatico:
+        <span style="font-family:monospace;background:var(--gray-100);padding:1px 5px;border-radius:4px;">${escHtml(sku)}_principale</span>,
+        <span style="font-family:monospace;background:var(--gray-100);padding:1px 5px;border-radius:4px;">${escHtml(sku)}_img2</span>, ecc.
+        Le modifiche vengono salvate tramite <strong>"💾 Salva modifiche"</strong>.
+      </p>
+      <div class="prod-img-grid">${slots}</div>
+    </div>`;
+}
+
+/**
+ * Apre l'immagine in una nuova tab al click sulla preview.
+ */
+function prodImgPreviewClick(attrId) {
+  const preview = document.getElementById(`prod-imgpreview-${attrId}`);
+  if (preview && preview.src && !preview.classList.contains('hidden')) {
+    window.open(preview.src, '_blank');
+  }
+}
+
+/**
+ * Aggiorna la preview quando l'URL viene digitato manualmente nel campo testo.
+ */
+function prodImgUrlChanged(attrId) {
+  const urlInput    = document.getElementById(`attr-${attrId}`);
+  const preview     = document.getElementById(`prod-imgpreview-${attrId}`);
+  const placeholder = document.getElementById(`prod-imgplaceholder-${attrId}`);
+  if (!urlInput || !preview || !placeholder) return;
+  const val = urlInput.value.trim();
+  if (val) {
+    preview.src = val;
+    preview.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+  } else {
+    preview.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+  }
+}
+
+/**
+ * Gestisce upload immagine prodotto (riga parent) con naming intelligente.
+ * @param {number} attrId  - ID attributo (es. id di "Immagine principale")
+ * @param {HTMLInputElement} input - file input
+ * @param {string} tipo    - slug tipo (es. 'principale', 'img2', ...)
+ */
+async function handleProductImageFileSelect(attrId, input, tipo) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const btn         = document.getElementById(`prod-imgbtn-${attrId}`);
+  const preview     = document.getElementById(`prod-imgpreview-${attrId}`);
+  const placeholder = document.getElementById(`prod-imgplaceholder-${attrId}`);
+  const urlInput    = document.getElementById(`attr-${attrId}`);
+
+  // Preview locale immediata
+  const localUrl = URL.createObjectURL(file);
+  if (preview)     { preview.src = localUrl; preview.classList.remove('hidden'); }
+  if (placeholder) placeholder.classList.add('hidden');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="upload-spinner"></span> Upload...'; }
+
+  try {
+    const sku    = currentProduct?.sku_padre || `prod-${productId}`;
+    const name   = `${sku}_${tipo}`;
+    const folder = `amazon-ai/${sku}`;
+
+    const url = await uploadImageToCloudinary(file, name, folder);
+
+    if (urlInput) {
+      urlInput.value = url;
+      handleInput(attrId, urlInput);
+      prodImgUrlChanged(attrId);
+    }
+    if (preview) preview.src = url;
+    URL.revokeObjectURL(localUrl);
+    showToast(`✅ Immagine caricata: ${name}`, 'success');
+  } catch (err) {
+    showToast(`❌ Upload fallito: ${err.message}`, 'error');
+    if (preview && !(urlInput && urlInput.value)) {
+      preview.classList.add('hidden');
+      if (placeholder) placeholder.classList.remove('hidden');
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '📤 Carica'; }
     input.value = '';
   }
 }
