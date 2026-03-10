@@ -1396,6 +1396,47 @@ function injectKeywords() {
 }
 
 // =============================================
+// DOWNLOAD PER AMAZON (WALL_ART.xlsm)
+// =============================================
+async function downloadForAmazon() {
+  const btn = document.getElementById('downloadAmazonBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Download...'; }
+
+  try {
+    const res = await fetch(`/api/export/${productId}`);
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    // Leggi il buffer e crea un link di download
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+
+    // Recupera il filename dall'header Content-Disposition
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_${productId}.xlsm`;
+
+    const a = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showToast('✅ File scaricato! Carica su Amazon Seller Central.', 'success');
+  } catch (err) {
+    showToast(`❌ Download fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '📥 Scarica per Amazon'; }
+  }
+}
+
+// =============================================
 // UI HELPERS
 // =============================================
 function showLoading(title, subtitle) {

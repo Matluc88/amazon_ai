@@ -87,6 +87,7 @@ app.use('/api/upload',   requireAuth, require('./routes/upload'));
 app.use('/api/listings', requireAuth, require('./routes/listings'));
 app.use('/api/keywords', requireAuth, require('./routes/keywords'));
 app.use('/api/config',   requireAuth, require('./routes/config'));
+app.use('/api/export',   requireAuth, require('./routes/export'));
 
 // ─── Avvio ───────────────────────────────────────────────────
 async function start() {
