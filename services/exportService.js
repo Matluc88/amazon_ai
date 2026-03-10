@@ -337,7 +337,7 @@ async function exportAllProductsToXlsm() {
     SELECT p.*
     FROM products p
     WHERE EXISTS (
-      SELECT 1 FROM product_attributes pa
+      SELECT 1 FROM product_attribute_values pa
       WHERE pa.product_id = p.id AND pa.value IS NOT NULL AND pa.value <> ''
     )
     ORDER BY p.id ASC
