@@ -11,7 +11,7 @@
  * Valori chiave Amazon:
  *   Tipo di prodotto       = "WALL_ART"
  *   Livello di parentela   = "Articolo parent" / "Bambino"
- *   Variation theme        = "TAGLIA_NOME"
+ *   Variation theme        = "SIZE/ORIENTATION"
  *   Canale di gestione     = "DEFAULT"
  */
 const xlsx = require('xlsx');
@@ -169,7 +169,7 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
 
   if (isParent) {
     setCellValue(sheet, 3, rowIdx, 'Articolo parent');
-    setCellValue(sheet, 5, rowIdx, 'TAGLIA_NOME');
+    setCellValue(sheet, 5, rowIdx, 'SIZE/ORIENTATION');
     setCellValue(sheet, 189, rowIdx, 'Sì'); // skip_offer: parent non è acquistabile
   } else {
     setCellValue(sheet, 3, rowIdx, 'Bambino');

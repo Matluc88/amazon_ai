@@ -16,7 +16,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: "Nome dell'articolo",              sezione: 'identità',    priorita: 'obbligatorio',        source: 'AI',     ordine: 1 },
   { nome: 'Nome del marchio',                sezione: 'identità',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 2,  fixedValue: 'Sivigliart' },
   { nome: 'Tipo di prodotto',                sezione: 'identità',    priorita: 'struttura_catalogo',  source: 'FIXED',  ordine: 3,  fixedValue: 'WALL ART' },
-  { nome: 'Variazioni',                      sezione: 'identità',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 4,  fixedValue: 'Taglia' },
+  { nome: 'Variazioni',                      sezione: 'identità',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 4,  fixedValue: 'Taglia/Orientamento' },
 
   // ─── TAB: DESCRIZIONE ─────────────────────────────────────
   // Amazon mostra SOLO: Descrizione, Punti elenco, Immagini
