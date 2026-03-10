@@ -199,6 +199,19 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
           </button>
         </div>
       </div>
+      <!-- BARRA SELEZIONE (visibile solo quando almeno 1 prodotto è selezionato) -->
+      <div id="selectionBar" style="display:none;padding:10px 20px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;border-radius:0;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span id="selectionCount" style="font-size:13px;font-weight:600;color:#1d4ed8;">✅ 0 prodotti selezionati</span>
+        <button id="exportSelectedBtn" onclick="downloadSelectedForAmazon()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          📥 Esporta selezionati
+        </button>
+        <button onclick="deselectAll()"
+          style="padding:6px 12px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">
+          ✕ Deseleziona tutti
+        </button>
+      </div>
+
       <div id="productsContainer">
         <div class="empty-state">
           <span class="empty-icon">🎨</span>

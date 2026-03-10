@@ -378,18 +378,32 @@ async function exportProductToXlsm(productId) {
   return { buffer, filename };
 }
 
-// ─── Export TUTTI i prodotti compilati ────────────────────────────────────────
-async function exportAllProductsToXlsm() {
-  // 1. Carica tutti i prodotti con almeno un attributo compilato
-  const result = await query(`
-    SELECT p.*
-    FROM products p
-    WHERE EXISTS (
-      SELECT 1 FROM product_attribute_values pa
-      WHERE pa.product_id = p.id AND pa.value IS NOT NULL AND pa.value <> ''
-    )
-    ORDER BY p.id ASC
-  `);
+// ─── Export TUTTI i prodotti compilati (o solo quelli selezionati) ────────────
+/**
+ * @param {number[]|null} productIds - Se fornito, esporta solo questi ID.
+ *                                     Se null/undefined, esporta tutti i prodotti compilati.
+ */
+async function exportAllProductsToXlsm(productIds = null) {
+  // 1. Carica prodotti (filtrati o tutti)
+  let result;
+  if (productIds && productIds.length > 0) {
+    // Esporta solo gli ID selezionati
+    result = await query(
+      `SELECT p.* FROM products p WHERE p.id = ANY($1) ORDER BY p.id ASC`,
+      [productIds]
+    );
+  } else {
+    // Esporta tutti i prodotti con almeno un attributo compilato
+    result = await query(`
+      SELECT p.*
+      FROM products p
+      WHERE EXISTS (
+        SELECT 1 FROM product_attribute_values pa
+        WHERE pa.product_id = p.id AND pa.value IS NOT NULL AND pa.value <> ''
+      )
+      ORDER BY p.id ASC
+    `);
+  }
   const products = result.rows;
   if (products.length === 0) throw new Error('Nessun prodotto con listing compilato trovato');
 

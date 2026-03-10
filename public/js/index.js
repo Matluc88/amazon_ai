@@ -3,6 +3,7 @@
    ============================================= */
 
 let allProducts = [];
+let selectedProductIds = new Set(); // ID prodotti selezionati per l'export
 
 // =============================================
 // INIT
@@ -107,6 +108,7 @@ function renderProducts(products) {
     const hasListing = compiled > 0;
     const hasDesc = !!p.descrizione_raw;
     const pct = total > 0 ? Math.round(compiled / total * 100) : 0;
+    const isChecked = selectedProductIds.has(p.id);
 
     let statusBadge;
     if (!hasDesc) {
@@ -125,7 +127,6 @@ function renderProducts(products) {
       statusBadge = `<span class="badge badge-status-done">✅ Completo</span>`;
     }
 
-    // SKU info
     const skuInfo = p.sku_padre
       ? `<span style="font-size:11px;color:var(--gray-400);">SKU: ${escHtml(p.sku_padre)}</span>`
       : '';
@@ -135,7 +136,14 @@ function renderProducts(products) {
       : '—';
 
     return `
-      <tr>
+      <tr id="row-${p.id}" style="${isChecked ? 'background:#eff6ff;' : ''}">
+        <td style="width:36px;text-align:center;padding:8px 6px;">
+          <input type="checkbox" class="prod-checkbox"
+            style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb;"
+            data-id="${p.id}"
+            ${isChecked ? 'checked' : ''}
+            onchange="toggleProductSelection(${p.id}, this.checked)">
+        </td>
         <td>
           <span class="product-title">${escHtml(p.titolo_opera || '—')}</span>
           <span class="product-subtitle">${escHtml(p.autore || '—')}</span>
@@ -176,6 +184,11 @@ function renderProducts(products) {
       <table>
         <thead>
           <tr>
+            <th style="width:36px;text-align:center;padding:8px 6px;">
+              <input type="checkbox" id="selectAllCheckbox" title="Seleziona tutti"
+                style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb;"
+                onchange="toggleSelectAll(this.checked)">
+            </th>
             <th>Opera / SKU</th>
             <th>Misure</th>
             <th>Prezzi</th>
@@ -187,6 +200,124 @@ function renderProducts(products) {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+
+  // Aggiorna lo stato del "select all" checkbox
+  updateSelectAllCheckbox();
+}
+
+// =============================================
+// SELEZIONE PRODOTTI PER EXPORT
+// =============================================
+function toggleProductSelection(productId, checked) {
+  if (checked) {
+    selectedProductIds.add(productId);
+  } else {
+    selectedProductIds.delete(productId);
+  }
+  // Evidenzia/deseleziona riga
+  const row = document.getElementById(`row-${productId}`);
+  if (row) row.style.background = checked ? '#eff6ff' : '';
+
+  updateSelectionBar();
+  updateSelectAllCheckbox();
+}
+
+function toggleSelectAll(checked) {
+  if (checked) {
+    allProducts.forEach(p => selectedProductIds.add(p.id));
+  } else {
+    selectedProductIds.clear();
+  }
+  // Aggiorna tutte le checkbox e i colori delle righe
+  document.querySelectorAll('.prod-checkbox').forEach(cb => {
+    cb.checked = checked;
+    const id = parseInt(cb.dataset.id);
+    const row = document.getElementById(`row-${id}`);
+    if (row) row.style.background = checked ? '#eff6ff' : '';
+  });
+  updateSelectionBar();
+}
+
+function deselectAll() {
+  selectedProductIds.clear();
+  document.querySelectorAll('.prod-checkbox').forEach(cb => {
+    cb.checked = false;
+    const id = parseInt(cb.dataset.id);
+    const row = document.getElementById(`row-${id}`);
+    if (row) row.style.background = '';
+  });
+  updateSelectionBar();
+  updateSelectAllCheckbox();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  const count = selectedProductIds.size;
+  if (!bar) return;
+  if (count > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('selectionCount').textContent = `✅ ${count} ${count === 1 ? 'prodotto selezionato' : 'prodotti selezionati'}`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function updateSelectAllCheckbox() {
+  const cb = document.getElementById('selectAllCheckbox');
+  if (!cb) return;
+  const total = allProducts.length;
+  const sel = selectedProductIds.size;
+  cb.checked = sel > 0 && sel === total;
+  cb.indeterminate = sel > 0 && sel < total;
+}
+
+// =============================================
+// DOWNLOAD XLSM — SOLO SELEZIONATI
+// =============================================
+async function downloadSelectedForAmazon() {
+  const ids = Array.from(selectedProductIds);
+  if (ids.length === 0) {
+    showToast('Seleziona almeno un prodotto prima di esportare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('exportSelectedBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/selected', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: ids })
+    });
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_SELECTED.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || ids.length;
+    showToast(`✅ File scaricato con ${count} prodotti selezionati!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '📥 Esporta selezionati'; }
+  }
 }
 
 // =============================================
