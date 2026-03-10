@@ -100,7 +100,6 @@ const ATTR_COL = {
   "Codice fiscale del prodotto":                                193,
   "L'offerta può essere inviata tramite messaggio regalo":       196,
   "È disponibile in confezione regalo":                         197,
-  "Tempo di gestione":                                          217,
   "Prezzo minimo pubblicizzato":                                 222,
   "Altezza imballaggio":                                        234,
   "Peso imballaggio":                                           236,
@@ -176,7 +175,9 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     // Offerta
     setCellValue(sheet, 215, rowIdx, 'DEFAULT');    // canale gestione = FBM Italia
     setCellValue(sheet, 216, rowIdx, 1);             // quantità
-    if (prezzo) setCellValue(sheet, 220, rowIdx, Number(prezzo));
+    setCellValue(sheet, 217, rowIdx, 7);             // tempo di gestione = 7 giorni
+    if (prezzo) setCellValue(sheet, 220, rowIdx, Number(prezzo) + 10); // prezzo Amazon = prezzo DB + €10
+    setCellValue(sheet, 229, rowIdx, 'studio');      // gruppo spedizione venditore
   }
 
   // ── Attributi DB → colonne ───────────────────────────────
@@ -203,10 +204,12 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 235, rowIdx, 'Centimetri');
   }
 
-  // ── Peso variante ────────────────────────────────────────
+  // ── Peso variante + peso imballaggio ─────────────────────
   if (peso !== null && peso !== undefined) {
-    setCellValue(sheet, 296, rowIdx, Number(peso));
+    setCellValue(sheet, 296, rowIdx, Number(peso));              // peso articolo
     setCellValue(sheet, 297, rowIdx, 'Chilogrammi');
+    setCellValue(sheet, 236, rowIdx, Number(peso) + 0.3);       // peso imballaggio = peso + 0.3 kg cartone
+    setCellValue(sheet, 237, rowIdx, 'Chilogrammi');             // unità peso imballaggio
   }
 
   // ── Immagine principale variante (sovrascrive attributo condiviso) ───
