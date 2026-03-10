@@ -86,7 +86,13 @@ router.patch('/:id/description', async (req, res) => {
 router.patch('/:id/variants', async (req, res) => {
   try {
     const { id } = req.params;
-    const { ean_max, ean_media, ean_mini, immagine_max, immagine_media, immagine_mini } = req.body;
+    const {
+      ean_max, ean_media, ean_mini,
+      immagine_max, immagine_media, immagine_mini,
+      immagine_max_2, immagine_max_3,
+      immagine_media_2, immagine_media_3,
+      immagine_mini_2, immagine_mini_3,
+    } = req.body;
 
     const existing = await query('SELECT id FROM products WHERE id = $1', [id]);
     if (!existing.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
@@ -94,11 +100,17 @@ router.patch('/:id/variants', async (req, res) => {
     await query(`
       UPDATE products SET
         ean_max = $1, ean_media = $2, ean_mini = $3,
-        immagine_max = $4, immagine_media = $5, immagine_mini = $6
-      WHERE id = $7
+        immagine_max = $4, immagine_media = $5, immagine_mini = $6,
+        immagine_max_2 = $7, immagine_max_3 = $8,
+        immagine_media_2 = $9, immagine_media_3 = $10,
+        immagine_mini_2 = $11, immagine_mini_3 = $12
+      WHERE id = $13
     `, [
       ean_max || null, ean_media || null, ean_mini || null,
       immagine_max || null, immagine_media || null, immagine_mini || null,
+      immagine_max_2 || null, immagine_max_3 || null,
+      immagine_media_2 || null, immagine_media_3 || null,
+      immagine_mini_2 || null, immagine_mini_3 || null,
       id
     ]);
 

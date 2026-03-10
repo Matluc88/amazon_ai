@@ -356,17 +356,47 @@ function renderVariantsCard(product) {
            oninput="variantsDirty=true;" />`)
     },
     {
-      label: 'URL Immagine variante', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      label: '📷 Frontale', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
       cells: sizes.map(s =>
-        `<input type="file" id="varfile-${s.imgKey}" accept="image/*" style="display:none"
-               onchange="handleVariantImageSelect('${s.imgKey}', '${s.label}', this)">
+        `<input type="file" id="varfile-${s.imgKey}-frontale" accept="image/*" style="display:none"
+               onchange="handleVariantImageSelect('${s.imgKey}', '${s.label}', 'frontale', this, '${escHtml(s.misura || '')}')">
          <input type="url" class="var-input url-input" id="var-${s.imgKey}"
            value="${escHtml(product[s.imgKey] || '')}"
            placeholder="https://..."
            oninput="variantsDirty=true;" />
-         <button class="var-upload-btn" id="varbtn-${s.imgKey}"
-                 onclick="document.getElementById('varfile-${s.imgKey}').click()"
-                 title="Carica immagine su Cloudinary">
+         <button class="var-upload-btn" id="varbtn-${s.imgKey}-frontale"
+                 onclick="document.getElementById('varfile-${s.imgKey}-frontale').click()"
+                 title="Carica immagine frontale">
+           📤
+         </button>`)
+    },
+    {
+      label: '📷 Laterale', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s =>
+        `<input type="file" id="varfile-${s.imgKey}_2-laterale" accept="image/*" style="display:none"
+               onchange="handleVariantImageSelect('${s.imgKey}_2', '${s.label}', 'laterale', this, '${escHtml(s.misura || '')}')">
+         <input type="url" class="var-input url-input" id="var-${s.imgKey}_2"
+           value="${escHtml(product[s.imgKey + '_2'] || '')}"
+           placeholder="https://..."
+           oninput="variantsDirty=true;" />
+         <button class="var-upload-btn" id="varbtn-${s.imgKey}_2-laterale"
+                 onclick="document.getElementById('varfile-${s.imgKey}_2-laterale').click()"
+                 title="Carica immagine laterale">
+           📤
+         </button>`)
+    },
+    {
+      label: '📷 Proporzione', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s =>
+        `<input type="file" id="varfile-${s.imgKey}_3-proporzione" accept="image/*" style="display:none"
+               onchange="handleVariantImageSelect('${s.imgKey}_3', '${s.label}', 'proporzione', this, '${escHtml(s.misura || '')}')">
+         <input type="url" class="var-input url-input" id="var-${s.imgKey}_3"
+           value="${escHtml(product[s.imgKey + '_3'] || '')}"
+           placeholder="https://..."
+           oninput="variantsDirty=true;" />
+         <button class="var-upload-btn" id="varbtn-${s.imgKey}_3-proporzione"
+                 onclick="document.getElementById('varfile-${s.imgKey}_3-proporzione').click()"
+                 title="Carica immagine proporzione">
            📤
          </button>`)
     },
@@ -431,12 +461,18 @@ async function saveVariants() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Salvataggio...'; }
 
   const body = {
-    ean_max:        document.getElementById('var-ean_max')?.value.trim()        || null,
-    ean_media:      document.getElementById('var-ean_media')?.value.trim()      || null,
-    ean_mini:       document.getElementById('var-ean_mini')?.value.trim()       || null,
-    immagine_max:   document.getElementById('var-immagine_max')?.value.trim()   || null,
-    immagine_media: document.getElementById('var-immagine_media')?.value.trim() || null,
-    immagine_mini:  document.getElementById('var-immagine_mini')?.value.trim()  || null,
+    ean_max:           document.getElementById('var-ean_max')?.value.trim()           || null,
+    ean_media:         document.getElementById('var-ean_media')?.value.trim()         || null,
+    ean_mini:          document.getElementById('var-ean_mini')?.value.trim()          || null,
+    immagine_max:      document.getElementById('var-immagine_max')?.value.trim()      || null,
+    immagine_media:    document.getElementById('var-immagine_media')?.value.trim()    || null,
+    immagine_mini:     document.getElementById('var-immagine_mini')?.value.trim()     || null,
+    immagine_max_2:    document.getElementById('var-immagine_max_2')?.value.trim()    || null,
+    immagine_max_3:    document.getElementById('var-immagine_max_3')?.value.trim()    || null,
+    immagine_media_2:  document.getElementById('var-immagine_media_2')?.value.trim()  || null,
+    immagine_media_3:  document.getElementById('var-immagine_media_3')?.value.trim()  || null,
+    immagine_mini_2:   document.getElementById('var-immagine_mini_2')?.value.trim()   || null,
+    immagine_mini_3:   document.getElementById('var-immagine_mini_3')?.value.trim()   || null,
   };
 
   try {
@@ -1497,31 +1533,53 @@ async function handleImageFileSelect(attrId, input, nomeCampo) {
 }
 
 /**
- * Gestisce upload immagine per le varianti (immagine_max/media/mini).
- * @param {string} imgKey - 'immagine_max' | 'immagine_media' | 'immagine_mini'
- * @param {string} label  - 'Grande' | 'Media' | 'Piccola'
+ * Gestisce upload immagine variante con naming intelligente.
+ * @param {string} imgKey  - 'immagine_max' | 'immagine_max_2' | ecc.
+ * @param {string} label   - 'Grande' | 'Media' | 'Piccola'
+ * @param {string} imgType - 'frontale' | 'laterale' | 'proporzione'
  * @param {HTMLInputElement} input - file input
+ * @param {string} misura  - es. '90x130 cm' — usato per naming corretto
  */
-async function handleVariantImageSelect(imgKey, label, input) {
+async function handleVariantImageSelect(imgKey, label, imgType, input, misura) {
   const file = input.files[0];
   if (!file) return;
 
-  const btn      = document.getElementById(`varbtn-${imgKey}`);
+  const btnId    = `varbtn-${imgKey}-${imgType}`;
+  const btn      = document.getElementById(btnId);
   const urlInput = document.getElementById(`var-${imgKey}`);
 
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="upload-spinner"></span>'; }
 
   try {
-    const sku    = currentProduct?.sku_padre || `prod-${productId}`;
-    const name   = `${sku}-variante-${label.toLowerCase()}-${Date.now()}`;
-    const folder = `amazon-ai/${sku}`;
+    const skuPadre = currentProduct?.sku_padre || `prod-${productId}`;
+
+    // SKU variante (es. sku_max per immagine_max / immagine_max_2 / immagine_max_3)
+    const baseKey    = imgKey.replace(/_[23]$/, '');          // immagine_max_2 → immagine_max
+    const skuKey     = baseKey.replace('immagine_', 'sku_');  // immagine_max → sku_max
+    const skuVar     = currentProduct?.[skuKey] || label.toLowerCase();
+
+    // Dimensioni corrette: lato lungo (base) × lato corto (altezza)
+    let dimStr = '';
+    if (misura) {
+      const m = misura.match(/(\d+)\s*[xX×]\s*(\d+)/i);
+      if (m) {
+        const a = parseInt(m[1]);
+        const b = parseInt(m[2]);
+        const base    = Math.max(a, b);   // lato lungo = base
+        const altezza = Math.min(a, b);   // lato corto = altezza
+        dimStr = `_${base}x${altezza}cm`;
+      }
+    }
+
+    const name   = `${skuVar}${dimStr}_${imgType}`;
+    const folder = `amazon-ai/${skuPadre}`;
 
     const url = await uploadImageToCloudinary(file, name, folder);
 
     if (urlInput) { urlInput.value = url; variantsDirty = true; }
     if (currentProduct) currentProduct[imgKey] = url;
 
-    showToast(`✅ Immagine variante ${label} caricata!`, 'success');
+    showToast(`✅ ${imgType.charAt(0).toUpperCase() + imgType.slice(1)} variante ${label} caricata!`, 'success');
   } catch (err) {
     showToast(`❌ Upload fallito: ${err.message}`, 'error');
   } finally {

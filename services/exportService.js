@@ -155,7 +155,7 @@ function clearDataRows(sheet) {
  *   - isParent     {boolean}
  */
 function buildRow(sheet, rowIdx, product, attrs, variant) {
-  const { isParent, sku, taglia, dims, peso, prezzo, immagine } = variant;
+  const { isParent, sku, taglia, dims, peso, prezzo, immagine, immagine2, immagine3 } = variant;
 
   // ── Colonne strutturali ──────────────────────────────────
   setCellValue(sheet, 0, rowIdx, sku || '');
@@ -217,9 +217,11 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 237, rowIdx, 'Chilogrammi');             // unità peso imballaggio
   }
 
-  // ── Immagine principale variante (sovrascrive attributo condiviso) ───
-  if (immagine && !isParent) {
-    setCellValue(sheet, 21, rowIdx, immagine);
+  // ── Immagini variante (principale=frontale, col22=laterale, col23=proporzione) ───
+  if (!isParent) {
+    if (immagine)    setCellValue(sheet, 21, rowIdx, immagine);       // frontale (principale)
+    if (immagine2)   setCellValue(sheet, 22, rowIdx, immagine2);      // laterale
+    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);      // proporzione
   }
 }
 
@@ -275,9 +277,9 @@ async function exportProductToXlsm(productId) {
 
     // ── Righe child per ogni taglia disponibile ────────────
     const childVariants = [
-      { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max },
-      { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media },
-      { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini },
+      { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3 },
+      { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3 },
+      { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3 },
     ].filter(v => v.sku && v.misura); // Salta varianti senza SKU o misura
 
     for (const cv of childVariants) {
@@ -293,6 +295,8 @@ async function exportProductToXlsm(productId) {
         peso,
         prezzo: cv.prezzo,
         immagine: cv.immagine,
+        immagine2: cv.immagine2,
+        immagine3: cv.immagine3,
         isParent: false,
       });
     }
@@ -383,16 +387,16 @@ async function exportAllProductsToXlsm() {
       });
 
       const childVariants = [
-        { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max },
-        { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media },
-        { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini },
+        { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3 },
+        { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3 },
+        { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3 },
       ].filter(v => v.sku && v.misura);
 
       for (const cv of childVariants) {
         const dims = extractDimensions(cv.misura);
         const peso = lookupWeight(cv.misura);
         const taglia = dims ? `${dims.lunghezza} x ${dims.larghezza} cm` : cv.misura;
-        rows.push({ sku: cv.sku, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, isParent: false });
+        rows.push({ sku: cv.sku, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, immagine2: cv.immagine2, immagine3: cv.immagine3, isParent: false });
       }
     } else {
       const dims = extractDimensions(product.dimensioni || product.descrizione_raw || '');

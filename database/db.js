@@ -106,6 +106,13 @@ async function initDatabase() {
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_max TEXT`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_media TEXT`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_mini TEXT`,
+      // Immagine laterale (img 2) e proporzione (img 3) per variante
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_max_2 TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_max_3 TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_media_2 TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_media_3 TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_mini_2 TEXT`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS immagine_mini_3 TEXT`,
     ];
     for (const col of eanImageCols) {
       await client.query(col);
