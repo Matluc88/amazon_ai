@@ -1,6 +1,27 @@
 const express = require('express');
 const router  = express.Router();
-const { exportProductToXlsm } = require('../services/exportService');
+const { exportProductToXlsm, exportAllProductsToXlsm } = require('../services/exportService');
+
+/**
+ * GET /api/export/all
+ * Genera e scarica un unico WALL_ART.xlsm con TUTTI i prodotti che hanno listing compilato.
+ */
+router.get('/all', async (req, res) => {
+  try {
+    const { buffer, filename, count } = await exportAllProductsToXlsm();
+
+    res.setHeader('Content-Type',
+      'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition',
+      `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('X-Product-Count', count);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export ALL error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export' });
+  }
+});
 
 /**
  * GET /api/export/:productId

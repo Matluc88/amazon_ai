@@ -325,4 +325,97 @@ async function exportProductToXlsm(productId) {
   return { buffer, filename };
 }
 
-module.exports = { exportProductToXlsm };
+// ─── Export TUTTI i prodotti compilati ────────────────────────────────────────
+async function exportAllProductsToXlsm() {
+  // 1. Carica tutti i prodotti con almeno un attributo compilato
+  const result = await query(`
+    SELECT p.*
+    FROM products p
+    WHERE EXISTS (
+      SELECT 1 FROM product_attributes pa
+      WHERE pa.product_id = p.id AND pa.value IS NOT NULL AND pa.value <> ''
+    )
+    ORDER BY p.id ASC
+  `);
+  const products = result.rows;
+  if (products.length === 0) throw new Error('Nessun prodotto con listing compilato trovato');
+
+  // 2. Leggi il template una sola volta
+  let wb;
+  try {
+    wb = xlsx.readFile(TEMPLATE_PATH);
+  } catch {
+    throw new Error('Template WALL_ART.xlsm non trovato nella root del progetto');
+  }
+  const sheet = wb.Sheets['Modello'];
+  if (!sheet) throw new Error('Foglio "Modello" non trovato nel template');
+
+  clearDataRows(sheet);
+
+  // 3. Itera su tutti i prodotti e accumula le righe
+  let currentRow = DATA_START_ROW;
+
+  for (const product of products) {
+    // Carica attributi compilati per questo prodotto
+    const sections = await getProductListing(product.id, product);
+    const attrs = {};
+    for (const items of Object.values(sections)) {
+      for (const item of items) {
+        if (item.value !== undefined && item.value !== '') {
+          attrs[item.nome] = item.value;
+        }
+      }
+    }
+
+    // Costruisci le righe del prodotto
+    const rows = [];
+    const hasVariants = !!(product.sku_max || product.sku_padre);
+
+    if (hasVariants) {
+      rows.push({
+        sku: product.sku_padre || product.titolo_opera?.substring(0, 40) || `SKU-${product.id}`,
+        taglia: null, dims: null, peso: null, prezzo: null, immagine: null, isParent: true,
+      });
+
+      const childVariants = [
+        { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max },
+        { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media },
+        { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini },
+      ].filter(v => v.sku && v.misura);
+
+      for (const cv of childVariants) {
+        const dims = extractDimensions(cv.misura);
+        const peso = lookupWeight(cv.misura);
+        const taglia = dims ? `${dims.lunghezza} x ${dims.larghezza} cm` : cv.misura;
+        rows.push({ sku: cv.sku, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, isParent: false });
+      }
+    } else {
+      const dims = extractDimensions(product.dimensioni || product.descrizione_raw || '');
+      const peso = lookupWeight(product.dimensioni || product.descrizione_raw || '');
+      rows.push({
+        sku: product.titolo_opera?.substring(0, 40) || `PROD-${product.id}`,
+        taglia: null, dims, peso, prezzo: product.prezzo, immagine: null, isParent: false,
+      });
+    }
+
+    // Scrivi le righe nel foglio
+    rows.forEach((variant, i) => {
+      buildRow(sheet, currentRow + i, product, attrs, variant);
+    });
+    currentRow += rows.length;
+  }
+
+  // 4. Aggiorna il range del foglio
+  const currentRange = xlsx.utils.decode_range(sheet['!ref'] || 'A1');
+  currentRange.e.r = Math.max(currentRange.e.r, currentRow - 1);
+  sheet['!ref'] = xlsx.utils.encode_range(currentRange);
+
+  // 5. Genera buffer
+  const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsm' });
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const filename = `WALL_ART_ALL_${today}.xlsm`;
+
+  return { buffer, filename, count: products.length };
+}
+
+module.exports = { exportProductToXlsm, exportAllProductsToXlsm };

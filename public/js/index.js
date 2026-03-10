@@ -75,6 +75,17 @@ function updateStats(products) {
   } else {
     generateAllBtn.style.display = 'none';
   }
+
+  // Mostra "Scarica XLSM" se ci sono prodotti con listing compilato
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  if (downloadAllBtn) {
+    if (conListing > 0) {
+      downloadAllBtn.style.display = 'inline-flex';
+      downloadAllBtn.textContent = `📥 Scarica XLSM per Amazon (${conListing})`;
+    } else {
+      downloadAllBtn.style.display = 'none';
+    }
+  }
 }
 
 function renderProducts(products) {
@@ -226,6 +237,46 @@ async function generateAll() {
   if (errors === 0) showToast(`✅ Tutti i ${success} listing generati!`, 'success');
   else showToast(`⚠️ ${success} generati, ${errors} errori.`, 'warning');
   loadProducts();
+}
+
+// =============================================
+// DOWNLOAD XLSM PER AMAZON (tutti i prodotti)
+// =============================================
+async function downloadAllForAmazon() {
+  const btn = document.getElementById('downloadAllBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/all');
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_ALL.xlsm`;
+
+    const a = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || '?';
+    showToast(`✅ File scaricato con ${count} prodotti. Carica su Amazon Seller Central!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '📥 Scarica XLSM per Amazon'; }
+  }
 }
 
 // =============================================
