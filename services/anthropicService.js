@@ -174,32 +174,36 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 ### CHIAVI DI RICERCA (campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali):
 ${formatoSection}
 Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo.
-Riempi 1100–1200 byte totali — ogni blocco deve essere ampio e dettagliato. Il testo verrà distribuito automaticamente su 5 slot da 250 byte.
-NON ripetere parole già nel Nome dell'articolo, nei Punti elenco o nel brand.
+Riempi 1100–1200 byte totali. Il testo verrà distribuito automaticamente su 5 slot da 250 byte.
 
-STRUTTURA A 5 BLOCCHI LOGICI (concatena tutto separato da spazio):
+⚠️ REGOLA FONDAMENTALE — ZERO DUPLICATI:
+Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già presenti nel titolo o nei bullet è uno spreco di byte e NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole che NON compaiono già nel Nome dell'articolo e nei Punti elenco.
 
-BLOCCO 1 — PRODOTTO BASE (sempre incluso, SEMPRE LE PRIME PAROLE della stringa):
-quadro stampa tela decorazione parete artistica canvas
-↑ Queste 6 parole devono essere ESATTAMENTE le prime della stringa — sono le keyword con il massimo volume di ricerca per la categoria Wall Art su Amazon.it
+STRUTTURA A 5 AREE COMPLEMENTARI (tutte parole NUOVE, non già nel titolo/bullet):
 
-BLOCCO 2 — SOGGETTO (2–6 parole specifiche del contenuto dell'opera):
-es. famiglia bambino genitori figlio neonato / paesaggio mare spiaggia tramonto / astratto geometrico forme / coppia romantica amore
+AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO:
+Termini alternativi che i clienti usano per cercare stampe/quadri e che NON sono nel titolo.
+es. poster, riproduzione artistica, arte da parete, wall art, immagine su tela, quadri moderni, stampa artistica
 
-BLOCCO 3 — STILE:
-es. arte figurativa arte contemporanea quadro moderno / astratto moderno arte italiana / impressionismo
+AREA 2 — SOGGETTO SPECIFICO (varianti e sinonimi):
+Parole specifiche del soggetto che NON hai usato nel titolo.
+es. se nel titolo hai "coppia" → usa: fidanzati, innamorati, coppia di sposi, bacio, abbraccio, insieme
 
-BLOCCO 4 — UTILIZZO E STANZA:
-es. decorazione parete arredamento casa soggiorno camera bambino / ufficio studio corridoio ingresso
+AREA 3 — STILE ARTISTICO (varianti non nel titolo):
+es. pop art, arte moderna italiana, neo-espressionismo, surrealismo, arte naif, impressionismo, figurativo
 
-BLOCCO 5 — ATTRIBUTI SPECIFICI:
-es. quadro grande + colore dominante + arte italiana (aggiungi solo ciò che non è già presente nei blocchi precedenti)
+AREA 4 — AMBIENTI E CONTESTI USO (non già nei bullet):
+Stanze e contesti non menzionati nei bullet.
+es. ingresso, corridoio, sala da pranzo, studio, cantina, sala riunioni, reception, clinica
+
+AREA 5 — OCCASIONI REGALO E LONG-TAIL:
+Frasi di ricerca specifiche con intento d'acquisto.
+es. regalo laurea, regalo inaugurazione casa, regalo fidanzamento, quadro regalo donna, quadro regalo uomo
 
 REGOLE CRITICHE:
-- Parole VIETATE (le persone NON le cercano su Amazon): emozione, tenerezza, sentimento, caldo, evocativo, magia, poetico, romantico come aggettivo generico
-- Amazon indicizza le singole parole: "quadro famiglia" indicizza ANCHE "quadro" e "famiglia" — NON serve ripetere
-- Dopo aver assemblato i 5 blocchi: rimuovi le parole già presenti nel titolo/bullet, poi taglia a 250 byte
-- ESEMPIO CORRETTO: "quadro stampa tela stampa artistica canvas famiglia bambino genitori figlio neonato arte figurativa arte contemporanea quadro moderno decorazione parete arredamento casa soggiorno camera bambino quadro grande arancione arte italiana"
+- NON includere: parole già nel titolo, parole già nei 5 bullet, il brand "sivigliart"
+- NON includere: emozione, tenerezza, sentimento, poetico, evocativo, magico (nessuno le cerca)
+- ESEMPIO CORRETTO (tutte parole complementari al titolo): "poster arte da parete riproduzione artistica wall art fidanzati innamorati bacio abbraccio pop art surrealismo arte naif ingresso corridoio sala da pranzo studio regalo inaugurazione casa regalo fidanzamento quadro regalo donna"
 
 ### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
 ⚠️ REGOLA TECNICA per TUTTI i bullet: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano.
@@ -327,18 +331,21 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie). ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.',
     "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo per spedizione sicura; chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."',
     "Chiavi di ricerca": `Campo backend Search Terms — 5 slot da 250 byte = 1250 byte totali.
-Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 1100–1200 byte totali (saranno distribuiti su 5 slot da 250 byte nell'export).
-NON ripetere parole già nel titolo, nei bullet o nel brand.
+Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 1100–1200 byte totali (distribuiti su 5 slot da 250 byte nell'export).
 
-STRUTTURA A 5 BLOCCHI (concatena separato da spazio):
-BLOCCO 1 — PRODOTTO BASE (sempre, PRIME PAROLE della stringa): quadro stampa tela decorazione parete artistica canvas
-BLOCCO 2 — SOGGETTO (2–6 parole specifiche del contenuto dell'opera)
-BLOCCO 3 — STILE: arte figurativa arte contemporanea quadro moderno [stile specifico]
-BLOCCO 4 — UTILIZZO: decorazione parete arredamento casa soggiorno camera [stanza specifica]
-BLOCCO 5 — ATTRIBUTI: quadro grande [colore dominante] arte italiana
+⚠️ REGOLA FONDAMENTALE — ZERO DUPLICATI:
+Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già nel titolo o nei bullet NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole NUOVE che NON compaiono nel titolo/bullet/brand.
 
-PAROLE VIETATE (nessuno le cerca su Amazon): emozione, tenerezza, sentimento, caldo, evocativo, magia, poetico
-ESEMPIO: "quadro stampa tela stampa artistica canvas famiglia bambino genitori figlio neonato arte figurativa arte contemporanea quadro moderno decorazione parete arredamento casa soggiorno camera bambino quadro grande arancione arte italiana"
+STRUTTURA A 5 AREE COMPLEMENTARI (tutte parole NUOVE):
+
+AREA 1 — SINONIMI PRODOTTO (non nel titolo): poster, riproduzione artistica, arte da parete, wall art, immagine su tela
+AREA 2 — SOGGETTO varianti/sinonimi (non nel titolo): es. se titolo ha "coppia" → fidanzati, innamorati, bacio, abbraccio
+AREA 3 — STILE ARTISTICO varianti (non nel titolo): pop art, surrealismo, impressionismo, neo-espressionismo, arte naif
+AREA 4 — AMBIENTI non nei bullet: ingresso, corridoio, sala da pranzo, studio, sala riunioni, reception
+AREA 5 — OCCASIONI REGALO long-tail: regalo laurea, regalo inaugurazione casa, regalo fidanzamento, quadro regalo donna
+
+VIETATO: parole già nel titolo, nei 5 bullet, il brand "sivigliart", parole: emozione, tenerezza, sentimento, poetico, evocativo
+ESEMPIO CORRETTO: "poster arte da parete riproduzione artistica wall art fidanzati innamorati bacio pop art surrealismo arte naif ingresso corridoio sala da pranzo regalo inaugurazione casa regalo fidanzamento quadro regalo donna"
 
 Output: UNA sola riga di testo, senza virgolette esterne.`,
     "Edizione": 'breve descrizione dell\'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")',
