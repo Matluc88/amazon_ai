@@ -15,10 +15,10 @@ const { uploadImage, isConfigured } = require('../services/cloudinaryService');
 
 const router = express.Router();
 
-// Multer in memoria (nessun file su disco) — max 10 MB
+// Multer in memoria (nessun file su disco) — max 25 MB
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/^image\/(jpeg|png|webp|gif|bmp|tiff)$/.test(file.mimetype)) {
       cb(null, true);
@@ -29,7 +29,18 @@ const upload = multer({
 });
 
 // POST /api/images/upload
-router.post('/upload', upload.single('image'), async (req, res) => {
+router.post('/upload', (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      // Gestione esplicita MulterError (es. file troppo grande)
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File troppo grande. Dimensione massima consentita: 25 MB.' });
+      }
+      return res.status(400).json({ error: err.message || 'Errore upload file' });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!isConfigured()) {
       return res.status(503).json({
