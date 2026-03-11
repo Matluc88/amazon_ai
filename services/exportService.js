@@ -212,6 +212,7 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   } else {
     setCellValue(sheet, 3, rowIdx, 'Bambino');
     setCellValue(sheet, 4, rowIdx, product.sku_padre || '');
+    setCellValue(sheet, 5, rowIdx, 'SIZE/ORIENTATION');
     setCellValue(sheet, 66, rowIdx, taglia || '');
     // Condizione articolo
     setCellValue(sheet, 190, rowIdx, 'Nuovo');

@@ -340,11 +340,13 @@ async function getProductListing(productId, product = null) {
   for (const row of result.rows) {
     if (!sections[row.sezione]) sections[row.sezione] = [];
 
-    // Priorità: valore salvato nel DB → fallback FIXED → fallback AUTO → ''
-    const displayValue = row.value
-      || (row.source === 'FIXED' ? (row.fixed_value || '') : '')
-      || (row.source === 'AUTO'  ? autoFallback(row.nome_attributo) : '')
-      || '';
+    // Priorità: FIXED usa sempre il fixedValue (ignora vecchi valori AI nel DB)
+    //           AI/MANUAL: valore salvato → fallback AUTO → ''
+    const displayValue = row.source === 'FIXED'
+      ? (row.fixed_value || '')
+      : (row.value
+          || (row.source === 'AUTO' ? autoFallback(row.nome_attributo) : '')
+          || '');
 
     sections[row.sezione].push({
       id: row.id,
