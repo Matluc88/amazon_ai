@@ -161,7 +161,7 @@ Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 - Punto elenco 5 — REGALO/GARANZIA: inizia con "IDEA REGALO –" menziona occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo; chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."
 
 ### ALTRI CAMPI:
-- "Personaggio rappresentato": se non applicabile, scrivi "N/D"
+- "Personaggio rappresentato": analizza il soggetto dell'opera. Se è presente una figura umana o un personaggio riconoscibile, indicalo con 1-3 parole (es. "Coppia", "Musicista", "Bambino", "Famiglia", "Donna", "Ballerina", "Trombettista"). Se l'opera è paesaggistica, astratta o non ha figure umane/personaggi, scrivi "N/D"
 - "Colore": se l'opera ha 1-2 colori dominanti elencali (es. "Arancione, Rosso"); se ha 3 o più colori usa "Multicolore" — Amazon lo gestisce meglio nei filtri di ricerca
 - "Stile": stile artistico (es. "Cubista", "Impressionista", "Arte Moderna", "Astratto")
 - "Tema": tema/i dell'opera separati da virgola (es. "Coppia romantica, Estate, Amore")
@@ -195,8 +195,6 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
   "Supporti di stampa": "Stampa su tela canvas",
   "Edizione": "...",
   "Stagioni": "...",
-  "Utilizzo in ambienti interni ed esterni": "...",
-  "forma decorazione da parete": "...",
   "Tema animali": "..."
 }`;
 
@@ -289,6 +287,7 @@ Output: UNA sola riga di testo, senza virgolette esterne.`,
     "Colore": 'colori principali dell\'opera separati da virgola',
     "Motivo": 'motivo decorativo (es. Floreale, Astratto, Geometrico, Figurativo...)',
     "Usi consigliati per il prodotto": 'usi pratici separati da virgola (es. Decorazione parete, Regalo, Arredamento...)',
+    "Personaggio rappresentato": 'Analizza il soggetto dell\'opera. Se è presente una figura umana o un personaggio riconoscibile, indicalo con 1-3 parole (es. "Coppia", "Musicista", "Bambino", "Famiglia", "Donna", "Ballerina", "Trombettista"). Se l\'opera è paesaggistica, astratta o non contiene figure umane/personaggi, scrivi "N/D".',
     "Tema animali": 'SOLO se il soggetto principale dell\'opera è un animale: indicare il tipo (es. "Cane", "Gatto", "Cavallo", "Uccello", "Leone"). Se l\'opera non rappresenta animali, scrivi "N/D".',
   };
 

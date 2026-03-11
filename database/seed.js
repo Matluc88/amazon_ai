@@ -79,7 +79,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: "È fragile?",                      sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 74, fixedValue: 'No' },
   { nome: "È incorniciato",                  sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 75, fixedValue: 'No' },
   { nome: 'Stagioni',                        sezione: 'dettagli',    priorita: 'facoltativo',         source: 'AI',     ordine: 76 },
-  { nome: 'Utilizzo in ambienti interni ed esterni', sezione: 'dettagli', priorita: 'facoltativo',    source: 'AI',     ordine: 77 },
+  { nome: 'Utilizzo in ambienti interni ed esterni', sezione: 'dettagli', priorita: 'facoltativo',    source: 'FIXED',  ordine: 77, fixedValue: 'Interno' },
   { nome: 'forma decorazione da parete',     sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 78, fixedValue: 'Stampa artistica' },
   { nome: 'Numero di confezioni',            sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 79, fixedValue: '1' },
   // — Dimensioni combinate display (lunghezza x larghezza, estratto da misura_max)
