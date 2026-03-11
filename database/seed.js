@@ -66,7 +66,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: 'Descrizione della fascia di età', sezione: 'dettagli',    priorita: 'obbligatorio',        source: 'FIXED',  ordine: 62, fixedValue: 'Adulto' },
   // — Attributi tecnici specifici Wall Art
   { nome: 'Orientamento',                    sezione: 'dettagli',    priorita: 'seo',                 source: 'AUTO',   ordine: 63 },
-  { nome: 'Supporti di stampa',              sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 64 },
+  { nome: 'Supporti di stampa',              sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 64, fixedValue: 'Stoffa' },
   { nome: 'Edizione',                        sezione: 'dettagli',    priorita: 'seo',                 source: 'AI',     ordine: 65 },
   { nome: 'Tipo di vernice',                 sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 66, fixedValue: 'Stampa su tela' },
   { nome: 'Tipo di finitura',                sezione: 'dettagli',    priorita: 'seo',                 source: 'FIXED',  ordine: 67, fixedValue: 'Laccato' },
@@ -80,7 +80,7 @@ const ATTRIBUTE_DEFINITIONS = [
   { nome: "È incorniciato",                  sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 75, fixedValue: 'No' },
   { nome: 'Stagioni',                        sezione: 'dettagli',    priorita: 'facoltativo',         source: 'AI',     ordine: 76 },
   { nome: 'Utilizzo in ambienti interni ed esterni', sezione: 'dettagli', priorita: 'facoltativo',    source: 'AI',     ordine: 77 },
-  { nome: 'forma decorazione da parete',     sezione: 'dettagli',    priorita: 'facoltativo',         source: 'AI',     ordine: 78 },
+  { nome: 'forma decorazione da parete',     sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 78, fixedValue: 'Stampa artistica' },
   { nome: 'Numero di confezioni',            sezione: 'dettagli',    priorita: 'facoltativo',         source: 'FIXED',  ordine: 79, fixedValue: '1' },
   // — Dimensioni combinate display (lunghezza x larghezza, estratto da misura_max)
   { nome: "Dimensioni dell'articolo, lunghezza x larghezza", sezione: 'dettagli', priorita: 'seo', source: 'AUTO', ordine: 80 },
