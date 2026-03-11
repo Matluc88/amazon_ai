@@ -3,6 +3,54 @@ const Anthropic = require('@anthropic-ai/sdk');
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
+ * Costruisce il contenuto del messaggio Claude con o senza immagine.
+ * Se imageUrl è valido, invia immagine + testo (Vision AI).
+ * Altrimenti invia solo testo (comportamento precedente).
+ *
+ * @param {string} prompt    - Testo del prompt
+ * @param {string|null} imageUrl - URL immagine Cloudinary (opzionale)
+ * @returns {string|Array}   - Formato compatibile con Claude messages API
+ */
+function buildMessageContent(prompt, imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) {
+    return prompt; // solo testo (backward compat)
+  }
+  return [
+    {
+      type: 'image',
+      source: {
+        type: 'url',
+        url: imageUrl
+      }
+    },
+    {
+      type: 'text',
+      text: prompt
+    }
+  ];
+}
+
+/**
+ * Restituisce il primo URL immagine valido disponibile per un prodotto.
+ * Prova in ordine: immagine_max → immagine_media → immagine_mini.
+ *
+ * @param {object} product
+ * @returns {string|null}
+ */
+function getProductImageUrl(product) {
+  const candidates = [
+    product.immagine_max,
+    product.immagine_media,
+    product.immagine_mini,
+    product.immagine_max_2,
+  ];
+  for (const url of candidates) {
+    if (url && typeof url === 'string' && url.startsWith('http')) return url;
+  }
+  return null;
+}
+
+/**
  * Calcola orientamento e restituisce la stringa base×altezza già nello
  * stesso formato in cui le misure sono salvate nel DB (dopo swapDimensions).
  * Non importa da attributeService per evitare dipendenza circolare.
@@ -22,12 +70,16 @@ function calcOrientamento(misuraStr) {
 }
 
 /**
- * Genera TUTTI gli attributi AI in una singola chiamata Claude
+ * Genera TUTTI gli attributi AI in una singola chiamata Claude.
+ * Se il prodotto ha un'immagine Cloudinary, la invia a Claude (Vision AI)
+ * per un'analisi visiva precisa di soggetti, colori, personaggi e animali.
+ *
  * @param {object} product - dati del prodotto (descrizione_raw, dimensioni, ecc.)
  * @param {string[]} keywords - keyword minate da Amazon (opzionale)
  * @returns {object} - { "Nome dell'articolo": "...", "Punto elenco 1": "...", ... }
  */
 async function generateAllAiAttributes(product, keywords = []) {
+  const imageUrl = getProductImageUrl(product);
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
@@ -54,10 +106,15 @@ async function generateAllAiAttributes(product, keywords = []) {
     ? `\n⚠️ FORMATO ARTWORK: ${oriCalc.orientamento.toUpperCase()} — Le dimensioni nel DB sono BASE×ALTEZZA (es. "${oriCalc.display}" = base ${oriCalc.display.split('x')[0]} cm × altezza ${oriCalc.display.split('x')[1]} cm). Nelle Chiavi di ricerca usa SEMPRE questo ordine (base×altezza) e indica il formato ${oriCalc.orientamento.toLowerCase()} corretto.`
     : '';
 
+  // Nota per il prompt: informa Claude che sta vedendo l'immagine se disponibile
+  const visionNote = imageUrl
+    ? '\n🖼️ ANALISI VISIVA: Ti viene fornita anche l\'immagine dell\'opera. Usala come fonte primaria per determinare: soggetti presenti (personaggi, animali), colori dominanti reali, stile artistico, composizione. I campi "Personaggio rappresentato", "Tema animali", "Colore", "Famiglia di colori" e "Stile" devono basarsi principalmente sull\'analisi visiva dell\'immagine.\n'
+    : '';
+
   const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
-Il tuo compito è analizzare il testo di un'opera d'arte e generare TUTTI gli attributi necessari per un listing Amazon ottimizzato per stampe su tela.
-
+Il tuo compito è analizzare${imageUrl ? ' l\'immagine e' : ''} il testo di un'opera d'arte e generare TUTTI gli attributi necessari per un listing Amazon ottimizzato per stampe su tela.
+${visionNote}
 TESTO DELL'OPERA:
 """
 ${product.descrizione_raw || 'Nessuna descrizione fornita'}
@@ -198,10 +255,14 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
   "Tema animali": "..."
 }`;
 
+  if (imageUrl) {
+    console.log(`[AI] Vision AI attiva per prodotto ${product.id || '?'} — immagine: ${imageUrl.slice(0, 60)}...`);
+  }
+
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 3000,
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
   });
 
   return parseJsonResponse(message.content[0].text);
@@ -215,6 +276,7 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
  * @param {string[]} keywords
  */
 async function regenerateSingleAttribute(product, nomeAttributo, currentValue, keywords = []) {
+  const imageUrl = getProductImageUrl(product);
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT:\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
@@ -293,10 +355,14 @@ Output: UNA sola riga di testo, senza virgolette esterne.`,
 
   const guide = guideMap[nomeAttributo] || 'campo testo libero per listing Amazon Italia';
 
+  const visionNoteRegen = imageUrl
+    ? '\n🖼️ ANALISI VISIVA: Ti viene fornita anche l\'immagine dell\'opera. Usala come fonte primaria per determinare soggetti, colori, personaggi e animali presenti.\n'
+    : '';
+
   const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
 Rigenera SOLO il campo "${nomeAttributo}" per questa stampa artistica su tela.
-
+${visionNoteRegen}
 TESTO DELL'OPERA:
 """
 ${product.descrizione_raw || 'Nessuna descrizione'}
@@ -316,10 +382,14 @@ ${guide}
 
 Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
 
+  if (imageUrl) {
+    console.log(`[AI] Vision AI attiva — rigenera "${nomeAttributo}" con immagine`);
+  }
+
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 1000,
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
   });
 
   return parseJsonResponse(message.content[0].text);
@@ -333,15 +403,20 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
  * @returns {string[]} array di keyword ordinate per rilevanza
  */
 async function generateKeywordsWithAI(product) {
+  const imageUrl = getProductImageUrl(product);
   const oriCalcKw = calcOrientamento(product.misura_max || product.dimensioni || '');
   const formatoKw = oriCalcKw
     ? `- Formato: ${oriCalcKw.orientamento} (dimensioni BASE×ALTEZZA: ${oriCalcKw.display} cm) — usa questo ordine e questo orientamento nelle keyword con dimensioni`
     : '';
 
+  const visionNoteKw = imageUrl
+    ? '\n🖼️ ANALISI VISIVA: Ti viene fornita anche l\'immagine dell\'opera. Usala per identificare con precisione: soggetti, colori dominanti, stile, elementi caratteristici — e genera keyword coerenti con ciò che si vede.\n'
+    : '';
+
   const prompt = `Sei un esperto SEO per Amazon Italia (marketplace IT), specializzato in arte e decorazione.
 
-Analizza questo prodotto e genera le migliori keyword di ricerca che i clienti italiani userebbero su Amazon.it per trovarlo.
-
+Analizza questo prodotto${imageUrl ? ' (testo + immagine)' : ''} e genera le migliori keyword di ricerca che i clienti italiani userebbero su Amazon.it per trovarlo.
+${visionNoteKw}
 PRODOTTO:
 - Opera: ${product.titolo_opera || ''}
 - Autore: ${product.autore || ''}
@@ -361,10 +436,14 @@ ISTRUZIONI:
 Rispondi SOLO con un JSON array di stringhe:
 ["keyword1", "keyword2", "keyword3", ...]`;
 
+  if (imageUrl) {
+    console.log(`[AI] Vision AI attiva — keyword generation con immagine`);
+  }
+
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 1000,
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
   });
 
   const text = message.content[0].text;
