@@ -192,9 +192,6 @@ const BYTE_TRIM_FIELDS = new Set([
   'Chiavi ricerca 1', 'Chiavi ricerca 2', 'Chiavi ricerca 3',
 ]);
 
-// Core terms Wall Art Amazon.it — inseriti in testa se mancanti
-const SEARCH_TERMS_CORE = ['quadro', 'stampa', 'tela', 'decorazione', 'parete'];
-
 /**
  * Taglia una stringa al massimo di maxBytes byte UTF-8,
  * senza spezzare caratteri multi-byte.
@@ -210,8 +207,11 @@ function trimToBytes(str, maxBytes = 1250) {
  * - Rimuove punteggiatura, emoji, simboli (regex Unicode-safe con flag /u)
  * - Converte in minuscolo
  * - Dedup con Set (O(n))
- * - Inserisce in testa i core terms mancanti (quadro, stampa, tela, decorazione, parete)
  * - Taglia a 1250 byte UTF-8 (5 slot × 250 — lo split avviene nell'export XLSM)
+ *
+ * NOTE: Non aggiunge più core terms forzati (quadro, stampa, tela...) perché
+ * sono già nel titolo/bullet e Amazon li indicizza da lì. I search terms
+ * devono contenere SOLO parole complementari non presenti nel titolo/bullet.
  */
 function normalizeSearchTerms(str) {
   if (!str) return str;
@@ -227,12 +227,8 @@ function normalizeSearchTerms(str) {
   const seen = new Set();
   const unique = words.filter(w => (seen.has(w) ? false : (seen.add(w), true)));
 
-  // Inserisci core terms mancanti in testa
-  const missingCore = SEARCH_TERMS_CORE.filter(t => !seen.has(t));
-  const result = [...missingCore, ...unique].join(' ');
-
   // Trim a 1250 byte (5 slot × 250) — lo split in export avviene in splitKeywordsTo5Slots()
-  return trimToBytes(result, 1250);
+  return trimToBytes(unique.join(' '), 1250);
 }
 
 /**

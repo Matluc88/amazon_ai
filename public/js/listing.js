@@ -49,7 +49,6 @@ function getByteLength(str) {
  */
 function normalizeSearchTermsClient(str) {
   if (!str) return str;
-  const CORE = ['quadro', 'stampa', 'tela', 'decorazione', 'parete'];
 
   let cleaned;
   try {
@@ -64,8 +63,7 @@ function normalizeSearchTermsClient(str) {
   const seen = new Set();
   const unique = words.filter(w => (seen.has(w) ? false : (seen.add(w), true)));
 
-  const missingCore = CORE.filter(t => !seen.has(t));
-  const joined = [...missingCore, ...unique].join(' ');
+  const joined = unique.join(' ');
 
   // Trim a 1250 byte UTF-8 (5 slot × 250 byte — lo split avviene nell'export)
   const encoder = new TextEncoder();
@@ -577,7 +575,7 @@ function createAttrCard(attr) {
     ? `<button class="btn-regen" onclick="regenerateAttr(${attr.id}, '${escHtml(attr.nome).replace(/'/g, "\\'")}', this)" title="Rigenera con AI">🔄 Rigenera</button>`
     : '';
   const ottimizzaBtn = BYTE_COUNTER_FIELDS.has(attr.nome)
-    ? `<button class="btn-ottimizza" onclick="ottimizzaChiavi(${attr.id})" title="Normalizza: rimuovi punteggiatura, dedup, aggiungi core terms (quadro stampa tela decorazione parete)">⚡ Ottimizza</button>`
+    ? `<button class="btn-ottimizza" onclick="ottimizzaChiavi(${attr.id})" title="Normalizza: rimuovi punteggiatura, deduplica parole ripetute, taglia a 1250 byte">⚡ Ottimizza</button>`
     : '';
 
   // Input element
@@ -1296,7 +1294,7 @@ function ottimizzaChiavi(attrId) {
   }
   el.value = normalized;
   handleInput(attrId, el);
-  showToast('⚡ Chiavi ottimizzate: punteggiatura rimossa, dedup applicato, core terms verificati', 'success');
+  showToast('⚡ Chiavi ottimizzate: punteggiatura rimossa, deduplicazione applicata', 'success');
 }
 
 // =============================================
