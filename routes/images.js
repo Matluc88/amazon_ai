@@ -11,6 +11,7 @@
  */
 const express = require('express');
 const multer  = require('multer');
+const sharp   = require('sharp');
 const { uploadImage, isConfigured } = require('../services/cloudinaryService');
 
 const router = express.Router();
@@ -57,7 +58,22 @@ router.post('/upload', (req, res, next) => {
       .replace(/\.[^.]+$/, '')          // rimuovi estensione se presente
       .replace(/[^a-zA-Z0-9_-]/g, '_'); // sanitize
 
-    const url = await uploadImage(req.file.buffer, publicId, folder);
+    // Comprimi se il file supera 9 MB (limite Cloudinary free plan: 10 MB)
+    const CLOUDINARY_MAX = 9 * 1024 * 1024; // 9 MB margine sicurezza
+    let imageBuffer = req.file.buffer;
+    if (imageBuffer.length > CLOUDINARY_MAX) {
+      imageBuffer = await sharp(imageBuffer)
+        .resize({ width: 4000, height: 4000, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+      // Secondo passaggio se ancora troppo grande
+      if (imageBuffer.length > CLOUDINARY_MAX) {
+        imageBuffer = await sharp(imageBuffer).jpeg({ quality: 70 }).toBuffer();
+      }
+      console.log(`[images] Compressa: ${req.file.size} → ${imageBuffer.length} byte`);
+    }
+
+    const url = await uploadImage(imageBuffer, publicId, folder);
 
     res.json({ url });
   } catch (err) {
