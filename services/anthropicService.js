@@ -3,6 +3,25 @@ const Anthropic = require('@anthropic-ai/sdk');
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
+ * Calcola orientamento e restituisce la stringa base×altezza già nello
+ * stesso formato in cui le misure sono salvate nel DB (dopo swapDimensions).
+ * Non importa da attributeService per evitare dipendenza circolare.
+ *
+ * @param {string} misuraStr  es. "130x90" (base×altezza, già swappato)
+ * @returns {{ orientamento: string, display: string } | null}
+ */
+function calcOrientamento(misuraStr) {
+  if (!misuraStr) return null;
+  const m = misuraStr.match(/(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i);
+  if (!m) return null;
+  const a = Math.round(parseFloat(m[1].replace(',', '.')));
+  const b = Math.round(parseFloat(m[2].replace(',', '.')));
+  if (isNaN(a) || isNaN(b)) return null;
+  const orientamento = a > b ? 'Orizzontale' : a < b ? 'Verticale' : 'Quadrato';
+  return { orientamento, display: `${a}x${b}` };
+}
+
+/**
  * Genera TUTTI gli attributi AI in una singola chiamata Claude
  * @param {object} product - dati del prodotto (descrizione_raw, dimensioni, ecc.)
  * @param {string[]} keywords - keyword minate da Amazon (opzionale)
@@ -28,6 +47,12 @@ async function generateAllAiAttributes(product, keywords = []) {
 
   // Dimensione taglia grande per single ASIN (es. "70x100")
   const dimensioneSingle = product.dimensioni || product.misura_max || '';
+
+  // Orientamento e formato dimensioni (base×altezza)
+  const oriCalc = calcOrientamento(product.misura_max || product.dimensioni || '');
+  const formatoSection = oriCalc
+    ? `\n⚠️ FORMATO ARTWORK: ${oriCalc.orientamento.toUpperCase()} — Le dimensioni nel DB sono BASE×ALTEZZA (es. "${oriCalc.display}" = base ${oriCalc.display.split('x')[0]} cm × altezza ${oriCalc.display.split('x')[1]} cm). Nelle Chiavi di ricerca usa SEMPRE questo ordine (base×altezza) e indica il formato ${oriCalc.orientamento.toLowerCase()} corretto.`
+    : '';
 
   const prompt = `Sei un esperto di listing Amazon per il mercato italiano, specializzato in arte e decorazione.
 
@@ -90,6 +115,7 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 - Chiudi dopo le misure con una frase che invita all'acquisto
 
 ### CHIAVI DI RICERCA (campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali):
+${formatoSection}
 Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo.
 Riempi 1100–1200 byte totali — ogni blocco deve essere ampio e dettagliato. Il testo verrà distribuito automaticamente su 5 slot da 250 byte.
 NON ripetere parole già nel Nome dell'articolo, nei Punti elenco o nel brand.
@@ -206,6 +232,12 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     : Boolean(product.misura_max);
   const dimensioneSingleRegen = product.dimensioni || product.misura_max || '';
 
+  // Orientamento per rigenera
+  const oriCalcRegen = calcOrientamento(product.misura_max || product.dimensioni || '');
+  const formatoInfoRegen = oriCalcRegen
+    ? `\n⚠️ FORMATO ARTWORK: ${oriCalcRegen.orientamento.toUpperCase()} — dimensioni BASE×ALTEZZA: ${oriCalcRegen.display} cm. Usa SEMPRE questo ordine e questo orientamento.`
+    : '';
+
   const guideMap = {
     "Nome dell'articolo": `Titolo Amazon CTR-first + SEO. Range TARGET: 150–180 caratteri, MAI oltre 200.
 
@@ -279,6 +311,7 @@ ${currentValue || 'Non presente'}
 ${keywordsSection}
 ⚠️ REGOLA CRITICA — AMAZON POLICY: VIETATO TASSATIVO in qualsiasi campo: "contenuti per adulti", "per adulti", "adult", "erotico", "sensuale", "intimo", "sexy" o qualsiasi termine che Amazon possa classificare come adult content. Per soggetti romantici (baci, coppie, abbracci): usa SOLO "romantico", "coppia", "amore", "sentimentale", "arte figurativa".
 
+${formatoInfoRegen}
 GUIDA SPECIFICA PER QUESTO CAMPO:
 ${guide}
 
@@ -301,6 +334,11 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
  * @returns {string[]} array di keyword ordinate per rilevanza
  */
 async function generateKeywordsWithAI(product) {
+  const oriCalcKw = calcOrientamento(product.misura_max || product.dimensioni || '');
+  const formatoKw = oriCalcKw
+    ? `- Formato: ${oriCalcKw.orientamento} (dimensioni BASE×ALTEZZA: ${oriCalcKw.display} cm) — usa questo ordine e questo orientamento nelle keyword con dimensioni`
+    : '';
+
   const prompt = `Sei un esperto SEO per Amazon Italia (marketplace IT), specializzato in arte e decorazione.
 
 Analizza questo prodotto e genera le migliori keyword di ricerca che i clienti italiani userebbero su Amazon.it per trovarlo.
@@ -309,6 +347,7 @@ PRODOTTO:
 - Opera: ${product.titolo_opera || ''}
 - Autore: ${product.autore || ''}
 - Dimensioni: ${product.dimensioni || product.misura_max || ''}
+${formatoKw}
 - Tecnica: ${product.tecnica || 'Stampa su tela'}
 - Descrizione: ${(product.descrizione_raw || '').slice(0, 600)}
 
