@@ -20,7 +20,7 @@ const CHAR_LIMITS = {
   'Punto elenco 1': 500, 'Punto elenco 2': 500,
   'Punto elenco 3': 500, 'Punto elenco 4': 500,
   'Punto elenco 5': 500,
-  'Chiavi di ricerca': 250,
+  'Chiavi di ricerca': 1250,
   // backward compat per varianti seed precedenti
   'Nome articolo': 200,
   'Descrizione prodotto': 2000,
@@ -67,11 +67,11 @@ function normalizeSearchTermsClient(str) {
   const missingCore = CORE.filter(t => !seen.has(t));
   const joined = [...missingCore, ...unique].join(' ');
 
-  // Trim a 250 byte UTF-8
+  // Trim a 1250 byte UTF-8 (5 slot × 250 byte — lo split avviene nell'export)
   const encoder = new TextEncoder();
-  if (encoder.encode(joined).length <= 250) return joined;
+  if (encoder.encode(joined).length <= 1250) return joined;
   let trimmed = joined;
-  while (encoder.encode(trimmed).length > 250) {
+  while (encoder.encode(trimmed).length > 1250) {
     trimmed = trimmed.slice(0, trimmed.length - 1);
   }
   return trimmed.trimEnd();

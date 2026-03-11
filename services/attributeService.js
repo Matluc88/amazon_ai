@@ -335,17 +335,21 @@ async function getProductListing(productId, product = null) {
       return '';
     }
 
+  // Campi AI facoltativi per cui mostrare "N/D" se il valore non è ancora stato generato
+  const ND_FALLBACK_FIELDS = new Set(['Personaggio rappresentato', 'Tema animali']);
+
   // Raggruppa per sezione
   const sections = {};
   for (const row of result.rows) {
     if (!sections[row.sezione]) sections[row.sezione] = [];
 
     // Priorità: FIXED usa sempre il fixedValue (ignora vecchi valori AI nel DB)
-    //           AI/MANUAL: valore salvato → fallback AUTO → ''
+    //           AI/MANUAL: valore salvato → fallback AUTO → fallback N/D → ''
     const displayValue = row.source === 'FIXED'
       ? (row.fixed_value || '')
       : (row.value
           || (row.source === 'AUTO' ? autoFallback(row.nome_attributo) : '')
+          || (ND_FALLBACK_FIELDS.has(row.nome_attributo) ? 'N/D' : '')
           || '');
 
     sections[row.sezione].push({
