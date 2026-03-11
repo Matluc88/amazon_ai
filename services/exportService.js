@@ -309,12 +309,14 @@ async function exportProductToXlsm(productId) {
   const hasVariants = !!(product.sku_max || product.sku_padre);
 
   if (hasVariants) {
-    // ── Riga parent ───────────────────────────────────────
+    // ── Riga parent — usa dimensioni della variante più grande per l'imballaggio ──
+    const parentDims = extractDimensions(product.misura_max || product.misura_media || product.misura_mini || '');
+    const parentPeso = lookupWeight(product.misura_max || product.misura_media || product.misura_mini || '');
     rows.push({
       sku: product.sku_padre || product.titolo_opera?.substring(0, 40) || `SKU-${productId}`,
       taglia: null,
-      dims: null,
-      peso: null,
+      dims: parentDims,
+      peso: parentPeso,
       prezzo: null,
       immagine: null,
       isParent: true,
@@ -440,9 +442,11 @@ async function exportAllProductsToXlsm(productIds = null) {
     const hasVariants = !!(product.sku_max || product.sku_padre);
 
     if (hasVariants) {
+      const parentDims = extractDimensions(product.misura_max || product.misura_media || product.misura_mini || '');
+      const parentPeso = lookupWeight(product.misura_max || product.misura_media || product.misura_mini || '');
       rows.push({
         sku: product.sku_padre || product.titolo_opera?.substring(0, 40) || `SKU-${product.id}`,
-        taglia: null, dims: null, peso: null, prezzo: null, immagine: null, isParent: true,
+        taglia: null, dims: parentDims, peso: parentPeso, prezzo: null, immagine: null, isParent: true,
       });
 
       const childVariants = [
