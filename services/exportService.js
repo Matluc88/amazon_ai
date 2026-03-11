@@ -262,11 +262,13 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 237, rowIdx, 'Chilogrammi');             // unità peso imballaggio
   }
 
-  // ── Immagini variante (principale=frontale, col22=laterale, col23=proporzione) ───
+  // ── Immagini variante child (col21=principale sfondo bianco dal parent via attrs) ───
+  // col 21 (Immagine principale) arriva dall'ATTR_COL loop sopra → attrs["Immagine principale"]
+  // Le immagini specifiche della variante occupano le colonne successive
   if (!isParent) {
-    if (immagine)    setCellValue(sheet, 21, rowIdx, immagine);       // frontale (principale)
-    if (immagine2)   setCellValue(sheet, 22, rowIdx, immagine2);      // laterale
-    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);      // proporzione
+    if (immagine)    setCellValue(sheet, 22, rowIdx, immagine);       // ambientata frontale
+    if (immagine2)   setCellValue(sheet, 23, rowIdx, immagine2);      // ambientata di lato
+    if (immagine3)   setCellValue(sheet, 24, rowIdx, immagine3);      // proporzione
   }
 }
 
