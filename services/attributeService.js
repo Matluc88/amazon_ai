@@ -200,7 +200,7 @@ const SEARCH_TERMS_CORE = ['quadro', 'stampa', 'tela', 'decorazione', 'parete'];
  * senza spezzare caratteri multi-byte.
  * Buffer.from().toString('utf8') gestisce automaticamente le sequenze incomplete.
  */
-function trimToBytes(str, maxBytes = 250) {
+function trimToBytes(str, maxBytes = 1250) {
   if (!str) return str;
   return Buffer.from(str, 'utf8').slice(0, maxBytes).toString('utf8').trimEnd();
 }
@@ -211,7 +211,7 @@ function trimToBytes(str, maxBytes = 250) {
  * - Converte in minuscolo
  * - Dedup con Set (O(n))
  * - Inserisce in testa i core terms mancanti (quadro, stampa, tela, decorazione, parete)
- * - Taglia a 250 byte UTF-8
+ * - Taglia a 1250 byte UTF-8 (5 slot × 250 — lo split avviene nell'export XLSM)
  */
 function normalizeSearchTerms(str) {
   if (!str) return str;
@@ -231,7 +231,8 @@ function normalizeSearchTerms(str) {
   const missingCore = SEARCH_TERMS_CORE.filter(t => !seen.has(t));
   const result = [...missingCore, ...unique].join(' ');
 
-  return trimToBytes(result, 250);
+  // Trim a 1250 byte (5 slot × 250) — lo split in export avviene in splitKeywordsTo5Slots()
+  return trimToBytes(result, 1250);
 }
 
 /**
