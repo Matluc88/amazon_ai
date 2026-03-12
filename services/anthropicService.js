@@ -80,6 +80,8 @@ function calcOrientamento(misuraStr) {
  */
 async function generateAllAiAttributes(product, keywords = []) {
   const imageUrl = getProductImageUrl(product);
+  // ⚠️ Autore con fallback — evita che Claude usi il titolo dell'opera come nome artista
+  const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
@@ -120,7 +122,9 @@ TESTO DELL'OPERA:
 ${product.descrizione_raw || 'Nessuna descrizione fornita'}
 """
 ${product.dimensioni ? `\nDIMENSIONI (taglia grande): ${product.dimensioni}` : ''}
-${product.autore ? `\nAUTORE: ${product.autore}` : ''}
+
+AUTORE DELL'OPERA: ${autore}
+⚠️ CRITICO — NON CONFONDERE: "${autore}" è il NOME DELL'ARTISTA. Il titolo dell'opera (es. "${product.titolo_opera || product.descrizione_raw?.split('\n')[0]?.slice(0, 40) || ''}") è il TITOLO, non l'autore. Usa SEMPRE e SOLO "${autore}" dove richiesto il nome dell'artista/autore.
 ${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
 ${variantiSection}
 ${keywordsSection}
@@ -163,9 +167,9 @@ ESEMPI CORRETTI:
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
-- La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dell'artista [autore]." — sostituisci [autore] con il nome reale (usa "dell'artista", NON "dipinta dall'artista")
+- La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON modificarlo): "Stampa su tela che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinta dall'artista")
 - ⚠️ REGOLA TECNICA: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano. VIETATO: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto venduto
-- ⚠️ VIETATO nel corpo della descrizione: "dipinto da [autore]", "quadro di [autore]", "opera di [autore]" — usa SEMPRE "stampa artistica su tela dell'opera originale di [autore]" o formulazioni equivalenti che chiariscono che è una stampa, non un originale
+- ⚠️ VIETATO nel corpo della descrizione: "dipinto da ${autore}", "quadro di ${autore}", "opera di ${autore}" — usa SEMPRE "stampa artistica su tela dell'opera originale di ${autore}" o formulazioni equivalenti che chiariscono che è una stampa, non un originale
 - Prosegui raccontando l'opera con linguaggio evocativo
 - Suggerisci contesti d'uso e destinatari
 - ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI chiudere SEMPRE la descrizione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti.
@@ -212,10 +216,10 @@ Max 220 caratteri per bullet (leggibilità mobile). NON fare keyword stuffing.
 
 Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 
-- Punto elenco 1 — MATERIALE: usa SEMPRE questa formulazione esatta:
-  "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista [autore], montata su telaio in legno e pronta da appendere."
-  (sostituisci [autore] con il nome reale; chiarisce che è una riproduzione, non un originale)
-- ⚠️ La formulazione "Riproduzione su tela dell'opera originale dell'artista [autore]" deve comparire SOLO nel Punto elenco 1 — NON nei bullet 2-5
+- Punto elenco 1 — MATERIALE: usa QUESTA formulazione ESATTA (il nome è già inserito — NON cambiarlo con il titolo dell'opera):
+  "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista ${autore}, montata su telaio in legno e pronta da appendere."
+  ("${autore}" è il NOME DELL'ARTISTA — non confonderlo con il titolo dell'opera)
+- ⚠️ La formulazione "Riproduzione su tela dell'opera originale dell'artista ${autore}" deve comparire SOLO nel Punto elenco 1 — NON nei bullet 2-5
 - Punto elenco 2 — STILE/ARTE: inizia con "ARTE [STILE] –" e descrivi l'opera, i colori dominanti, l'impatto visivo
 - Punto elenco 3 — AMBIENTI: inizia con "DECORAZIONE PARETE –" e indica i contesti ideali (soggiorno, camera da letto, ufficio, studio, corridoio...)
 - Punto elenco 4 — INSTALLAZIONE: inizia con "PRONTO DA APPENDERE –" e descrivi telaio in legno, ganci inclusi, misure disponibili. ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.
@@ -281,6 +285,8 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
  */
 async function regenerateSingleAttribute(product, nomeAttributo, currentValue, keywords = []) {
   const imageUrl = getProductImageUrl(product);
+  // ⚠️ Autore con fallback — stesso pattern di generateAllAiAttributes
+  const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT:\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
@@ -324,8 +330,8 @@ VIETATO:
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
-    "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE: "Stampa su tela che riproduce un'opera originale dell'artista [autore]." (sostituisci [autore] con il nome reale; usa "dell'artista", NON "dipinta dall'artista"). REGOLA TECNICA: VIETATO "dipinto", "tela dipinta" come attributo del prodotto. Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
-    "Punto elenco 1": `MATERIALE — usa SEMPRE questa formulazione esatta: "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista [autore], montata su telaio in legno e pronta da appendere." Sostituisci [autore] con il nome reale. VIETATO: "dipinto", "tela dipinta" — usa sempre "riproduzione su tela". ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
+    "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON cambiarlo): "Stampa su tela che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinta dall'artista"). REGOLA TECNICA: VIETATO "dipinto", "tela dipinta" come attributo del prodotto. Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
+    "Punto elenco 1": `MATERIALE — usa QUESTA formulazione ESATTA (il nome è già inserito — NON cambiarlo con il titolo dell'opera): "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista ${autore}, montata su telaio in legno e pronta da appendere." ("${autore}" è il NOME DELL'ARTISTA). VIETATO: "dipinto", "tela dipinta". ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
     "Punto elenco 2": 'STILE/ARTE — inizia con "ARTE [STILE] –" e descrivi l\'opera, i colori principali, l\'impatto visivo ed emotivo',
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie). ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.',
@@ -375,7 +381,9 @@ TESTO DELL'OPERA:
 ${product.descrizione_raw || 'Nessuna descrizione'}
 """
 ${product.dimensioni ? `\nDIMENSIONI: ${product.dimensioni}` : ''}
-${product.autore ? `\nAUTORE: ${product.autore}` : ''}
+
+AUTORE DELL'OPERA: ${autore}
+⚠️ CRITICO — NON CONFONDERE: "${autore}" è il NOME DELL'ARTISTA, non il titolo dell'opera. Usa SEMPRE e SOLO "${autore}" dove richiesto il nome dell'artista/autore.
 ${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
 
 VALORE ATTUALE (da migliorare):
