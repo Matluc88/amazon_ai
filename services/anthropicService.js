@@ -327,7 +327,15 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
     messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
   });
 
-  return parseJsonResponse(message.content[0].text);
+  const result = parseJsonResponse(message.content[0].text);
+
+  // ─── Validazione lunghezza titolo post-generazione ──────────────────────
+  if (result["Nome dell'articolo"]) {
+    result["Nome dell'articolo"] = smartTruncateTitle(result["Nome dell'articolo"], stableKey);
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  return result;
 }
 
 /**
@@ -474,7 +482,15 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
     messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
   });
 
-  return parseJsonResponse(message.content[0].text);
+  const regenResult = parseJsonResponse(message.content[0].text);
+
+  // ─── Validazione lunghezza titolo (solo per la rigenerazione del titolo) ─
+  if (nomeAttributo === "Nome dell'articolo" && regenResult[nomeAttributo]) {
+    regenResult[nomeAttributo] = smartTruncateTitle(regenResult[nomeAttributo], stableKeyRegen);
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  return regenResult;
 }
 
 /**
@@ -538,6 +554,40 @@ Rispondi SOLO con un JSON array di stringhe:
   } catch {
     return [];
   }
+}
+
+/**
+ * Smart truncation del titolo Amazon.
+ * Applica la chain: ultima virgola → ultimo spazio → taglio secco a 200 + trim().
+ * Logga warning se il titolo era oltre limite (> 200) o in zona gialla (181-200).
+ *
+ * @param {string} title      - Titolo generato da Claude
+ * @param {string} stableKey  - SKU o ID del prodotto (per il log)
+ * @returns {string}          - Titolo entro 200 caratteri
+ */
+function smartTruncateTitle(title, stableKey) {
+  if (!title) return title;
+  const len = title.length;
+
+  if (len > 200) {
+    // Fallback chain: virgola → spazio → taglio secco
+    let cutAt = title.lastIndexOf(',', 199);   // ultima virgola entro 200
+    if (cutAt < 100) {
+      cutAt = title.lastIndexOf(' ', 199);     // ultimo spazio entro 200
+    }
+    const truncated = cutAt > 100
+      ? title.slice(0, cutAt).trim()
+      : title.slice(0, 200).trim();
+
+    console.warn(`[AI] ⚠️ Titolo TRONCATO [${stableKey}]: ${len} → ${truncated.length} car. (taglio: ${cutAt > 100 ? (title[cutAt] === ',' ? 'virgola' : 'spazio') : 'secco'})`);
+    return truncated;
+  }
+
+  if (len > 180) {
+    console.info(`[AI] ℹ️ Titolo zona gialla [${stableKey}]: ${len} car. (target 150-180, max 200)`);
+  }
+
+  return title;
 }
 
 /**
