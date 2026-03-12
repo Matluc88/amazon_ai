@@ -2,6 +2,45 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ─── POOL ANTI-CANNIBALIZZAZIONE TITOLI ────────────────────────────────────
+// Rotazione deterministica: ogni ASIN riceve uno stile e una coppia di stanze
+// univoci, evitando che tutti i listing convergano sulle stesse keyword SEO.
+const STYLE_POOL = [
+  'Quadro Moderno',
+  'Stampa su Tela Canvas',
+  'Quadro Astratto Moderno',
+  'Arte Contemporanea Italiana',
+  'Wall Art Moderna',
+  'Stampa Artistica su Tela'
+];
+
+const ROOM_POOL = [
+  'Soggiorno e Camera da Letto',
+  'Soggiorno e Ufficio',
+  'Camera da Letto e Studio',
+  'Salotto Moderno e Ingresso',
+  'Ufficio e Studio Medico',
+  'Sala da Pranzo e Corridoio'
+];
+
+/**
+ * Hash deterministico su stringa → intero positivo a 32 bit.
+ * Permette di derivare stile/stanze dall'SKU del prodotto in modo stabile,
+ * indipendentemente dagli ID del database.
+ *
+ * @param {string} str
+ * @returns {number}
+ */
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0; // forza 32-bit integer
+  }
+  return Math.abs(hash);
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 /**
  * Costruisce il contenuto del messaggio Claude con o senza immagine.
  * Se imageUrl è valido, invia immagine + testo (Vision AI).
@@ -82,6 +121,15 @@ async function generateAllAiAttributes(product, keywords = []) {
   const imageUrl = getProductImageUrl(product);
   // ⚠️ Autore con fallback — evita che Claude usi il titolo dell'opera come nome artista
   const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
+
+  // ─── Rotazione anti-cannibalizzazione ────────────────────────────────────
+  // Hash deterministico sullo SKU del parent (stabile anche se gli ID cambiano)
+  const stableKey = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
+  const hashValue = simpleHash(stableKey);
+  const selectedStyle = STYLE_POOL[hashValue % STYLE_POOL.length];
+  const selectedRooms = ROOM_POOL[(hashValue + 3) % ROOM_POOL.length];
+  // ─────────────────────────────────────────────────────────────────────────
+
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
@@ -139,14 +187,20 @@ ISTRUZIONI:
 Obiettivo: titolo CTR-first + SEO, leggibile su mobile, italiano naturale senza keyword stuffing.
 Range TARGET: 150–180 caratteri. MAI oltre 200. Mira ai 160–170.
 
+⚠️ ANTI-CANNIBALIZZAZIONE — Stile e stanze PRE-ASSEGNATI per questo prodotto (rotazione deterministica):
+- Stile OBBLIGATORIO nel titolo: "${selectedStyle}"
+- Stanze OBBLIGATORIE nel titolo: "${selectedRooms}"
+USA questi valori nel titolo. NON sostituirli con altri stili o stanze diversi da quelli assegnati.
+Se necessario, adatta la struttura della frase per garantire un titolo naturale e coerente con il soggetto dell'opera, ma le parole chiave dello stile e delle stanze assegnate devono comparire integralmente.
+
 STRUTTURA OBBLIGATORIA (segui quest'ordine esatto, massimo 3 virgole interne):
-"Stampa su Tela {soggetto}, {stile} dai Colori {colore1} e {colore2}, Decorazione Parete per {stanza1} e {stanza2}, Pronto da Appendere{DIMENSIONE}"
+"Stampa su Tela {soggetto}, ${selectedStyle} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRooms}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
 - {soggetto}: 2–5 parole descrittive dell'opera (es. "Coppia Romantica", "Paesaggio Astratto", "Figura Femminile al Mare")
-- {stile}: es. "Quadro Moderno", "Quadro Astratto Moderno", "Quadro Contemporaneo"
+- {stile}: OBBLIGATORIO "${selectedStyle}" — non usare altri stili
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
-- {stanza1} e {stanza2}: le 2 stanze più coerenti con l'opera (es. "Soggiorno e Camera da Letto", "Soggiorno e Ufficio")
+- {stanza1} e {stanza2}: OBBLIGATORIO "${selectedRooms}" — non usare altre stanze
 - {DIMENSIONE}:
   - hasSizeVariants = ${hasSizeVariants}
   - Se hasSizeVariants è TRUE (prodotto parent con 3 taglie): NON aggiungere NESSUNA dimensione nel titolo
@@ -296,6 +350,13 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     ? `${product.misura_mini}, ${product.misura_media}, ${product.misura_max} cm`
     : null;
 
+  // ─── Rotazione anti-cannibalizzazione (stessa logica di generateAllAiAttributes) ──
+  const stableKeyRegen = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
+  const hashValueRegen = simpleHash(stableKeyRegen);
+  const selectedStyleRegen = STYLE_POOL[hashValueRegen % STYLE_POOL.length];
+  const selectedRoomsRegen = ROOM_POOL[(hashValueRegen + 3) % ROOM_POOL.length];
+  // ─────────────────────────────────────────────────────────────────────────────────
+
   // hasSizeVariants per regenerate (stessa logica di generateAllAiAttributes)
   const hasSizeVariantsRegen = typeof product.misura_max === 'string'
     ? product.misura_max.trim().length > 0 && product.misura_max.trim() !== '—'
@@ -311,14 +372,20 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
   const guideMap = {
     "Nome dell'articolo": `Titolo Amazon CTR-first + SEO. Range TARGET: 150–180 caratteri, MAI oltre 200.
 
+⚠️ ANTI-CANNIBALIZZAZIONE — Stile e stanze PRE-ASSEGNATI per questo prodotto (rotazione deterministica):
+- Stile OBBLIGATORIO nel titolo: "${selectedStyleRegen}"
+- Stanze OBBLIGATORIE nel titolo: "${selectedRoomsRegen}"
+USA questi valori nel titolo. NON sostituirli con altri stili o stanze diversi da quelli assegnati.
+Se necessario, adatta la struttura della frase per garantire un titolo naturale e coerente con il soggetto dell'opera, ma le parole chiave dello stile e delle stanze assegnate devono comparire integralmente.
+
 STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Stampa su Tela {soggetto}, {stile} dai Colori {colore1} e {colore2}, Decorazione Parete per {stanza1} e {stanza2}, Pronto da Appendere{DIMENSIONE}"
+"Stampa su Tela {soggetto}, ${selectedStyleRegen} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRoomsRegen}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
 - {soggetto}: 2–5 parole descrittive dell'opera (es. "Coppia Romantica", "Paesaggio Astratto")
-- {stile}: es. "Quadro Moderno", "Quadro Contemporaneo", "Quadro Astratto Moderno"
+- {stile}: OBBLIGATORIO "${selectedStyleRegen}" — non usare altri stili
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
-- {stanza1} e {stanza2}: le 2 stanze più coerenti con l'opera
+- {stanza1} e {stanza2}: OBBLIGATORIO "${selectedRoomsRegen}" — non usare altre stanze
 - hasSizeVariants = ${hasSizeVariantsRegen}
 - {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → aggiungi ", ${dimensioneSingleRegen} cm"
 
