@@ -687,9 +687,16 @@ function showToast(message, type = 'info') {
 // AMAZON STATUS FILTER
 // =============================================
 function getAmazonStatus(p) {
-  const filled = [p.asin_padre, p.asin_max, p.asin_media, p.asin_mini].filter(v => v && v.trim()).length;
+  // Controlla solo le varianti che il prodotto ha effettivamente (in base alle misure)
+  const checks = [];
+  if (p.misura_max)   checks.push(p.asin_max);
+  if (p.misura_media) checks.push(p.asin_media);
+  if (p.misura_mini)  checks.push(p.asin_mini);
+
+  if (checks.length === 0) return 'none';
+  const filled = checks.filter(v => v && v.trim()).length;
   if (filled === 0) return 'none';
-  if (filled < 4) return 'partial';
+  if (filled < checks.length) return 'partial';
   return 'live';
 }
 
