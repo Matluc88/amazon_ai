@@ -214,8 +214,18 @@ function renderProductInfo(product) {
   }
 
   if (fields.length) {
-    // Immagine opera: prende la prima disponibile tra immagine_max, media, mini
-    const imgSrc = product.immagine_max || product.immagine_media || product.immagine_mini || null;
+    // Immagine principale dal listing (sezione immagini del prodotto parent)
+    // Fallback alle immagini varianti se l'immagine principale non è ancora caricata
+    let imgSrc = null;
+    if (currentSections) {
+      for (const attrs of Object.values(currentSections)) {
+        const imgAttr = attrs.find(a => /^immagine\s*principale/i.test(a.nome));
+        if (imgAttr && imgAttr.value) { imgSrc = imgAttr.value; break; }
+      }
+    }
+    if (!imgSrc) {
+      imgSrc = product.immagine_max || product.immagine_media || product.immagine_mini || null;
+    }
     const imgHtml = imgSrc ? `
       <div style="float:right;margin:0 0 12px 18px;flex-shrink:0;">
         <img src="${escHtml(imgSrc)}" alt="Opera"
