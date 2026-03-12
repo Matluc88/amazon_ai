@@ -214,7 +214,18 @@ function renderProductInfo(product) {
   }
 
   if (fields.length) {
-    document.getElementById('productInfoRows').innerHTML = fields.map(f => `
+    // Immagine opera: prende la prima disponibile tra immagine_max, media, mini
+    const imgSrc = product.immagine_max || product.immagine_media || product.immagine_mini || null;
+    const imgHtml = imgSrc ? `
+      <div style="float:right;margin:0 0 12px 18px;flex-shrink:0;">
+        <img src="${escHtml(imgSrc)}" alt="Opera"
+          style="width:130px;height:130px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);box-shadow:var(--shadow-sm);cursor:pointer;"
+          onclick="window.open('${escHtml(imgSrc)}','_blank')"
+          title="Clicca per ingrandire"
+        />
+      </div>` : '';
+
+    document.getElementById('productInfoRows').innerHTML = imgHtml + fields.map(f => `
       <div class="product-info-row">
         <span class="info-key">${f.k}:</span>
         <span class="info-val">${escHtml(f.v)}</span>

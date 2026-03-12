@@ -83,7 +83,7 @@ function parseSivigliartRows(rawRows, meta) {
       const misuraSwapped = swapDimensions(misura);
       current = {
         titolo_opera: titolo,
-        autore: '',
+        autore: 'Alessandro Siviglia',
         dimensioni: misuraSwapped,    // dimensioni = misura grande (per compatibilità listing AI)
         tecnica: 'Stampa su tela',
         descrizione_raw: null,        // verrà aggiunta dall'utente separatamente
