@@ -46,7 +46,7 @@ function detectSivigliartFormat(rawRows) {
     const titoloIdx = row.indexOf('titolo');
     const misuraIdx = row.findIndex(h => h.includes('misura'));
     const prezzoIdx = row.findIndex(h => h.includes('prezzo'));
-    const skuVariantiIdx = row.findIndex(h => h.includes('sku') && h.includes('variant'));
+    const skuVariantiIdx = row.findIndex(h => h.includes('sku'));
 
     if (titoloIdx >= 0 && misuraIdx >= 0) {
       return { headerIdx: i, titoloIdx, misuraIdx, prezzoIdx, skuVariantiIdx };
