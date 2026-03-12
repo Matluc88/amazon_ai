@@ -440,16 +440,18 @@ async function deleteProduct(productId, btn) {
 // TAB SWITCHING (3 tab)
 // =============================================
 function switchImportTab(tab) {
-  const tabs = ['catalog', 'desc', 'paste'];
+  const tabs = ['catalog', 'desc', 'paste', 'asin'];
   const btns = {
     catalog: document.getElementById('tabCatalogBtn'),
-    desc: document.getElementById('tabDescBtn'),
-    paste: document.getElementById('tabPasteBtn'),
+    desc:    document.getElementById('tabDescBtn'),
+    paste:   document.getElementById('tabPasteBtn'),
+    asin:    document.getElementById('tabAsinBtn'),
   };
   const panels = {
     catalog: document.getElementById('tabCatalog'),
-    desc: document.getElementById('tabDesc'),
-    paste: document.getElementById('tabPaste'),
+    desc:    document.getElementById('tabDesc'),
+    paste:   document.getElementById('tabPaste'),
+    asin:    document.getElementById('tabAsin'),
   };
 
   tabs.forEach(t => {
@@ -709,4 +711,193 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// =============================================
+// TAB 4 — AGGIORNA ASIN DAL REPORT INVENTARIO
+// =============================================
+
+/**
+ * Gestisce la selezione del file report inventario Amazon.
+ * Parsa il TSV client-side e mostra anteprima delle entry trovate.
+ */
+function handleAsinFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const entries = parseInventoryReport(text);
+    const infoDiv = document.getElementById('asinFileInfo');
+    const importBtn = document.getElementById('importAsinsBtn');
+    const area = document.getElementById('asinUploadArea');
+
+    if (entries.length === 0) {
+      infoDiv.style.display = 'block';
+      infoDiv.innerHTML = `<span style="color:var(--danger);">⚠️ Nessuna entry trovata nel file. Verifica che sia il formato corretto (TSV con colonne sku, asin).</span>`;
+      importBtn.disabled = true;
+      return;
+    }
+
+    // Mostra anteprima
+    const prodotti = new Set(entries.map(e => e.sku.replace(/[-_](max|media|mini)$/i, '')));
+    infoDiv.style.display = 'block';
+    infoDiv.innerHTML = `
+      <strong>📄 File:</strong> ${escHtml(file.name)} &nbsp;
+      <strong>📊 Entry trovate:</strong> ${entries.length} &nbsp;
+      <strong>🖼️ Prodotti:</strong> ${prodotti.size}
+      <div style="margin-top:6px;font-size:12px;color:var(--gray-500);">
+        SKU: ${[...prodotti].map(s => escHtml(s)).join(', ')}
+      </div>`;
+
+    // Aggiorna upload area con nome file
+    area.innerHTML = `<span class="upload-icon">✅</span><h3>${escHtml(file.name)}</h3><p>${entries.length} entry, ${prodotti.size} prodotti</p>`;
+
+    importBtn.disabled = false;
+
+    // Salva le entry in memoria per quando si clicca il pulsante
+    importBtn._entries = entries;
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * Parsa il TSV del Report Inventario Amazon.
+ * Formato atteso (tab-separated):
+ *   sku  asin  price  quantity  ...
+ *   bacio-molo-max  B0XXXXXXXXX  330.00  100  ...
+ */
+function parseInventoryReport(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return [];
+
+  // Trova la riga header (contiene "sku" e "asin" come colonne)
+  let headerIdx = -1;
+  let skuCol = -1;
+  let asinCol = -1;
+
+  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const cols = lines[i].split('\t').map(c => c.trim().toLowerCase());
+    const si = cols.indexOf('sku');
+    const ai = cols.indexOf('asin');
+    if (si >= 0 && ai >= 0) {
+      headerIdx = i;
+      skuCol = si;
+      asinCol = ai;
+      break;
+    }
+  }
+
+  if (headerIdx === -1) return []; // header non trovato
+
+  const entries = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const cols = lines[i].split('\t').map(c => c.trim());
+    const sku = cols[skuCol] || '';
+    const asin = cols[asinCol] || '';
+    if (sku && asin && /^[A-Z0-9]{10}$/i.test(asin)) {
+      entries.push({ sku, asin });
+    }
+  }
+  return entries;
+}
+
+/**
+ * Invia le entry parsate all'endpoint /api/products/import-asins
+ * e mostra il report risultato.
+ */
+async function importAsins() {
+  const btn = document.getElementById('importAsinsBtn');
+  const entries = btn._entries;
+
+  if (!entries || entries.length === 0) {
+    showToast('Seleziona prima un file', 'warning');
+    return;
+  }
+
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Elaborazione...';
+
+  try {
+    const res = await fetch('/api/products/import-asins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const { updated, skipped, not_found, errors } = data;
+
+    // Toast riassuntivo
+    const type = updated > 0 ? 'success' : (not_found > 0 || errors > 0 ? 'warning' : 'info');
+    showToast(
+      `🛒 ${updated} aggiornati | ⏩ ${skipped} già presenti | ❌ ${not_found + errors} non trovati/errori`,
+      type
+    );
+
+    // Render tabella dettaglio
+    renderAsinImportResults(data);
+
+    // Ricarica prodotti se ci sono aggiornamenti
+    if (updated > 0) loadProducts();
+
+    // Reset
+    btn._entries = null;
+
+  } catch (err) {
+    showToast(`Errore: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
+/**
+ * Mostra il report dettagliato dell'import ASIN.
+ */
+function renderAsinImportResults(data) {
+  const container = document.getElementById('asinImportResults');
+  if (!container) return;
+
+  const { updated, skipped, not_found, errors, details } = data;
+
+  const statusIcon = { updated: '✅', skipped: '⏩', not_found: '⚠️', error: '❌' };
+  const statusColor = { updated: '#16a34a', skipped: '#6b7280', not_found: '#d97706', error: '#dc2626' };
+
+  const rows = (details || []).map(d => `
+    <tr>
+      <td style="font-family:monospace;font-size:12px;">${escHtml(d.sku)}</td>
+      <td style="font-family:monospace;font-size:12px;">${escHtml(d.asin)}</td>
+      <td style="color:${statusColor[d.status] || '#374151'};font-weight:600;font-size:12px;">
+        ${statusIcon[d.status] || ''} ${escHtml(d.msg)}
+      </td>
+    </tr>`).join('');
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="border:1px solid var(--gray-200);border-radius:var(--radius);overflow:hidden;">
+      <div style="padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);
+                  display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+        <span style="font-weight:700;font-size:14px;">📊 Risultato import ASIN</span>
+        <span style="color:#16a34a;font-size:13px;font-weight:600;">✅ ${updated} aggiornati</span>
+        <span style="color:#6b7280;font-size:13px;">⏩ ${skipped} già presenti</span>
+        ${not_found > 0 ? `<span style="color:#d97706;font-size:13px;">⚠️ ${not_found} non trovati</span>` : ''}
+        ${errors > 0    ? `<span style="color:#dc2626;font-size:13px;">❌ ${errors} errori</span>` : ''}
+      </div>
+      <div style="max-height:300px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+              <th style="text-align:left;padding:8px 12px;">SKU</th>
+              <th style="text-align:left;padding:8px 12px;">ASIN</th>
+              <th style="text-align:left;padding:8px 12px;">Stato</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }

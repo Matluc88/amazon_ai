@@ -95,6 +95,10 @@
             style="padding:10px 18px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-2px;">
             📝 Testo libero
           </button>
+          <button id="tabAsinBtn" onclick="switchImportTab('asin')"
+            style="padding:10px 18px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-2px;">
+            🛒 Aggiorna ASIN
+          </button>
         </div>
 
         <!-- TAB: CATALOGO -->
@@ -179,6 +183,42 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
             </button>
             <span style="font-size:12px;color:var(--gray-500);">Crea un nuovo prodotto (senza varianti SKU)</span>
           </div>
+        </div>
+
+        <!-- TAB: AGGIORNA ASIN -->
+        <div id="tabAsin" style="display:none;">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px;">
+            Carica il <strong>Report dell'inventario</strong> scaricato da Amazon Seller Central
+            (<em>Inventario → Gestisci inventario → Esporta</em>). Il sistema aggiorna automaticamente
+            gli ASIN per ogni variante (max/media/mini). Salta gli ASIN già presenti.
+          </p>
+
+          <div class="upload-area" id="asinUploadArea"
+               onclick="document.getElementById('asinFileInput').click()"
+               style="cursor:pointer;">
+            <span class="upload-icon">🛒</span>
+            <h3>Trascina il report o clicca per selezionarlo</h3>
+            <p>File TSV scaricato da Amazon Seller Central</p>
+            <div class="format-badges">
+              <span class="badge badge-format">TXT</span>
+              <span class="badge badge-format">TSV</span>
+            </div>
+          </div>
+          <input type="file" id="asinFileInput" accept=".txt,.tsv,.csv" style="display:none"
+                 onchange="handleAsinFileSelect(this)" />
+
+          <div id="asinFileInfo" style="display:none;margin-top:12px;padding:10px 14px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);font-size:13px;">
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="importAsinsBtn" onclick="importAsins()" disabled>
+              🛒 Aggiorna ASIN
+            </button>
+            <span style="font-size:12px;color:var(--gray-500);">Aggiorna solo gli ASIN mancanti o cambiati</span>
+          </div>
+
+          <!-- Risultati import ASIN -->
+          <div id="asinImportResults" style="display:none;margin-top:18px;"></div>
         </div>
 
       </div>

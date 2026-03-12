@@ -136,6 +136,82 @@ router.patch('/:id/variants', async (req, res) => {
   }
 });
 
+// =============================================
+// POST /api/products/import-asins
+// Importa ASIN dal Report Inventario Amazon (.txt TSV).
+// Body JSON: { entries: [{ sku, asin }, ...] }
+// Logica: sku-max → asin_max | sku-media → asin_media | sku-mini → asin_mini
+// Controlla duplicati: salta se l'ASIN è già lo stesso.
+// =============================================
+router.post('/import-asins', async (req, res) => {
+  try {
+    const { entries } = req.body;
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return res.status(400).json({ error: 'Nessuna entry fornita' });
+    }
+
+    const results = { updated: 0, skipped: 0, not_found: 0, errors: 0, details: [] };
+
+    for (const entry of entries) {
+      const { sku, asin } = entry;
+      if (!sku || !asin) continue;
+
+      // Determina la colonna ASIN e lo SKU padre dal suffisso
+      let colonna = null;
+      let skuPadre = null;
+      if (/-max$/i.test(sku) || /_max$/i.test(sku)) {
+        colonna = 'asin_max';
+        skuPadre = sku.replace(/[-_]max$/i, '');
+      } else if (/-media$/i.test(sku) || /_media$/i.test(sku)) {
+        colonna = 'asin_media';
+        skuPadre = sku.replace(/[-_]media$/i, '');
+      } else if (/-mini$/i.test(sku) || /_mini$/i.test(sku)) {
+        colonna = 'asin_mini';
+        skuPadre = sku.replace(/[-_]mini$/i, '');
+      } else {
+        results.errors++;
+        results.details.push({ sku, asin, status: 'error', msg: 'Suffisso non riconosciuto (atteso -max/-media/-mini)' });
+        continue;
+      }
+
+      // Cerca il prodotto per sku_padre (case-insensitive)
+      const productRes = await query(
+        `SELECT id, sku_padre, asin_max, asin_media, asin_mini FROM products WHERE LOWER(sku_padre) = LOWER($1)`,
+        [skuPadre]
+      );
+
+      if (productRes.rows.length === 0) {
+        results.not_found++;
+        results.details.push({ sku, asin, status: 'not_found', msg: `SKU padre non trovato: "${skuPadre}"` });
+        continue;
+      }
+
+      const product = productRes.rows[0];
+      const currentAsin = product[colonna];
+
+      // Skip se già presente e identico
+      if (currentAsin && currentAsin.toUpperCase() === asin.toUpperCase()) {
+        results.skipped++;
+        results.details.push({ sku, asin, status: 'skipped', msg: 'Già presente' });
+        continue;
+      }
+
+      // Aggiorna
+      await query(`UPDATE products SET ${colonna} = $1 WHERE id = $2`, [asin.toUpperCase(), product.id]);
+      results.updated++;
+      results.details.push({
+        sku, asin, status: 'updated',
+        msg: currentAsin ? `Aggiornato: ${currentAsin} → ${asin.toUpperCase()}` : `Nuovo ASIN inserito`
+      });
+    }
+
+    res.json(results);
+  } catch (err) {
+    console.error('Errore import ASIN:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/products/:id
 router.delete('/:id', async (req, res) => {
   try {
