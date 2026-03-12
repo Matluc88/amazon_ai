@@ -779,8 +779,9 @@ function parseInventoryReport(text) {
 
   for (let i = 0; i < Math.min(lines.length, 5); i++) {
     const cols = lines[i].split('\t').map(c => c.trim().toLowerCase());
-    const si = cols.indexOf('sku');
-    const ai = cols.indexOf('asin');
+    // Supporta sia "Report inventario" (sku, asin) sia "Report tutte le offerte" (seller-sku, asin1)
+    const si = cols.findIndex(c => c === 'sku' || c === 'seller-sku');
+    const ai = cols.findIndex(c => c === 'asin' || c === 'asin1');
     if (si >= 0 && ai >= 0) {
       headerIdx = i;
       skuCol = si;

@@ -169,14 +169,14 @@ router.post('/import-asins', async (req, res) => {
         colonna = 'asin_mini';
         skuPadre = sku.replace(/[-_]mini$/i, '');
       } else {
-        results.errors++;
-        results.details.push({ sku, asin, status: 'error', msg: 'Suffisso non riconosciuto (atteso -max/-media/-mini)' });
-        continue;
+        // Nessun suffisso variante → è lo SKU padre, quindi → asin_padre
+        colonna = 'asin_padre';
+        skuPadre = sku;
       }
 
       // Cerca il prodotto per sku_padre (case-insensitive)
       const productRes = await query(
-        `SELECT id, sku_padre, asin_max, asin_media, asin_mini FROM products WHERE LOWER(sku_padre) = LOWER($1)`,
+        `SELECT id, sku_padre, asin_padre, asin_max, asin_media, asin_mini FROM products WHERE LOWER(sku_padre) = LOWER($1)`,
         [skuPadre]
       );
 
