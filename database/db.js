@@ -98,6 +98,17 @@ async function initDatabase() {
       ON products (sku_max) WHERE sku_max IS NOT NULL AND sku_max != ''
     `);
 
+    // Colonne ASIN Amazon (parent + 3 child)
+    const asinCols = [
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS asin_padre VARCHAR(20)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS asin_max VARCHAR(20)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS asin_media VARCHAR(20)`,
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS asin_mini VARCHAR(20)`,
+    ];
+    for (const col of asinCols) {
+      await client.query(col);
+    }
+
     // Colonne EAN e immagini varianti
     const eanImageCols = [
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS ean_max VARCHAR(30)`,

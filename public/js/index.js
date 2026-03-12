@@ -109,6 +109,12 @@ function renderProducts(products) {
     const hasDesc = !!p.descrizione_raw;
     const pct = total > 0 ? Math.round(compiled / total * 100) : 0;
     const isChecked = selectedProductIds.has(p.id);
+    const amazonStatus = getAmazonStatus(p);
+    const amazonBadge = amazonStatus === 'live'
+      ? `<span class="amazon-status-badge amazon-status-live">🟢 Live</span>`
+      : amazonStatus === 'partial'
+        ? `<span class="amazon-status-badge amazon-status-partial">🟡 Parziale</span>`
+        : `<span class="amazon-status-badge amazon-status-none">🔴 Non caricato</span>`;
 
     let statusBadge;
     if (!hasDesc) {
@@ -136,7 +142,7 @@ function renderProducts(products) {
       : '—';
 
     return `
-      <tr id="row-${p.id}" style="${isChecked ? 'background:#eff6ff;' : ''}">
+      <tr id="row-${p.id}" data-amazon-status="${amazonStatus}" style="${isChecked ? 'background:#eff6ff;' : ''}">
         <td style="width:36px;text-align:center;padding:8px 6px;">
           <input type="checkbox" class="prod-checkbox"
             style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb;"
@@ -164,6 +170,7 @@ function renderProducts(products) {
           </div>` : (p.prezzo ? `€${parseFloat(p.prezzo).toFixed(2)}` : '—')}
         </td>
         <td>${statusBadge}</td>
+        <td>${amazonBadge}</td>
         <td>${createdAt}</td>
         <td>
           <div class="actions-cell">
@@ -193,6 +200,7 @@ function renderProducts(products) {
             <th>Misure</th>
             <th>Prezzi</th>
             <th>Stato</th>
+            <th>🛒 Amazon</th>
             <th>Importato il</th>
             <th>Azioni</th>
           </tr>
@@ -671,6 +679,27 @@ function showToast(message, type = 'info') {
     toast.classList.add('hiding');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+// =============================================
+// AMAZON STATUS FILTER
+// =============================================
+function getAmazonStatus(p) {
+  const filled = [p.asin_padre, p.asin_max, p.asin_media, p.asin_mini].filter(v => v && v.trim()).length;
+  if (filled === 0) return 'none';
+  if (filled < 4) return 'partial';
+  return 'live';
+}
+
+function filterByAmazonStatus() {
+  const val = document.getElementById('filterAmazon').value;
+  document.querySelectorAll('#productsContainer tbody tr').forEach(row => {
+    if (val === 'all' || row.dataset.amazonStatus === val) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
 }
 
 function escHtml(str) {

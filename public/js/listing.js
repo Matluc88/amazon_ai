@@ -328,7 +328,7 @@ function renderVariantsCard(product) {
     { label: 'Piccola', misura: product.misura_mini,  sku: product.sku_mini,  prezzo: product.prezzo_mini,  eanKey: 'ean_mini',  imgKey: 'immagine_mini'  },
   ].filter(s => s.misura || s.sku);
 
-  // Riga SKU padre
+  // Riga SKU padre + ASIN padre
   const skuPadreHtml = product.sku_padre ? `
     <div class="sku-padre-bar">
       <strong>SKU Padre:</strong>
@@ -336,6 +336,18 @@ function renderVariantsCard(product) {
       <button onclick="copyText('${escHtml(product.sku_padre)}', this)"
               style="background:none;border:none;cursor:pointer;font-size:13px;" title="Copia SKU padre">📋</button>
       <span class="badge-source FIXED" style="font-size:10px;">📌 FISSO</span>
+    </div>
+    <div class="sku-padre-bar" style="margin-top:8px;">
+      <strong>🛒 ASIN Padre:</strong>
+      <input type="text" class="var-input" id="var-asin_padre"
+        value="${escHtml(product.asin_padre || '')}"
+        placeholder="es. B0XXXXXXXXX"
+        maxlength="10"
+        style="width:140px;"
+        oninput="variantsDirty=true; this.value=this.value.toUpperCase();" />
+      ${product.asin_padre ? `<a href="https://www.amazon.it/dp/${escHtml(product.asin_padre)}" target="_blank" rel="noopener"
+        style="font-size:12px;color:var(--primary);text-decoration:none;margin-left:4px;" title="Apri su Amazon.it">🔗 Amazon.it</a>` : ''}
+      <span class="badge-source MANUAL" style="font-size:10px;">✍️ MANUALE</span>
     </div>` : '';
 
   const rows = [
@@ -362,6 +374,18 @@ function renderVariantsCard(product) {
            placeholder="es. 8056715291234"
            maxlength="14"
            oninput="variantsDirty=true;" />`)
+    },
+    {
+      label: '🛒 ASIN Amazon', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s => {
+        const asinKey = s.eanKey.replace('ean_', 'asin_');
+        const val = product[asinKey] || '';
+        return `<input type="text" class="var-input" id="var-${asinKey}"
+           value="${escHtml(val)}"
+           placeholder="es. B0XXXXXXXXX"
+           maxlength="10"
+           oninput="variantsDirty=true; this.value=this.value.toUpperCase();" />`;
+      })
     },
     {
       label: '📷 Frontale', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
@@ -481,6 +505,11 @@ async function saveVariants() {
     immagine_media_3:  document.getElementById('var-immagine_media_3')?.value.trim()  || null,
     immagine_mini_2:   document.getElementById('var-immagine_mini_2')?.value.trim()   || null,
     immagine_mini_3:   document.getElementById('var-immagine_mini_3')?.value.trim()   || null,
+    // ASIN Amazon (parent + 3 child)
+    asin_padre:        document.getElementById('var-asin_padre')?.value.trim().toUpperCase() || null,
+    asin_max:          document.getElementById('var-asin_max')?.value.trim().toUpperCase()   || null,
+    asin_media:        document.getElementById('var-asin_media')?.value.trim().toUpperCase() || null,
+    asin_mini:         document.getElementById('var-asin_mini')?.value.trim().toUpperCase()  || null,
   };
 
   try {

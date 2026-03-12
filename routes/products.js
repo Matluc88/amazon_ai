@@ -81,7 +81,7 @@ router.patch('/:id/description', async (req, res) => {
 
 // =============================================
 // PATCH /api/products/:id/variants
-// Salva EAN e URL immagini per le 3 varianti
+// Salva EAN, URL immagini e ASIN Amazon per le 3 varianti
 // =============================================
 router.patch('/:id/variants', async (req, res) => {
   try {
@@ -92,10 +92,19 @@ router.patch('/:id/variants', async (req, res) => {
       immagine_max_2, immagine_max_3,
       immagine_media_2, immagine_media_3,
       immagine_mini_2, immagine_mini_3,
+      asin_padre, asin_max, asin_media, asin_mini,
     } = req.body;
 
     const existing = await query('SELECT id FROM products WHERE id = $1', [id]);
     if (!existing.rows[0]) return res.status(404).json({ error: 'Prodotto non trovato' });
+
+    // Validazione ASIN: deve essere esattamente 10 caratteri alfanumerici (B0xxxxxxxx)
+    const asinFields = { asin_padre, asin_max, asin_media, asin_mini };
+    for (const [key, val] of Object.entries(asinFields)) {
+      if (val && val.trim() && !/^[A-Z0-9]{10}$/i.test(val.trim())) {
+        return res.status(400).json({ error: `${key}: formato ASIN non valido (deve essere 10 caratteri alfanumerici, es. B0XXXXXXXXX)` });
+      }
+    }
 
     await query(`
       UPDATE products SET
@@ -103,14 +112,19 @@ router.patch('/:id/variants', async (req, res) => {
         immagine_max = $4, immagine_media = $5, immagine_mini = $6,
         immagine_max_2 = $7, immagine_max_3 = $8,
         immagine_media_2 = $9, immagine_media_3 = $10,
-        immagine_mini_2 = $11, immagine_mini_3 = $12
-      WHERE id = $13
+        immagine_mini_2 = $11, immagine_mini_3 = $12,
+        asin_padre = $13, asin_max = $14, asin_media = $15, asin_mini = $16
+      WHERE id = $17
     `, [
       ean_max || null, ean_media || null, ean_mini || null,
       immagine_max || null, immagine_media || null, immagine_mini || null,
       immagine_max_2 || null, immagine_max_3 || null,
       immagine_media_2 || null, immagine_media_3 || null,
       immagine_mini_2 || null, immagine_mini_3 || null,
+      asin_padre ? asin_padre.trim().toUpperCase() : null,
+      asin_max   ? asin_max.trim().toUpperCase()   : null,
+      asin_media ? asin_media.trim().toUpperCase() : null,
+      asin_mini  ? asin_mini.trim().toUpperCase()  : null,
       id
     ]);
 

@@ -188,7 +188,15 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
     <div class="card" id="productsCard">
       <div class="card-header">
         <h2>🖼️ Prodotti importati</h2>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:12px;font-weight:600;color:var(--gray-600);">🛒 Amazon:</label>
+          <select id="filterAmazon" onchange="filterByAmazonStatus()"
+            style="padding:5px 10px;font-size:13px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;cursor:pointer;background:white;">
+            <option value="all">Tutti</option>
+            <option value="none">🔴 Non caricati</option>
+            <option value="partial">🟡 Parziali</option>
+            <option value="live">🟢 Live</option>
+          </select>
           <button class="btn btn-primary btn-sm" id="generateAllBtn" style="display:none">
             ✨ Genera tutti i listing
           </button>

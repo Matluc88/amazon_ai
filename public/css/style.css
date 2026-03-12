@@ -878,6 +878,34 @@ input.field-input:focus {
 .gap-3 { gap: 12px; }
 
 /* =============================================
+   AMAZON STATUS BADGE
+   ============================================= */
+.amazon-status-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.amazon-status-none {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.amazon-status-partial {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.amazon-status-live {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+/* =============================================
    CHAR COUNTER — stati okay / warn / over
    ============================================= */
 .char-counter.okay { color: #059669; font-weight: 600; }
