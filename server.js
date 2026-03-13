@@ -26,6 +26,17 @@ const { requireAuth } = require('./middleware/auth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Mappa in memoria per tracking "chi sta editando quale prodotto"
+// { productId (number) → { userId, nome, updatedAt } }
+app.locals.editingMap = new Map();
+// Pulizia automatica ogni minuto (rimuove sessioni > 2 minuti)
+setInterval(() => {
+  const threshold = Date.now() - 120_000;
+  for (const [key, val] of app.locals.editingMap.entries()) {
+    if (val.updatedAt < threshold) app.locals.editingMap.delete(key);
+  }
+}, 60_000);
+
 // ─── Middleware ──────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());

@@ -21,6 +21,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/products/editing — sessioni editing attive (heartbeat < 90s)
+router.get('/editing', (req, res) => {
+  const editingMap = req.app.locals.editingMap;
+  const threshold = Date.now() - 90_000;
+  const active = [];
+  for (const [productId, session] of editingMap.entries()) {
+    if (session.updatedAt >= threshold) {
+      active.push({ productId, userId: session.userId, nome: session.nome, updatedAt: session.updatedAt });
+    }
+  }
+  res.json(active);
+});
+
 // GET /api/products/:id
 router.get('/:id', async (req, res) => {
   try {
@@ -30,6 +43,18 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/products/:id/heartbeat — registra che l'utente sta editando questo prodotto
+router.post('/:id/heartbeat', (req, res) => {
+  const productId = parseInt(req.params.id);
+  if (isNaN(productId)) return res.status(400).json({ error: 'ID non valido' });
+  req.app.locals.editingMap.set(productId, {
+    userId:    req.session.userId,
+    nome:      req.session.nome || req.session.email || 'Utente',
+    updatedAt: Date.now()
+  });
+  res.json({ ok: true });
 });
 
 // =============================================

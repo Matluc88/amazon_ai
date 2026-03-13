@@ -47,9 +47,30 @@ async function loadProducts() {
     renderProducts(allProducts);
     updateStats(allProducts);
     populateDescDropdown(allProducts);
+    loadEditingStatus(); // overlay "🔵 In corso"
   } catch (err) {
     showToast('Errore nel caricamento dei prodotti', 'error');
   }
+}
+
+// Sovrappone badge "🔵 In corso (Nome)" per le schede aperte in questo momento
+async function loadEditingStatus() {
+  try {
+    const res = await fetch('/api/products/editing');
+    if (!res.ok) return;
+    const sessions = await res.json();
+    sessions.forEach(s => {
+      const cell = document.getElementById(`amazon-cell-${s.productId}`);
+      if (!cell) return;
+      cell.innerHTML = `
+        <span class="amazon-status-badge"
+              style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;"
+              title="Sta lavorando su questa scheda">
+          🔵 In corso
+          <span style="display:block;font-size:10px;opacity:0.8;font-weight:400;">${escHtml(s.nome)}</span>
+        </span>`;
+    });
+  } catch (_) { /* non critico */ }
 }
 
 function updateStats(products) {
@@ -170,7 +191,7 @@ function renderProducts(products) {
           </div>` : (p.prezzo ? `€${parseFloat(p.prezzo).toFixed(2)}` : '—')}
         </td>
         <td>${statusBadge}</td>
-        <td>${amazonBadge}</td>
+        <td id="amazon-cell-${p.id}">${amazonBadge}</td>
         <td>${createdAt}</td>
         <td>
           <div class="actions-cell">
@@ -695,9 +716,10 @@ function getAmazonStatus(p) {
 
   if (checks.length === 0) return 'none';
   const filled = checks.filter(v => v && v.trim()).length;
-  if (filled === 0) return 'none';
-  if (filled < checks.length) return 'partial';
-  return 'live';
+  if (filled === checks.length) return 'live';
+  // Parziale: ha qualche ASIN, OPPURE ha la descrizione caricata (lavoro iniziato)
+  if (filled > 0 || !!p.descrizione_raw) return 'partial';
+  return 'none';
 }
 
 function filterByAmazonStatus() {

@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   loadListing();
+  startHeartbeat(); // notifica la dashboard che questa scheda è aperta
 });
 
 // =============================================
@@ -1887,4 +1888,32 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// =============================================
+// HEARTBEAT — segnala alla dashboard che questa scheda è aperta
+// =============================================
+let _heartbeatInterval = null;
+
+function startHeartbeat() {
+  if (!productId) return;
+  sendHeartbeat();
+  _heartbeatInterval = setInterval(sendHeartbeat, 30_000);
+  // Pausa quando la tab diventa invisibile, riprende quando torna visibile
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearInterval(_heartbeatInterval);
+      _heartbeatInterval = null;
+    } else {
+      sendHeartbeat();
+      _heartbeatInterval = setInterval(sendHeartbeat, 30_000);
+    }
+  });
+}
+
+async function sendHeartbeat() {
+  if (!productId) return;
+  try {
+    await fetch(`/api/products/${productId}/heartbeat`, { method: 'POST' });
+  } catch (_) { /* ignora errori di rete */ }
 }
