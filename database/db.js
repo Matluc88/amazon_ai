@@ -176,6 +176,21 @@ async function initDatabase() {
       )
     `);
 
+    // Tabella chat interna
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        sender_nome VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at
+      ON chat_messages (created_at ASC)
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database inizializzato correttamente');
   } catch (err) {
