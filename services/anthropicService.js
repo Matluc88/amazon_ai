@@ -231,37 +231,40 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### CHIAVI DI RICERCA (campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali):
 ${formatoSection}
-Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo.
-Riempi 1100–1200 byte totali. Il testo verrà distribuito automaticamente su 5 slot da 250 byte.
+Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. SOLO ITALIANO — zero parole in inglese o altra lingua.
+⚠️ TARGET LUNGHEZZA OBBLIGATORIO: genera ESATTAMENTE 1100–1200 byte UTF-8. Questo corrisponde a circa 160–190 parole italiane. Se non raggiungi 1100 byte il campo NON è compilato correttamente.
 
 ⚠️ REGOLA FONDAMENTALE — ZERO DUPLICATI:
 Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già presenti nel titolo o nei bullet è uno spreco di byte e NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole che NON compaiono già nel Nome dell'articolo e nei Punti elenco.
 
-STRUTTURA A 5 AREE COMPLEMENTARI (tutte parole NUOVE, non già nel titolo/bullet):
+STRUTTURA A 5 AREE COMPLEMENTARI — OGNUNA DEVE ESSERE AMPIA E DETTAGLIATA (tutte parole NUOVE, non già nel titolo/bullet):
 
-AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO:
-Termini alternativi che i clienti usano per cercare stampe/quadri e che NON sono nel titolo.
-es. poster, riproduzione artistica, arte da parete, wall art, immagine su tela, quadri moderni, stampa artistica
+AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO (almeno 25 termini diversi):
+Tutti i modi in cui i clienti italiani cercano stampe/quadri su Amazon.it. Sii esaustivo.
+es. poster quadro pittura dipinto illustrazione arte tela arredamento decorazione casa parete muro cornice regalo anniversario
 
-AREA 2 — SOGGETTO SPECIFICO (varianti e sinonimi):
-Parole specifiche del soggetto che NON hai usato nel titolo.
-es. se nel titolo hai "coppia" → usa: fidanzati, innamorati, coppia di sposi, bacio, abbraccio, insieme
+AREA 2 — SOGGETTO SPECIFICO (almeno 30 parole — varianti, sinonimi, dettagli visivi dell'opera):
+Tutte le varianti possibili del soggetto, personaggi, azioni, elementi visivi dell'opera.
+es. se c'è un circo → circo artisti giocolieri clown pagliaccio tendone acrobati funamboli saltimbanchi spettacolo festival divertimento
 
-AREA 3 — STILE ARTISTICO (varianti non nel titolo):
-es. pop art, arte moderna italiana, neo-espressionismo, surrealismo, arte naif, impressionismo, figurativo
+AREA 3 — STILE E TECNICA ARTISTICA (almeno 20 parole diverse):
+Tutte le correnti artistiche, tecniche, aggettivi stilistici non già nel titolo.
+es. figurativo astratto contemporaneo moderno naif pop realistico impressionista espressionista surrealista cubista pittura italiana vivaci
 
-AREA 4 — AMBIENTI E CONTESTI USO (non già nei bullet):
-Stanze e contesti non menzionati nei bullet.
-es. ingresso, corridoio, sala da pranzo, studio, cantina, sala riunioni, reception, clinica
+AREA 4 — AMBIENTI E CONTESTI D'USO (almeno 30 parole — tutti gli ambienti non nei bullet):
+Ogni possibile stanza, ambiente, luogo dove l'opera può essere appesa.
+es. ingresso corridoio scala anticamera cucina bagno terrazzo balcone mansarda hotel ristorante bar ufficio medico ambulatorio reception albergo cantina
 
-AREA 5 — OCCASIONI REGALO E LONG-TAIL:
-Frasi di ricerca specifiche con intento d'acquisto.
-es. regalo laurea, regalo inaugurazione casa, regalo fidanzamento, quadro regalo donna, quadro regalo uomo
+AREA 5 — OCCASIONI REGALO E LONG-TAIL (almeno 40 parole — frasi di ricerca con intento d'acquisto):
+Tutte le occasioni regalo e frasi di acquisto specifiche.
+es. regalo laurea regalo festa mamma regalo compleanno fidanzata regalo nozze anniversario matrimonio inaugurazione casa regalo natale capodanno pasqua san valentino festa papa regalo amica regalo coppia pensionamento
 
 REGOLE CRITICHE:
+- SOLO ITALIANO — ZERO parole in inglese (non wall art, non canvas, non art, non gift, non home decor)
 - NON includere: parole già nel titolo, parole già nei 5 bullet, il brand "sivigliart"
-- NON includere: emozione, tenerezza, sentimento, poetico, evocativo, magico (nessuno le cerca)
-- ESEMPIO CORRETTO (tutte parole complementari al titolo): "poster arte da parete riproduzione artistica wall art fidanzati innamorati bacio abbraccio pop art surrealismo arte naif ingresso corridoio sala da pranzo studio regalo inaugurazione casa regalo fidanzamento quadro regalo donna"
+- NON includere: parole inutili come emozione, tenerezza, sentimento, poetico, evocativo
+- Se ti mancano byte, aggiungi sinonimi, varianti di misura (centimetri grande piccolo medio), varianti tipologiche
+- VERIFICA FINALE: conta le parole — devono essere almeno 150. Se hai meno di 150 parole aggiungi sinonimi finché raggiungi il target.
 
 ### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
 ⚠️ REGOLA TECNICA per TUTTI i bullet: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano.
@@ -411,22 +414,42 @@ Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
     "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie). ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.',
     "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo per spedizione sicura; chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."',
-    "Chiavi di ricerca": `Campo backend Search Terms — 5 slot da 250 byte = 1250 byte totali.
-Formato OBBLIGATORIO: SOLO SPAZI — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. Riempi 1100–1200 byte totali (distribuiti su 5 slot da 250 byte nell'export).
+    "Chiavi di ricerca": `Campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali.
+${formatoInfoRegen}
+Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. SOLO ITALIANO — zero parole in inglese o altra lingua.
+⚠️ TARGET LUNGHEZZA OBBLIGATORIO: genera ESATTAMENTE 1100–1200 byte UTF-8. Questo corrisponde a circa 160–190 parole italiane. Se non raggiungi 1100 byte il campo NON è compilato correttamente.
 
 ⚠️ REGOLA FONDAMENTALE — ZERO DUPLICATI:
-Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già nel titolo o nei bullet NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole NUOVE che NON compaiono nel titolo/bullet/brand.
+Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già presenti nel titolo o nei bullet è uno spreco di byte e NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole che NON compaiono già nel Nome dell'articolo e nei Punti elenco.
 
-STRUTTURA A 5 AREE COMPLEMENTARI (tutte parole NUOVE):
+STRUTTURA A 5 AREE COMPLEMENTARI — OGNUNA DEVE ESSERE AMPIA E DETTAGLIATA (tutte parole NUOVE, non già nel titolo/bullet):
 
-AREA 1 — SINONIMI PRODOTTO (non nel titolo): poster, riproduzione artistica, arte da parete, wall art, immagine su tela
-AREA 2 — SOGGETTO varianti/sinonimi (non nel titolo): es. se titolo ha "coppia" → fidanzati, innamorati, bacio, abbraccio
-AREA 3 — STILE ARTISTICO varianti (non nel titolo): pop art, surrealismo, impressionismo, neo-espressionismo, arte naif
-AREA 4 — AMBIENTI non nei bullet: ingresso, corridoio, sala da pranzo, studio, sala riunioni, reception
-AREA 5 — OCCASIONI REGALO long-tail: regalo laurea, regalo inaugurazione casa, regalo fidanzamento, quadro regalo donna
+AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO (almeno 25 termini diversi):
+Tutti i modi in cui i clienti italiani cercano stampe/quadri su Amazon.it. Sii esaustivo.
+es. poster quadro pittura dipinto illustrazione arte tela arredamento decorazione casa parete muro cornice regalo anniversario
 
-VIETATO: parole già nel titolo, nei 5 bullet, il brand "sivigliart", parole: emozione, tenerezza, sentimento, poetico, evocativo
-ESEMPIO CORRETTO: "poster arte da parete riproduzione artistica wall art fidanzati innamorati bacio pop art surrealismo arte naif ingresso corridoio sala da pranzo regalo inaugurazione casa regalo fidanzamento quadro regalo donna"
+AREA 2 — SOGGETTO SPECIFICO (almeno 30 parole — varianti, sinonimi, dettagli visivi dell'opera):
+Tutte le varianti possibili del soggetto, personaggi, azioni, elementi visivi dell'opera.
+es. se c'è un circo → circo artisti giocolieri clown pagliaccio tendone acrobati funamboli saltimbanchi spettacolo festival divertimento
+
+AREA 3 — STILE E TECNICA ARTISTICA (almeno 20 parole diverse):
+Tutte le correnti artistiche, tecniche, aggettivi stilistici non già nel titolo.
+es. figurativo astratto contemporaneo moderno naif pop realistico impressionista espressionista surrealista cubista pittura italiana vivaci
+
+AREA 4 — AMBIENTI E CONTESTI D'USO (almeno 30 parole — tutti gli ambienti non nei bullet):
+Ogni possibile stanza, ambiente, luogo dove l'opera può essere appesa.
+es. ingresso corridoio scala anticamera cucina bagno terrazzo balcone mansarda hotel ristorante bar ufficio medico ambulatorio reception albergo cantina
+
+AREA 5 — OCCASIONI REGALO E LONG-TAIL (almeno 40 parole — frasi di ricerca con intento d'acquisto):
+Tutte le occasioni regalo e frasi di acquisto specifiche.
+es. regalo laurea regalo festa mamma regalo compleanno fidanzata regalo nozze anniversario matrimonio inaugurazione casa regalo natale capodanno pasqua san valentino festa papa regalo amica regalo coppia pensionamento
+
+REGOLE CRITICHE:
+- SOLO ITALIANO — ZERO parole in inglese (non wall art, non canvas, non art, non gift, non home decor)
+- NON includere: parole già nel titolo, parole già nei 5 bullet, il brand "sivigliart"
+- NON includere: parole inutili come emozione, tenerezza, sentimento, poetico, evocativo
+- Se ti mancano byte, aggiungi sinonimi, varianti di misura (centimetri grande piccolo medio), varianti tipologiche
+- VERIFICA FINALE: conta le parole — devono essere almeno 150. Se hai meno di 150 parole aggiungi sinonimi finché raggiungi il target.
 
 Output: UNA sola riga di testo, senza virgolette esterne.`,
     "Edizione": 'breve descrizione dell\'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")',
