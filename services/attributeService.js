@@ -384,6 +384,7 @@ async function getProductListing(productId, product = null) {
       nome: row.nome_attributo,
       priorita: row.priorita,
       source: row.source,
+      ordine: row.ordine,
       value: displayValue,
       compiled_by: row.compiled_by || row.source,
       is_compiled: !!displayValue

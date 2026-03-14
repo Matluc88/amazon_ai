@@ -317,6 +317,8 @@ function switchListingTab(tab) {
       // Tab descrizione: mostra anche card immagini prodotto
       renderProductImagesCard();
       if (picCard) picCard.style.display = '';
+      // Auto-popola silenziosamente se tutti gli slot sono vuoti e ci sono immagini varianti
+      setTimeout(() => autoPopulateImagesIfEmpty(), 50);
     } else {
       // Altri tab: nascondi keyword section e card immagini
       keywordSection.style.display = 'none';
@@ -410,49 +412,56 @@ function renderVariantsCard(product) {
       })
     },
     {
-      label: '📷 Frontale', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
-      cells: sizes.map(s =>
-        `<input type="file" id="varfile-${s.imgKey}-frontale" accept="image/*" style="display:none"
-               onchange="handleVariantImageSelect('${s.imgKey}', '${s.label}', 'frontale', this, '${escHtml(s.misura || '')}')">
-         <input type="url" class="var-input url-input" id="var-${s.imgKey}"
-           value="${escHtml(product[s.imgKey] || '')}"
-           placeholder="https://..."
-           oninput="variantsDirty=true;" />
-         <button class="var-upload-btn" id="varbtn-${s.imgKey}-frontale"
-                 onclick="document.getElementById('varfile-${s.imgKey}-frontale').click()"
-                 title="Carica immagine frontale">
-           📤
-         </button>`)
+      label: '📷 Frontale (lifestyle)', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s => {
+        const url2 = product[s.imgKey + '_2'] || '';
+        return `<div class="var-img-cell">
+          <img id="varpreview-${s.imgKey}_2"
+               src="${escHtml(url2)}"
+               class="var-img-thumb${url2 ? '' : ' hidden'}"
+               onclick="if(this.src && !this.classList.contains('hidden')) window.open(this.src,'_blank')"
+               title="Clicca per ingrandire" />
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <input type="file" id="varfile-${s.imgKey}_2-frontale" accept="image/*" style="display:none"
+                   onchange="handleVariantImageSelect('${s.imgKey}_2', '${s.label}', 'frontale', this, '${escHtml(s.misura || '')}')">
+            <input type="url" class="var-input url-input" id="var-${s.imgKey}_2"
+              value="${escHtml(url2)}"
+              placeholder="https://..."
+              oninput="variantsDirty=true; varThumbUpdate('${s.imgKey}_2', this);" />
+            <button class="var-upload-btn" id="varbtn-${s.imgKey}_2-frontale"
+                    onclick="document.getElementById('varfile-${s.imgKey}_2-frontale').click()"
+                    title="Carica immagine frontale lifestyle">
+              📤 Carica
+            </button>
+          </div>
+        </div>`;
+      })
     },
     {
-      label: '📷 Laterale', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
-      cells: sizes.map(s =>
-        `<input type="file" id="varfile-${s.imgKey}_2-laterale" accept="image/*" style="display:none"
-               onchange="handleVariantImageSelect('${s.imgKey}_2', '${s.label}', 'laterale', this, '${escHtml(s.misura || '')}')">
-         <input type="url" class="var-input url-input" id="var-${s.imgKey}_2"
-           value="${escHtml(product[s.imgKey + '_2'] || '')}"
-           placeholder="https://..."
-           oninput="variantsDirty=true;" />
-         <button class="var-upload-btn" id="varbtn-${s.imgKey}_2-laterale"
-                 onclick="document.getElementById('varfile-${s.imgKey}_2-laterale').click()"
-                 title="Carica immagine laterale">
-           📤
-         </button>`)
-    },
-    {
-      label: '📷 Proporzione', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
-      cells: sizes.map(s =>
-        `<input type="file" id="varfile-${s.imgKey}_3-proporzione" accept="image/*" style="display:none"
-               onchange="handleVariantImageSelect('${s.imgKey}_3', '${s.label}', 'proporzione', this, '${escHtml(s.misura || '')}')">
-         <input type="url" class="var-input url-input" id="var-${s.imgKey}_3"
-           value="${escHtml(product[s.imgKey + '_3'] || '')}"
-           placeholder="https://..."
-           oninput="variantsDirty=true;" />
-         <button class="var-upload-btn" id="varbtn-${s.imgKey}_3-proporzione"
-                 onclick="document.getElementById('varfile-${s.imgKey}_3-proporzione').click()"
-                 title="Carica immagine proporzione">
-           📤
-         </button>`)
+      label: '📷 Proporzione (scala)', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s => {
+        const url3 = product[s.imgKey + '_3'] || '';
+        return `<div class="var-img-cell">
+          <img id="varpreview-${s.imgKey}_3"
+               src="${escHtml(url3)}"
+               class="var-img-thumb${url3 ? '' : ' hidden'}"
+               onclick="if(this.src && !this.classList.contains('hidden')) window.open(this.src,'_blank')"
+               title="Clicca per ingrandire" />
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <input type="file" id="varfile-${s.imgKey}_3-proporzione" accept="image/*" style="display:none"
+                   onchange="handleVariantImageSelect('${s.imgKey}_3', '${s.label}', 'proporzione', this, '${escHtml(s.misura || '')}')">
+            <input type="url" class="var-input url-input" id="var-${s.imgKey}_3"
+              value="${escHtml(url3)}"
+              placeholder="https://..."
+              oninput="variantsDirty=true; varThumbUpdate('${s.imgKey}_3', this);" />
+            <button class="var-upload-btn" id="varbtn-${s.imgKey}_3-proporzione"
+                    onclick="document.getElementById('varfile-${s.imgKey}_3-proporzione').click()"
+                    title="Carica immagine proporzione (scala)">
+              📤 Carica
+            </button>
+          </div>
+        </div>`;
+      })
     },
     {
       label: 'Condizione', badge: '📌 FISSO', badgeCls: 'FIXED',
@@ -518,9 +527,11 @@ async function saveVariants() {
     ean_max:           document.getElementById('var-ean_max')?.value.trim()           || null,
     ean_media:         document.getElementById('var-ean_media')?.value.trim()         || null,
     ean_mini:          document.getElementById('var-ean_mini')?.value.trim()          || null,
-    immagine_max:      document.getElementById('var-immagine_max')?.value.trim()      || null,
-    immagine_media:    document.getElementById('var-immagine_media')?.value.trim()    || null,
-    immagine_mini:     document.getElementById('var-immagine_mini')?.value.trim()     || null,
+    // immagine_max/media/mini: il campo UI è stato rimosso (gestito nel tab Descrizione).
+    // Preserviamo il valore già in DB usando currentProduct come fallback.
+    immagine_max:      currentProduct?.immagine_max   || null,
+    immagine_media:    currentProduct?.immagine_media || null,
+    immagine_mini:     currentProduct?.immagine_mini  || null,
     immagine_max_2:    document.getElementById('var-immagine_max_2')?.value.trim()    || null,
     immagine_max_3:    document.getElementById('var-immagine_max_3')?.value.trim()    || null,
     immagine_media_2:  document.getElementById('var-immagine_media_2')?.value.trim()  || null,
@@ -1641,12 +1652,32 @@ async function handleVariantImageSelect(imgKey, label, imgType, input, misura) {
     if (urlInput) { urlInput.value = url; variantsDirty = true; }
     if (currentProduct) currentProduct[imgKey] = url;
 
+    // Aggiorna thumbnail nella tabella varianti
+    const thumb = document.getElementById(`varpreview-${imgKey}`);
+    if (thumb) { thumb.src = url; thumb.classList.remove('hidden'); }
+
     showToast(`✅ ${imgType.charAt(0).toUpperCase() + imgType.slice(1)} variante ${label} caricata!`, 'success');
   } catch (err) {
     showToast(`❌ Upload fallito: ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '📤'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '📤 Carica'; }
     input.value = '';
+  }
+}
+
+/**
+ * Aggiorna il thumbnail nell'input URL delle varianti.
+ * Chiamata dall'oninput del campo URL nelle righe Frontale/Proporzione.
+ */
+function varThumbUpdate(imgKey, input) {
+  const thumb = document.getElementById(`varpreview-${imgKey}`);
+  if (!thumb) return;
+  const val = (input.value || '').trim();
+  if (val) {
+    thumb.src = val;
+    thumb.classList.remove('hidden');
+  } else {
+    thumb.classList.add('hidden');
   }
 }
 
@@ -1723,18 +1754,135 @@ function renderProductImagesCard() {
       </div>`;
   }).join('');
 
+  // Controlla quante immagini varianti sono disponibili per il bottone auto-popola
+  const AUTO_IMAGE_KEYS = [
+    'immagine_max', 'immagine_max_2', 'immagine_max_3',
+    'immagine_media', 'immagine_media_2', 'immagine_media_3',
+    'immagine_mini', 'immagine_mini_2', 'immagine_mini_3',
+  ];
+  const availableCount = AUTO_IMAGE_KEYS.filter(k => currentProduct && currentProduct[k]).length;
+
   card.innerHTML = `
     <div class="product-info-card" style="margin-bottom:20px;">
-      <h3 style="margin-bottom:4px;">🖼️ Immagini Prodotto</h3>
-      <p style="font-size:12px;color:var(--gray-400);margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
+        <h3 style="margin:0;">🖼️ Immagini Prodotto</h3>
+        ${availableCount > 0 ? `
+        <button onclick="autoPopulateImagesFromVariants()"
+                style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;
+                       border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;
+                       cursor:pointer;white-space:nowrap;font-family:inherit;"
+                title="Compila automaticamente le 9 slot con le immagini già caricate dalle varianti">
+          🔄 Auto-popola da varianti (${availableCount} disponibili)
+        </button>` : ''}
+      </div>
+      <p style="font-size:12px;color:var(--gray-400);margin-bottom:16px;margin-top:6px;">
         Immagini della riga <strong>parent</strong> nell'export Amazon (colonne 21–29).
-        Naming automatico:
-        <span style="font-family:monospace;background:var(--gray-100);padding:1px 5px;border-radius:4px;">${escHtml(sku)}_principale</span>,
-        <span style="font-family:monospace;background:var(--gray-100);padding:1px 5px;border-radius:4px;">${escHtml(sku)}_img2</span>, ecc.
+        Ordine: principale → frontale grande → proporzione grande → media → frontale media → ecc.
         Le modifiche vengono salvate tramite <strong>"💾 Salva modifiche"</strong>.
       </p>
       <div class="prod-img-grid">${slots}</div>
     </div>`;
+}
+
+/**
+ * Auto-popola i 9 slot "Immagine principale"..."Immagine 9" (riga parent Amazon)
+ * con le immagini già caricate nelle varianti (immagine_max, immagine_max_2, ecc.).
+ *
+ * Mapping:
+ *   Slot 1 "Immagine principale" → immagine_max   (foto quadro su sfondo bianco)
+ *   Slot 2 "Immagine 2"          → immagine_max_2  (frontale lifestyle Grande)
+ *   Slot 3 "Immagine 3"          → immagine_max_3  (proporzione scala Grande)
+ *   Slot 4 "Immagine 4"          → immagine_media  (principale Media)
+ *   Slot 5 "Immagine 5"          → immagine_media_2 (frontale lifestyle Media)
+ *   Slot 6 "Immagine 6"          → immagine_media_3 (proporzione scala Media)
+ *   Slot 7 "Immagine 7"          → immagine_mini   (principale Piccola)
+ *   Slot 8 "Immagine 8"          → immagine_mini_2  (frontale lifestyle Piccola)
+ *   Slot 9 "Immagine 9"          → immagine_mini_3  (proporzione scala Piccola)
+ *
+ * Usa handleInput() → pendingChanges → "Salva modifiche" per persistere.
+ */
+function autoPopulateImagesFromVariants() {
+  if (!currentSections || !currentProduct) {
+    showToast('Dati prodotto non disponibili', 'warning');
+    return;
+  }
+
+  const AUTO_IMAGE_KEYS = [
+    'immagine_max',    'immagine_max_2',   'immagine_max_3',
+    'immagine_media',  'immagine_media_2', 'immagine_media_3',
+    'immagine_mini',   'immagine_mini_2',  'immagine_mini_3',
+  ];
+
+  // Raccogli e ordina per ordine DB
+  const imageAttrs = [];
+  for (const attrs of Object.values(currentSections)) {
+    for (const attr of attrs) {
+      if (/^immagine\s/i.test(attr.nome)) imageAttrs.push(attr);
+    }
+  }
+  imageAttrs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0));
+
+  let filled = 0;
+  imageAttrs.forEach((attr, i) => {
+    const productKey = AUTO_IMAGE_KEYS[i];
+    const url = productKey ? (currentProduct[productKey] || '') : '';
+    if (!url) return; // salta slot senza immagine disponibile
+
+    // Aggiorna sia l'URL input nella griglia (prod-img-url)
+    const urlInput = document.getElementById(`attr-${attr.id}`);
+    if (urlInput) {
+      urlInput.value = url;
+      handleInput(attr.id, urlInput);
+      prodImgUrlChanged(attr.id);
+      filled++;
+    }
+
+    // Aggiorna la preview
+    const preview     = document.getElementById(`prod-imgpreview-${attr.id}`);
+    const placeholder = document.getElementById(`prod-imgplaceholder-${attr.id}`);
+    if (preview)     { preview.src = url; preview.classList.remove('hidden'); }
+    if (placeholder) placeholder.classList.add('hidden');
+  });
+
+  if (filled > 0) {
+    showToast(`🔄 ${filled} immagini auto-popolate! Clicca "💾 Salva modifiche" per confermare.`, 'success');
+  } else {
+    showToast('⚠️ Nessuna immagine variante disponibile da importare', 'warning');
+  }
+}
+
+/**
+ * Auto-popola silenziosamente gli slot immagine al caricamento del tab Descrizione,
+ * ma SOLO se tutti gli slot sono ancora vuoti (nessun valore salvato in DB).
+ * Se ci sono già valori, non sovrascrive nulla.
+ */
+function autoPopulateImagesIfEmpty() {
+  if (!currentSections || !currentProduct) return;
+
+  const AUTO_IMAGE_KEYS = [
+    'immagine_max',    'immagine_max_2',   'immagine_max_3',
+    'immagine_media',  'immagine_media_2', 'immagine_media_3',
+    'immagine_mini',   'immagine_mini_2',  'immagine_mini_3',
+  ];
+
+  // Controlla se ci sono immagini varianti disponibili
+  const hasVariantImages = AUTO_IMAGE_KEYS.some(k => currentProduct[k]);
+  if (!hasVariantImages) return;
+
+  // Controlla se tutti gli slot immagine sono vuoti in currentSections
+  const imageAttrs = [];
+  for (const attrs of Object.values(currentSections)) {
+    for (const attr of attrs) {
+      if (/^immagine\s/i.test(attr.nome)) imageAttrs.push(attr);
+    }
+  }
+  if (imageAttrs.length === 0) return;
+
+  const allEmpty = imageAttrs.every(attr => !attr.value || !attr.value.trim());
+  if (!allEmpty) return; // già popolati → non sovrascrivere
+
+  // Tutti vuoti e varianti disponibili → auto-popola
+  autoPopulateImagesFromVariants();
 }
 
 /**

@@ -480,6 +480,26 @@
     .var-upload-btn:hover:not(:disabled) { opacity: 0.85; }
     .var-upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    /* Thumbnail immagine nelle righe varianti */
+    .var-img-thumb {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 5px;
+      border: 1px solid var(--gray-200);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .var-img-thumb:hover { opacity: 0.85; transform: scale(1.05); }
+    .var-img-thumb.hidden { display: none; }
+    .var-img-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 640px) {
       .attr-header { flex-direction: column; align-items: flex-start; }
       .listing-toolbar { flex-direction: column; align-items: flex-start; }
