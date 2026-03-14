@@ -1779,30 +1779,26 @@ function renderProductImagesCard() {
       </div>`;
   }).join('');
 
-  // Controlla quante immagini varianti sono disponibili per il bottone auto-popola
-  const AUTO_IMAGE_KEYS = [
-    'immagine_max', 'immagine_max_2', 'immagine_max_3',
-    'immagine_media', 'immagine_media_2', 'immagine_media_3',
-    'immagine_mini', 'immagine_mini_2', 'immagine_mini_3',
-  ];
-  const availableCount = AUTO_IMAGE_KEYS.filter(k => currentProduct && currentProduct[k]).length;
+  // Conta immagini parent disponibili: principale + dettaglio_1/2/3
+  const PARENT_IMAGE_KEYS = ['immagine_max', 'dettaglio_1', 'dettaglio_2', 'dettaglio_3'];
+  const availableCount = PARENT_IMAGE_KEYS.filter(k => currentProduct && currentProduct[k]).length;
 
   card.innerHTML = `
     <div class="product-info-card" style="margin-bottom:20px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
-        <h3 style="margin:0;">🖼️ Immagini Prodotto</h3>
+        <h3 style="margin:0;">🖼️ Immagini Prodotto (Parent)</h3>
         ${availableCount > 0 ? `
         <button onclick="autoPopulateImagesFromVariants()"
                 style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;
                        border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;
                        cursor:pointer;white-space:nowrap;font-family:inherit;"
-                title="Compila automaticamente le 9 slot con le immagini già caricate dalle varianti">
-          🔄 Auto-popola da varianti (${availableCount} disponibili)
+                title="Slot 1 = sfondo bianco, Slot 2-4 = immagini dettaglio">
+          🔄 Auto-popola (${availableCount} disponibili)
         </button>` : ''}
       </div>
       <p style="font-size:12px;color:var(--gray-400);margin-bottom:16px;margin-top:6px;">
         Immagini della riga <strong>parent</strong> nell'export Amazon (colonne 21–29).
-        Ordine: principale → frontale grande → proporzione grande → media → frontale media → ecc.
+        Slot 1 = immagine principale sfondo bianco · Slot 2-4 = foto dettaglio.
         Le modifiche vengono salvate tramite <strong>"💾 Salva modifiche"</strong>.
       </p>
       <div class="prod-img-grid">${slots}</div>
@@ -1810,20 +1806,16 @@ function renderProductImagesCard() {
 }
 
 /**
- * Auto-popola i 9 slot "Immagine principale"..."Immagine 9" (riga parent Amazon)
- * con le immagini già caricate nelle varianti (immagine_max, immagine_max_2, ecc.).
+ * Auto-popola i 9 slot "Immagine principale"..."Immagine 9" (riga parent Amazon).
  *
- * Mapping:
+ * Mapping (immagini ESCLUSIVE del parent — non usate nelle righe child):
  *   Slot 1 "Immagine principale" → immagine_max   (foto quadro su sfondo bianco)
- *   Slot 2 "Immagine 2"          → immagine_max_2  (frontale lifestyle Grande)
- *   Slot 3 "Immagine 3"          → immagine_max_3  (proporzione scala Grande)
- *   Slot 4 "Immagine 4"          → immagine_media  (principale Media)
- *   Slot 5 "Immagine 5"          → immagine_media_2 (frontale lifestyle Media)
- *   Slot 6 "Immagine 6"          → immagine_media_3 (proporzione scala Media)
- *   Slot 7 "Immagine 7"          → immagine_mini   (principale Piccola)
- *   Slot 8 "Immagine 8"          → immagine_mini_2  (frontale lifestyle Piccola)
- *   Slot 9 "Immagine 9"          → immagine_mini_3  (proporzione scala Piccola)
+ *   Slot 2 "Immagine 2"          → dettaglio_1    (foto dettaglio per parent)
+ *   Slot 3 "Immagine 3"          → dettaglio_2    (foto dettaglio per parent)
+ *   Slot 4 "Immagine 4"          → dettaglio_3    (foto dettaglio per parent)
+ *   Slot 5-9                     → vuoti (da riempire manualmente)
  *
+ * Le righe child (varianti) hanno già le proprie immagini (frontale/laterale/proporzione).
  * Usa handleInput() → pendingChanges → "Salva modifiche" per persistere.
  */
 function autoPopulateImagesFromVariants() {
@@ -1832,10 +1824,15 @@ function autoPopulateImagesFromVariants() {
     return;
   }
 
+  // Slot 1: immagine principale sfondo bianco
+  // Slot 2-4: immagini dettaglio esclusive del parent
+  // Slot 5-9: vuoti (null = salta)
   const AUTO_IMAGE_KEYS = [
-    'immagine_max',    'immagine_max_2',   'immagine_max_3',
-    'immagine_media',  'immagine_media_2', 'immagine_media_3',
-    'immagine_mini',   'immagine_mini_2',  'immagine_mini_3',
+    'immagine_max',
+    'dettaglio_1',
+    'dettaglio_2',
+    'dettaglio_3',
+    null, null, null, null, null,
   ];
 
   // Raccogli e ordina per ordine DB
@@ -1884,15 +1881,12 @@ function autoPopulateImagesFromVariants() {
 function autoPopulateImagesIfEmpty() {
   if (!currentSections || !currentProduct) return;
 
-  const AUTO_IMAGE_KEYS = [
-    'immagine_max',    'immagine_max_2',   'immagine_max_3',
-    'immagine_media',  'immagine_media_2', 'immagine_media_3',
-    'immagine_mini',   'immagine_mini_2',  'immagine_mini_3',
-  ];
+  // Chiavi immagini parent (sfondo bianco + dettagli esclusivi)
+  const PARENT_KEYS = ['immagine_max', 'dettaglio_1', 'dettaglio_2', 'dettaglio_3'];
 
-  // Controlla se ci sono immagini varianti disponibili
-  const hasVariantImages = AUTO_IMAGE_KEYS.some(k => currentProduct[k]);
-  if (!hasVariantImages) return;
+  // Controlla se ci sono immagini parent disponibili
+  const hasParentImages = PARENT_KEYS.some(k => currentProduct[k]);
+  if (!hasParentImages) return;
 
   // Controlla se tutti gli slot immagine sono vuoti in currentSections
   const imageAttrs = [];

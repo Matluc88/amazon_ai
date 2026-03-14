@@ -21,7 +21,9 @@
  *   {slug}__{dim}_frontale.png      → immagine_{size}_2  (img di stile/ambiente)
  *   {slug}__{dim}_laterale.png      → immagine_{size}_2  (se non esiste frontale)
  *   {slug}__{dim}_proporzione.jpg   → immagine_{size}_3  (scala proporzione)
- *   {slug}__dettaglio_N.jpg         → upload Cloudinary (URL loggato, no colonna DB)
+ *   {slug}__dettaglio_1.jpg         → dettaglio_1  (immagine dettaglio per parent)
+ *   {slug}__dettaglio_2.jpg         → dettaglio_2  (immagine dettaglio per parent)
+ *   {slug}__dettaglio_3.jpg         → dettaglio_3  (immagine dettaglio per parent)
  *   {slug}__descrizione.txt         → descrizione_raw (solo se campo vuoto/corto)
  *
  * NOTA dimensioni: NORMALIZZATE usa height×base (es. "90x135", come consegna il cliente).
@@ -242,7 +244,8 @@ async function loadAllProducts() {
            immagine_max,    immagine_media,    immagine_mini,
            immagine_max_2,  immagine_max_3,
            immagine_media_2, immagine_media_3,
-           immagine_mini_2,  immagine_mini_3
+           immagine_mini_2,  immagine_mini_3,
+           dettaglio_1, dettaglio_2, dettaglio_3
     FROM products
     ORDER BY id
   `);
@@ -383,21 +386,35 @@ async function processSlug(entry, allProducts, stats) {
     }
   }
 
-  // ── 3. DETTAGLI → upload Cloudinary (nessuna colonna DB) ─────────────
+  // ── 3. DETTAGLI → upload Cloudinary + salva nel DB (dettaglio_1/2/3) ─
   if (dettagli.length > 0) {
-    for (let i = 0; i < dettagli.length; i++) {
-      const detPath = dettagli[i];
-      const detName = `${slug}__dettaglio_${i + 1}`;
+    // Ordina per nome file (garantisce dettaglio_1 < dettaglio_2 < dettaglio_3)
+    const dettagliSorted = [...dettagli].sort((a, b) =>
+      path.basename(a).localeCompare(path.basename(b))
+    );
+    for (let i = 0; i < Math.min(dettagliSorted.length, 3); i++) {
+      const detPath  = dettagliSorted[i];
+      const colName  = `dettaglio_${i + 1}`;
+      const detName  = `${slug}__dettaglio_${i + 1}`;
+      // Salta i _dup
+      if (path.basename(detPath).includes('_dup')) continue;
+      // Salta se già presente in DB
+      if (product[colName]) {
+        console.log(`  ⏭️  ${colName} già presente`);
+        continue;
+      }
       if (!DRY_RUN) {
         try {
           const url = await uploadToCloudinary(detPath, detName);
           await sleep(DELAY_MS);
-          console.log(`  ✅ dettaglio_${i + 1} → ${url}`);
+          updates[colName] = url;
+          console.log(`  ✅ ${colName} → Cloudinary`);
         } catch (e) {
-          console.error(`  ❌ Errore upload dettaglio_${i + 1}: ${e.message}`);
+          console.error(`  ❌ Errore upload ${colName}: ${e.message}`);
         }
       } else {
-        console.log(`  [DRY] dettaglio_${i + 1} → ${path.basename(detPath)}`);
+        console.log(`  [DRY] ${colName} → ${path.basename(detPath)}`);
+        updates[colName] = 'DRY_URL';
       }
       uploadCount++;
     }
