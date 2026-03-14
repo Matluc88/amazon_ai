@@ -263,16 +263,19 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   }
 
   // ── Immagini variante child ───────────────────────────────────────────────────
-  // Per le righe child sovrascriviamo le colonne immagine con quelle specifiche della variante:
-  //   col 21 (Immagine principale) = immagine_max_2 (frontale lifestyle — foto principale del child)
-  //   col 22 (Immagine 2)          = immagine_max   (di lato / laterale — seconda posizione)
-  //   col 23 (Immagine 3)          = immagine_max_3 (proporzione scala — terza posizione)
-  // Nota: l'ATTR_COL loop sopra ha scritto le immagini del PARENT (immagine_max/dettaglio) in
-  // col 21-29; qui sovrascriviamo col 21-23 con le immagini specifiche della variante.
+  // Per le righe child le immagini del PARENT (immagine_max, dettaglio_1/2/3) scritte
+  // dall'ATTR_COL loop sopra NON devono comparire. Puliamo cols 21-29 e scriviamo
+  // SOLO le 3 immagini specifiche della variante:
+  //   col 21 (Immagine principale) = frontale lifestyle (immagine_max_2)
+  //   col 22 (Immagine 2)          = di lato / laterale (immagine_max)
+  //   col 23 (Immagine 3)          = proporzione scala  (immagine_max_3)
   if (!isParent) {
-    if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);      // frontale lifestyle — Immagine principale child
-    if (immagine)    setCellValue(sheet, 22, rowIdx, immagine);       // di lato (laterale) — seconda posizione
-    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);      // proporzione scala — terza posizione
+    // Svuota tutti gli slot immagine scritti dal parent (cols 21-29)
+    for (let c = 21; c <= 29; c++) setCellValue(sheet, c, rowIdx, '');
+    // Scrivi SOLO le immagini della variante
+    if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);  // frontale lifestyle — 1ª posizione
+    if (immagine)    setCellValue(sheet, 22, rowIdx, immagine);   // di lato (laterale) — 2ª posizione
+    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);  // proporzione scala  — 3ª posizione
   }
 }
 
