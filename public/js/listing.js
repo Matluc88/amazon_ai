@@ -440,22 +440,22 @@ function renderVariantsCard(product) {
     {
       label: '📷 Di lato (laterale)', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
       cells: sizes.map(s => {
-        const urlBase = product[s.imgKey] || '';
+        const url4 = product[s.imgKey + '_4'] || '';
         return `<div class="var-img-cell">
-          <img id="varpreview-${s.imgKey}"
-               src="${escHtml(urlBase)}"
-               class="var-img-thumb${urlBase ? '' : ' hidden'}"
+          <img id="varpreview-${s.imgKey}_4"
+               src="${escHtml(url4)}"
+               class="var-img-thumb${url4 ? '' : ' hidden'}"
                onclick="if(this.src && !this.classList.contains('hidden')) window.open(this.src,'_blank')"
                title="Clicca per ingrandire" />
           <div style="display:flex;flex-direction:column;gap:4px;">
-            <input type="file" id="varfile-${s.imgKey}-laterale" accept="image/*" style="display:none"
-                   onchange="handleVariantImageSelect('${s.imgKey}', '${s.label}', 'laterale', this, '${escHtml(s.misura || '')}')">
-            <input type="url" class="var-input url-input" id="var-${s.imgKey}"
-              value="${escHtml(urlBase)}"
+            <input type="file" id="varfile-${s.imgKey}_4-laterale" accept="image/*" style="display:none"
+                   onchange="handleVariantImageSelect('${s.imgKey}_4', '${s.label}', 'laterale', this, '${escHtml(s.misura || '')}')">
+            <input type="url" class="var-input url-input" id="var-${s.imgKey}_4"
+              value="${escHtml(url4)}"
               placeholder="https://..."
-              oninput="variantsDirty=true; varThumbUpdate('${s.imgKey}', this);" />
-            <button class="var-upload-btn" id="varbtn-${s.imgKey}-laterale"
-                    onclick="document.getElementById('varfile-${s.imgKey}-laterale').click()"
+              oninput="variantsDirty=true; varThumbUpdate('${s.imgKey}_4', this);" />
+            <button class="var-upload-btn" id="varbtn-${s.imgKey}_4-laterale"
+                    onclick="document.getElementById('varfile-${s.imgKey}_4-laterale').click()"
                     title="Carica immagine di lato (laterale)">
               📤 Carica
             </button>
@@ -553,16 +553,20 @@ async function saveVariants() {
     ean_max:           document.getElementById('var-ean_max')?.value.trim()           || null,
     ean_media:         document.getElementById('var-ean_media')?.value.trim()         || null,
     ean_mini:          document.getElementById('var-ean_mini')?.value.trim()          || null,
-    // immagine_max/media/mini: ora sono le righe "Di lato (laterale)" → leggiamo dal DOM
-    immagine_max:      document.getElementById('var-immagine_max')?.value.trim()      || null,
-    immagine_media:    document.getElementById('var-immagine_media')?.value.trim()    || null,
-    immagine_mini:     document.getElementById('var-immagine_mini')?.value.trim()     || null,
+    // immagine_max/media/mini = principale sfondo bianco — preserva il valore esistente (gestito da auto-populate/import)
+    immagine_max:      currentProduct?.immagine_max   || null,
+    immagine_media:    currentProduct?.immagine_media || null,
+    immagine_mini:     currentProduct?.immagine_mini  || null,
+    // _2 = frontale lifestyle, _3 = proporzione scala, _4 = di lato (laterale)
     immagine_max_2:    document.getElementById('var-immagine_max_2')?.value.trim()    || null,
     immagine_max_3:    document.getElementById('var-immagine_max_3')?.value.trim()    || null,
+    immagine_max_4:    document.getElementById('var-immagine_max_4')?.value.trim()    || null,
     immagine_media_2:  document.getElementById('var-immagine_media_2')?.value.trim()  || null,
     immagine_media_3:  document.getElementById('var-immagine_media_3')?.value.trim()  || null,
+    immagine_media_4:  document.getElementById('var-immagine_media_4')?.value.trim()  || null,
     immagine_mini_2:   document.getElementById('var-immagine_mini_2')?.value.trim()   || null,
     immagine_mini_3:   document.getElementById('var-immagine_mini_3')?.value.trim()   || null,
+    immagine_mini_4:   document.getElementById('var-immagine_mini_4')?.value.trim()   || null,
     // ASIN Amazon (parent + 3 child)
     asin_padre:        document.getElementById('var-asin_padre')?.value.trim().toUpperCase() || null,
     asin_max:          document.getElementById('var-asin_max')?.value.trim().toUpperCase()   || null,
@@ -1651,8 +1655,8 @@ async function handleVariantImageSelect(imgKey, label, imgType, input, misura) {
   try {
     const skuPadre = currentProduct?.sku_padre || `prod-${productId}`;
 
-    // SKU variante (es. sku_max per immagine_max / immagine_max_2 / immagine_max_3)
-    const baseKey    = imgKey.replace(/_[23]$/, '');          // immagine_max_2 → immagine_max
+    // SKU variante (es. sku_max per immagine_max / immagine_max_2 / immagine_max_3 / immagine_max_4)
+    const baseKey    = imgKey.replace(/_[234]$/, '');         // immagine_max_2/_3/_4 → immagine_max
     const skuKey     = baseKey.replace('immagine_', 'sku_');  // immagine_max → sku_max
     const skuVar     = currentProduct?.[skuKey] || label.toLowerCase();
 

@@ -114,9 +114,9 @@ router.patch('/:id/variants', async (req, res) => {
     const {
       ean_max, ean_media, ean_mini,
       immagine_max, immagine_media, immagine_mini,
-      immagine_max_2, immagine_max_3,
-      immagine_media_2, immagine_media_3,
-      immagine_mini_2, immagine_mini_3,
+      immagine_max_2, immagine_max_3, immagine_max_4,
+      immagine_media_2, immagine_media_3, immagine_media_4,
+      immagine_mini_2, immagine_mini_3, immagine_mini_4,
       asin_padre, asin_max, asin_media, asin_mini,
     } = req.body;
 
@@ -135,17 +135,17 @@ router.patch('/:id/variants', async (req, res) => {
       UPDATE products SET
         ean_max = $1, ean_media = $2, ean_mini = $3,
         immagine_max = $4, immagine_media = $5, immagine_mini = $6,
-        immagine_max_2 = $7, immagine_max_3 = $8,
-        immagine_media_2 = $9, immagine_media_3 = $10,
-        immagine_mini_2 = $11, immagine_mini_3 = $12,
-        asin_padre = $13, asin_max = $14, asin_media = $15, asin_mini = $16
-      WHERE id = $17
+        immagine_max_2 = $7, immagine_max_3 = $8, immagine_max_4 = $9,
+        immagine_media_2 = $10, immagine_media_3 = $11, immagine_media_4 = $12,
+        immagine_mini_2 = $13, immagine_mini_3 = $14, immagine_mini_4 = $15,
+        asin_padre = $16, asin_max = $17, asin_media = $18, asin_mini = $19
+      WHERE id = $20
     `, [
       ean_max || null, ean_media || null, ean_mini || null,
       immagine_max || null, immagine_media || null, immagine_mini || null,
-      immagine_max_2 || null, immagine_max_3 || null,
-      immagine_media_2 || null, immagine_media_3 || null,
-      immagine_mini_2 || null, immagine_mini_3 || null,
+      immagine_max_2 || null, immagine_max_3 || null, immagine_max_4 || null,
+      immagine_media_2 || null, immagine_media_3 || null, immagine_media_4 || null,
+      immagine_mini_2 || null, immagine_mini_3 || null, immagine_mini_4 || null,
       asin_padre ? asin_padre.trim().toUpperCase() : null,
       asin_max   ? asin_max.trim().toUpperCase()   : null,
       asin_media ? asin_media.trim().toUpperCase() : null,
