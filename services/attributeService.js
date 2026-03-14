@@ -3,6 +3,14 @@
  * Gestisce le sorgenti: AI | FIXED | AUTO | MANUAL | SKIP
  */
 const { query } = require('../database/db');
+// Import lazy per evitare dipendenza circolare
+let _verifyOrientationWithAI = null;
+function getVerifyOrientation() {
+  if (!_verifyOrientationWithAI) {
+    _verifyOrientationWithAI = require('./anthropicService').verifyOrientationWithAI;
+  }
+  return _verifyOrientationWithAI;
+}
 
 /**
  * Lookup table dimensioni → peso (kg) per stampe su tela Sivigliart.
@@ -129,6 +137,28 @@ async function compileFixedAndAuto(productId, product) {
   const dimsSource = product.misura_max || product.descrizione_raw || '';
   const dims = extractDimensions(dimsSource);
 
+  // ─── Verifica orientamento con AI Vision ────────────────────────────────
+  // Se il prodotto ha un'immagine, usa Claude Haiku per verificare l'orientamento
+  // reale dall'immagine — evita errori quando le dimensioni nel DB sono invertite.
+  let orientamentoFinale = dims ? dims.orientamento : null;
+  const imageUrlForOrientation = product.immagine_max || product.immagine_media || product.immagine_mini || null;
+  if (imageUrlForOrientation && typeof imageUrlForOrientation === 'string' && imageUrlForOrientation.startsWith('http')) {
+    try {
+      const aiOri = await getVerifyOrientation()(imageUrlForOrientation);
+      if (aiOri) {
+        if (aiOri !== orientamentoFinale) {
+          console.warn(`[AUTO] ⚠️ Orientamento corretto da AI per prodotto ${productId}: dimensioni→${orientamentoFinale}, immagine→${aiOri}`);
+        } else {
+          console.log(`[AUTO] ✓ Orientamento confermato da AI per prodotto ${productId}: ${aiOri}`);
+        }
+        orientamentoFinale = aiOri;
+      }
+    } catch (e) {
+      console.warn(`[AUTO] verifica orientamento AI fallita per ${productId}:`, e.message);
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   const compiled = [];
 
   for (const attr of attrs) {
@@ -148,7 +178,7 @@ async function compileFixedAndAuto(productId, product) {
         } else if (nome.includes('più corto')) {
           value = dims.larghezza; compiledBy = 'AUTO';
         } else if (nome === 'Orientamento') {
-          value = dims.orientamento; compiledBy = 'AUTO';
+          value = orientamentoFinale; compiledBy = 'AUTO';
         } else if (nome === 'Lunghezza imballaggio') {
           value = dims.lunghezza; compiledBy = 'AUTO';
         } else if (nome === 'Larghezza imballaggio') {

@@ -591,6 +591,45 @@ function smartTruncateTitle(title, stableKey) {
 }
 
 /**
+ * Verifica l'orientamento di un'opera tramite analisi visiva AI (Claude Haiku).
+ * Usa l'immagine come fonte di verità per determinare se l'opera è
+ * Orizzontale, Verticale o Quadrata, indipendentemente dalle dimensioni nel DB.
+ *
+ * @param {string} imageUrl - URL immagine Cloudinary
+ * @returns {Promise<'Orizzontale'|'Verticale'|'Quadrato'|null>}
+ */
+async function verifyOrientationWithAI(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('http')) return null;
+  try {
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 20,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'url', url: imageUrl }
+          },
+          {
+            type: 'text',
+            text: "Guarda questa immagine. Qual è il suo orientamento? Rispondi SOLO con una di queste tre parole esatte: Orizzontale, Verticale, Quadrato. Nient'altro."
+          }
+        ]
+      }]
+    });
+    const text = message.content[0].text.trim().toLowerCase();
+    if (text.includes('verticale'))   return 'Verticale';
+    if (text.includes('orizzontale')) return 'Orizzontale';
+    if (text.includes('quadrato'))    return 'Quadrato';
+    return null;
+  } catch (e) {
+    console.warn('[AI] verifyOrientationWithAI fallito:', e.message);
+    return null;
+  }
+}
+
+/**
  * Estrae e parsa la risposta JSON di Claude
  */
 function parseJsonResponse(text) {
@@ -605,4 +644,4 @@ function parseJsonResponse(text) {
   }
 }
 
-module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI };
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI };
