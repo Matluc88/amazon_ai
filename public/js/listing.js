@@ -438,6 +438,32 @@ function renderVariantsCard(product) {
       })
     },
     {
+      label: '📷 Di lato (laterale)', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
+      cells: sizes.map(s => {
+        const urlBase = product[s.imgKey] || '';
+        return `<div class="var-img-cell">
+          <img id="varpreview-${s.imgKey}"
+               src="${escHtml(urlBase)}"
+               class="var-img-thumb${urlBase ? '' : ' hidden'}"
+               onclick="if(this.src && !this.classList.contains('hidden')) window.open(this.src,'_blank')"
+               title="Clicca per ingrandire" />
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <input type="file" id="varfile-${s.imgKey}-laterale" accept="image/*" style="display:none"
+                   onchange="handleVariantImageSelect('${s.imgKey}', '${s.label}', 'laterale', this, '${escHtml(s.misura || '')}')">
+            <input type="url" class="var-input url-input" id="var-${s.imgKey}"
+              value="${escHtml(urlBase)}"
+              placeholder="https://..."
+              oninput="variantsDirty=true; varThumbUpdate('${s.imgKey}', this);" />
+            <button class="var-upload-btn" id="varbtn-${s.imgKey}-laterale"
+                    onclick="document.getElementById('varfile-${s.imgKey}-laterale').click()"
+                    title="Carica immagine di lato (laterale)">
+              📤 Carica
+            </button>
+          </div>
+        </div>`;
+      })
+    },
+    {
       label: '📷 Proporzione (scala)', badge: '✍️ MANUALE', badgeCls: 'MANUAL',
       cells: sizes.map(s => {
         const url3 = product[s.imgKey + '_3'] || '';
@@ -527,11 +553,10 @@ async function saveVariants() {
     ean_max:           document.getElementById('var-ean_max')?.value.trim()           || null,
     ean_media:         document.getElementById('var-ean_media')?.value.trim()         || null,
     ean_mini:          document.getElementById('var-ean_mini')?.value.trim()          || null,
-    // immagine_max/media/mini: il campo UI è stato rimosso (gestito nel tab Descrizione).
-    // Preserviamo il valore già in DB usando currentProduct come fallback.
-    immagine_max:      currentProduct?.immagine_max   || null,
-    immagine_media:    currentProduct?.immagine_media || null,
-    immagine_mini:     currentProduct?.immagine_mini  || null,
+    // immagine_max/media/mini: ora sono le righe "Di lato (laterale)" → leggiamo dal DOM
+    immagine_max:      document.getElementById('var-immagine_max')?.value.trim()      || null,
+    immagine_media:    document.getElementById('var-immagine_media')?.value.trim()    || null,
+    immagine_mini:     document.getElementById('var-immagine_mini')?.value.trim()     || null,
     immagine_max_2:    document.getElementById('var-immagine_max_2')?.value.trim()    || null,
     immagine_max_3:    document.getElementById('var-immagine_max_3')?.value.trim()    || null,
     immagine_media_2:  document.getElementById('var-immagine_media_2')?.value.trim()  || null,
