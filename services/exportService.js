@@ -265,13 +265,13 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   // ── Immagini variante child ───────────────────────────────────────────────────
   // col 21 (Immagine principale) → dall'ATTR_COL loop sopra = attrs["Immagine principale"]
   // Ordine immagini child:
-  //   col 22 = frontale lifestyle (immagine_max_2) — mostra scala e ambiente
-  //   col 23 = principale sfondo bianco (immagine_max) — foto pulita del quadro
+  //   col 22 = di lato (immagine_max) — vista laterale del quadro
+  //   col 23 = frontale lifestyle (immagine_max_2) — mostra scala e ambiente
   //   col 24 = proporzione scala (immagine_max_3)
   if (!isParent) {
-    if (immagine2)   setCellValue(sheet, 22, rowIdx, immagine2);      // frontale lifestyle (prima)
-    if (immagine)    setCellValue(sheet, 23, rowIdx, immagine);       // principale sfondo bianco (seconda)
-    if (immagine3)   setCellValue(sheet, 24, rowIdx, immagine3);      // proporzione scala (terza)
+    if (immagine)    setCellValue(sheet, 22, rowIdx, immagine);       // di lato (laterale) — seconda posizione
+    if (immagine2)   setCellValue(sheet, 23, rowIdx, immagine2);      // frontale lifestyle — terza posizione
+    if (immagine3)   setCellValue(sheet, 24, rowIdx, immagine3);      // proporzione scala — quarta posizione
   }
 }
 
