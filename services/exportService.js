@@ -263,15 +263,16 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   }
 
   // ── Immagini variante child ───────────────────────────────────────────────────
-  // col 21 (Immagine principale) → dall'ATTR_COL loop sopra = attrs["Immagine principale"]
-  // Ordine immagini child:
-  //   col 22 = di lato (immagine_max) — vista laterale del quadro
-  //   col 23 = frontale lifestyle (immagine_max_2) — mostra scala e ambiente
-  //   col 24 = proporzione scala (immagine_max_3)
+  // Per le righe child sovrascriviamo le colonne immagine con quelle specifiche della variante:
+  //   col 21 (Immagine principale) = immagine_max_2 (frontale lifestyle — foto principale del child)
+  //   col 22 (Immagine 2)          = immagine_max   (di lato / laterale — seconda posizione)
+  //   col 23 (Immagine 3)          = immagine_max_3 (proporzione scala — terza posizione)
+  // Nota: l'ATTR_COL loop sopra ha scritto le immagini del PARENT (immagine_max/dettaglio) in
+  // col 21-29; qui sovrascriviamo col 21-23 con le immagini specifiche della variante.
   if (!isParent) {
+    if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);      // frontale lifestyle — Immagine principale child
     if (immagine)    setCellValue(sheet, 22, rowIdx, immagine);       // di lato (laterale) — seconda posizione
-    if (immagine2)   setCellValue(sheet, 23, rowIdx, immagine2);      // frontale lifestyle — terza posizione
-    if (immagine3)   setCellValue(sheet, 24, rowIdx, immagine3);      // proporzione scala — quarta posizione
+    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);      // proporzione scala — terza posizione
   }
 }
 
