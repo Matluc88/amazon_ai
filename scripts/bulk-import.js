@@ -18,8 +18,8 @@
  *
  * Mappa file → colonne DB:
  *   {slug}__principale.jpg          → immagine_max / immagine_media / immagine_mini
- *   {slug}__{dim}_frontale.png      → immagine_{size}_2  (img di stile/ambiente)
- *   {slug}__{dim}_laterale.png      → immagine_{size}_2  (se non esiste frontale)
+ *   {slug}__{dim}_frontale.png      → immagine_{size}_2  (frontale lifestyle)
+ *   {slug}__{dim}_laterale.png      → immagine_{size}_4  (di lato — colonna dedicata)
  *   {slug}__{dim}_proporzione.jpg   → immagine_{size}_3  (scala proporzione)
  *   {slug}__dettaglio_1.jpg         → dettaglio_1  (immagine dettaglio per parent)
  *   {slug}__dettaglio_2.jpg         → dettaglio_2  (immagine dettaglio per parent)
@@ -242,9 +242,9 @@ async function loadAllProducts() {
            misura_max, misura_media, misura_mini,
            asin_padre, asin_max, asin_media, asin_mini,
            immagine_max,    immagine_media,    immagine_mini,
-           immagine_max_2,  immagine_max_3,
-           immagine_media_2, immagine_media_3,
-           immagine_mini_2,  immagine_mini_3,
+           immagine_max_2,  immagine_max_3,  immagine_max_4,
+           immagine_media_2, immagine_media_3, immagine_media_4,
+           immagine_mini_2,  immagine_mini_3,  immagine_mini_4,
            dettaglio_1, dettaglio_2, dettaglio_3
     FROM products
     ORDER BY id
@@ -323,12 +323,12 @@ async function processSlug(entry, allProducts, stats) {
 
   // ── 2. VARIANTI (img2 + img3 per ogni taglia) ────────────────────────
   const sizeMap = [
-    { size: 'max',   dimField: 'misura_max',   col2: 'immagine_max_2',   col3: 'immagine_max_3' },
-    { size: 'media', dimField: 'misura_media',  col2: 'immagine_media_2', col3: 'immagine_media_3' },
-    { size: 'mini',  dimField: 'misura_mini',   col2: 'immagine_mini_2',  col3: 'immagine_mini_3' },
+    { size: 'max',   dimField: 'misura_max',   col2: 'immagine_max_2',   col3: 'immagine_max_3',   col4: 'immagine_max_4' },
+    { size: 'media', dimField: 'misura_media',  col2: 'immagine_media_2', col3: 'immagine_media_3', col4: 'immagine_media_4' },
+    { size: 'mini',  dimField: 'misura_mini',   col2: 'immagine_mini_2',  col3: 'immagine_mini_3',  col4: 'immagine_mini_4' },
   ];
 
-  for (const { size, dimField, col2, col3 } of sizeMap) {
+  for (const { size, dimField, col2, col3, col4 } of sizeMap) {
     const dbDim = product[dimField];   // es. "135x90" (base×altezza nel DB)
     if (!dbDim) continue;
 
@@ -342,27 +342,44 @@ async function processSlug(entry, allProducts, stats) {
 
     const varFiles = variants[matchedDim];
 
-    // img2 → preferisci frontale, poi laterale
-    const img2src  = varFiles.frontale || varFiles.laterale;
-    const img2tipo = varFiles.frontale ? 'frontale' : 'laterale';
-
-    if (img2src && !product[col2]) {
+    // img2 → frontale lifestyle ONLY (non più fallback su laterale)
+    if (varFiles.frontale && !product[col2]) {
       if (!DRY_RUN) {
         try {
-          const url = await uploadToCloudinary(img2src, `${slug}__${matchedDim}_${img2tipo}`);
+          const url = await uploadToCloudinary(varFiles.frontale, `${slug}__${matchedDim}_frontale`);
           await sleep(DELAY_MS);
           updates[col2] = url;
-          console.log(`  ✅ ${size} img2 (${img2tipo}, ${matchedDim}) → Cloudinary`);
+          console.log(`  ✅ ${size} img2 (frontale, ${matchedDim}) → Cloudinary`);
         } catch (e) {
           console.error(`  ❌ Errore upload ${size} img2: ${e.message}`);
         }
       } else {
-        console.log(`  [DRY] ${size} img2 (${img2tipo}, ${matchedDim}) → ${path.basename(img2src)}`);
+        console.log(`  [DRY] ${size} img2 (frontale, ${matchedDim}) → ${path.basename(varFiles.frontale)}`);
         updates[col2] = 'DRY_URL';
       }
       uploadCount++;
     } else if (product[col2]) {
-      console.log(`  ⏭️  ${size} img2 già presente`);
+      console.log(`  ⏭️  ${size} img2 (frontale) già presente`);
+    }
+
+    // img4 → laterale (colonna dedicata _4)
+    if (varFiles.laterale && !product[col4]) {
+      if (!DRY_RUN) {
+        try {
+          const url = await uploadToCloudinary(varFiles.laterale, `${slug}__${matchedDim}_laterale`);
+          await sleep(DELAY_MS);
+          updates[col4] = url;
+          console.log(`  ✅ ${size} img4 (laterale, ${matchedDim}) → Cloudinary`);
+        } catch (e) {
+          console.error(`  ❌ Errore upload ${size} img4: ${e.message}`);
+        }
+      } else {
+        console.log(`  [DRY] ${size} img4 (laterale, ${matchedDim}) → ${path.basename(varFiles.laterale)}`);
+        updates[col4] = 'DRY_URL';
+      }
+      uploadCount++;
+    } else if (product[col4]) {
+      console.log(`  ⏭️  ${size} img4 (laterale) già presente`);
     }
 
     // img3 → proporzione

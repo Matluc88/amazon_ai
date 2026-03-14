@@ -193,7 +193,7 @@ function splitKeywordsTo5Slots(keywordsStr) {
  *   - isParent     {boolean}
  */
 function buildRow(sheet, rowIdx, product, attrs, variant) {
-  const { isParent, sku, taglia, dims, peso, prezzo, immagine, immagine2, immagine3 } = variant;
+  const { isParent, sku, taglia, dims, peso, prezzo, immagine, immagine2, immagine3, immagine4 } = variant;
 
   // ── Colonne strutturali ──────────────────────────────────
   setCellValue(sheet, 0, rowIdx, sku || '');
@@ -266,15 +266,15 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   // Per le righe child le immagini del PARENT (immagine_max, dettaglio_1/2/3) scritte
   // dall'ATTR_COL loop sopra NON devono comparire. Puliamo cols 21-29 e scriviamo
   // SOLO le 3 immagini specifiche della variante:
-  //   col 21 (Immagine principale) = frontale lifestyle (immagine_max_2)
-  //   col 22 (Immagine 2)          = di lato / laterale (immagine_max)
-  //   col 23 (Immagine 3)          = proporzione scala  (immagine_max_3)
+  //   col 21 (Immagine principale) = frontale lifestyle   (immagine_max_2)
+  //   col 22 (Immagine 2)          = di lato / laterale   (immagine_max_4)
+  //   col 23 (Immagine 3)          = proporzione scala    (immagine_max_3)
   if (!isParent) {
     // Svuota tutti gli slot immagine scritti dal parent (cols 21-29)
     for (let c = 21; c <= 29; c++) setCellValue(sheet, c, rowIdx, '');
     // Scrivi SOLO le immagini della variante
     if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);  // frontale lifestyle — 1ª posizione
-    if (immagine)    setCellValue(sheet, 22, rowIdx, immagine);   // di lato (laterale) — 2ª posizione
+    if (immagine4)   setCellValue(sheet, 22, rowIdx, immagine4);  // di lato (laterale) — 2ª posizione
     if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);  // proporzione scala  — 3ª posizione
   }
 }
@@ -333,9 +333,9 @@ async function exportProductToXlsm(productId) {
 
     // ── Righe child per ogni taglia disponibile ────────────
     const childVariants = [
-      { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3 },
-      { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3 },
-      { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3 },
+      { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3,   immagine4: product.immagine_max_4 },
+      { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3, immagine4: product.immagine_media_4 },
+      { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3,  immagine4: product.immagine_mini_4 },
     ].filter(v => v.sku && v.misura); // Salta varianti senza SKU o misura
 
     for (const cv of childVariants) {
@@ -353,6 +353,7 @@ async function exportProductToXlsm(productId) {
         immagine: cv.immagine,
         immagine2: cv.immagine2,
         immagine3: cv.immagine3,
+        immagine4: cv.immagine4,
         isParent: false,
       });
     }
@@ -459,16 +460,16 @@ async function exportAllProductsToXlsm(productIds = null) {
       });
 
       const childVariants = [
-        { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3 },
-        { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3 },
-        { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3 },
+        { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3,   immagine4: product.immagine_max_4 },
+        { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3, immagine4: product.immagine_media_4 },
+        { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3,  immagine4: product.immagine_mini_4 },
       ].filter(v => v.sku && v.misura);
 
       for (const cv of childVariants) {
         const dims = extractDimensions(cv.misura);
         const peso = lookupWeight(cv.misura);
         const taglia = dims ? `${dims.lunghezza} x ${dims.larghezza} cm` : cv.misura;
-        rows.push({ sku: cv.sku, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, immagine2: cv.immagine2, immagine3: cv.immagine3, isParent: false });
+        rows.push({ sku: cv.sku, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, immagine2: cv.immagine2, immagine3: cv.immagine3, immagine4: cv.immagine4, isParent: false });
       }
     } else {
       const dims = extractDimensions(product.dimensioni || product.descrizione_raw || '');
