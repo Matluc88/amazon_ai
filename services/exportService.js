@@ -193,13 +193,19 @@ function splitKeywordsTo5Slots(keywordsStr) {
  *   - isParent     {boolean}
  */
 function buildRow(sheet, rowIdx, product, attrs, variant) {
-  const { isParent, sku, taglia, dims, peso, prezzo, immagine, immagine2, immagine3, immagine4 } = variant;
+  const { isParent, sku, taglia, dims, peso, prezzo, immagine, immagine2, immagine3, immagine4, asin } = variant;
 
   // ── Colonne strutturali ──────────────────────────────────
   setCellValue(sheet, 0, rowIdx, sku || '');
   setCellValue(sheet, 1, rowIdx, 'WALL_ART');
   // Col 2 (azione) → vuota = default "Crea o sostituisci"
-  setCellValue(sheet, 8,  rowIdx, 'Esenzione GTIN'); // Tipo ID di prodotto (no EAN)
+  // Col 8/9: ID prodotto — ASIN se presente, altrimenti Esenzione GTIN
+  if (asin) {
+    setCellValue(sheet, 8, rowIdx, 'ASIN');   // Tipo ID
+    setCellValue(sheet, 9, rowIdx, asin);     // Valore ASIN (es. B09XYZ123)
+  } else {
+    setCellValue(sheet, 8, rowIdx, 'Esenzione GTIN'); // Nessun EAN/ASIN disponibile
+  }
   setCellValue(sheet, 10, rowIdx, '20690426031');     // Nodo navigazione: Casa e cucina > Arte > Poster e stampe
   setCellValue(sheet, 15, rowIdx, 'Unità');           // Livello di aggregazione: singolo pezzo
   setCellValue(sheet, 275, rowIdx, 'No');             // Le batterie sono necessarie?
@@ -328,6 +334,7 @@ async function exportProductToXlsm(productId) {
     const parentPeso = lookupWeight(product.misura_max || product.misura_media || product.misura_mini || '');
     rows.push({
       sku: product.sku_padre || product.titolo_opera?.substring(0, 40) || `SKU-${productId}`,
+      asin: product.asin_padre || null,
       taglia: null,
       dims: parentDims,
       peso: parentPeso,
@@ -338,9 +345,9 @@ async function exportProductToXlsm(productId) {
 
     // ── Righe child per ogni taglia disponibile ────────────
     const childVariants = [
-      { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3,   immagine4: product.immagine_max_4 },
-      { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3, immagine4: product.immagine_media_4 },
-      { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3,  immagine4: product.immagine_mini_4 },
+      { sku: product.sku_max,   asin: product.asin_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3,   immagine4: product.immagine_max_4 },
+      { sku: product.sku_media, asin: product.asin_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3, immagine4: product.immagine_media_4 },
+      { sku: product.sku_mini,  asin: product.asin_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3,  immagine4: product.immagine_mini_4 },
     ].filter(v => v.sku && v.misura); // Salta varianti senza SKU o misura
 
     for (const cv of childVariants) {
@@ -351,6 +358,7 @@ async function exportProductToXlsm(productId) {
 
       rows.push({
         sku: cv.sku,
+        asin: cv.asin || null,
         taglia,
         dims,
         peso,
@@ -368,6 +376,7 @@ async function exportProductToXlsm(productId) {
     const peso = lookupWeight(product.dimensioni || product.descrizione_raw || '');
     rows.push({
       sku: product.titolo_opera?.substring(0, 40) || `PROD-${productId}`,
+      asin: product.asin_max || product.asin_padre || null,
       taglia: null,
       dims,
       peso,
@@ -461,20 +470,21 @@ async function exportAllProductsToXlsm(productIds = null) {
       const parentPeso = lookupWeight(product.misura_max || product.misura_media || product.misura_mini || '');
       rows.push({
         sku: product.sku_padre || product.titolo_opera?.substring(0, 40) || `SKU-${product.id}`,
+        asin: product.asin_padre || null,
         taglia: null, dims: parentDims, peso: parentPeso, prezzo: null, immagine: null, isParent: true,
       });
 
       const childVariants = [
-        { sku: product.sku_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3,   immagine4: product.immagine_max_4 },
-        { sku: product.sku_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3, immagine4: product.immagine_media_4 },
-        { sku: product.sku_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3,  immagine4: product.immagine_mini_4 },
+        { sku: product.sku_max,   asin: product.asin_max,   misura: product.misura_max,   prezzo: product.prezzo_max,   immagine: product.immagine_max,   immagine2: product.immagine_max_2,   immagine3: product.immagine_max_3,   immagine4: product.immagine_max_4 },
+        { sku: product.sku_media, asin: product.asin_media, misura: product.misura_media, prezzo: product.prezzo_media, immagine: product.immagine_media, immagine2: product.immagine_media_2, immagine3: product.immagine_media_3, immagine4: product.immagine_media_4 },
+        { sku: product.sku_mini,  asin: product.asin_mini,  misura: product.misura_mini,  prezzo: product.prezzo_mini,  immagine: product.immagine_mini,  immagine2: product.immagine_mini_2,  immagine3: product.immagine_mini_3,  immagine4: product.immagine_mini_4 },
       ].filter(v => v.sku && v.misura);
 
       for (const cv of childVariants) {
         const dims = extractDimensions(cv.misura);
         const peso = lookupWeight(cv.misura);
         const taglia = dims ? `${dims.lunghezza} x ${dims.larghezza} cm` : cv.misura;
-        rows.push({ sku: cv.sku, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, immagine2: cv.immagine2, immagine3: cv.immagine3, immagine4: cv.immagine4, isParent: false });
+        rows.push({ sku: cv.sku, asin: cv.asin || null, taglia, dims, peso, prezzo: cv.prezzo, immagine: cv.immagine, immagine2: cv.immagine2, immagine3: cv.immagine3, immagine4: cv.immagine4, isParent: false });
       }
     } else {
       const dims = extractDimensions(product.dimensioni || product.descrizione_raw || '');
