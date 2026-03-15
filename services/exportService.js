@@ -263,19 +263,24 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   }
 
   // ── Immagini variante child ───────────────────────────────────────────────────
-  // Per le righe child le immagini del PARENT (immagine_max, dettaglio_1/2/3) scritte
-  // dall'ATTR_COL loop sopra NON devono comparire. Puliamo cols 21-29 e scriviamo
-  // SOLO le 3 immagini specifiche della variante:
-  //   col 21 (Immagine principale) = frontale lifestyle   (immagine_max_2)
-  //   col 22 (Immagine 2)          = di lato / laterale   (immagine_max_4)
-  //   col 23 (Immagine 3)          = proporzione scala    (immagine_max_3)
+  // Per le righe child puliamo cols 21-29 e scriviamo:
+  //   col 21 (Immagine principale) = frontale lifestyle   (immagine_*_2)
+  //   col 22 (Immagine 2)          = di lato / laterale   (immagine_*_4)
+  //   col 23 (Immagine 3)          = proporzione scala    (immagine_*_3)
+  //   col 24 (Immagine 4)          = dettaglio 1 del parent (attrs "Immagine 2")
+  //   col 25 (Immagine 5)          = dettaglio 2 del parent (attrs "Immagine 3")
+  //   col 26 (Immagine 6)          = dettaglio 3 del parent (attrs "Immagine 4")
   if (!isParent) {
     // Svuota tutti gli slot immagine scritti dal parent (cols 21-29)
     for (let c = 21; c <= 29; c++) setCellValue(sheet, c, rowIdx, '');
-    // Scrivi SOLO le immagini della variante
-    if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);  // frontale lifestyle — 1ª posizione
-    if (immagine4)   setCellValue(sheet, 22, rowIdx, immagine4);  // di lato (laterale) — 2ª posizione
-    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);  // proporzione scala  — 3ª posizione
+    // Immagini specifiche della variante (slot 1-3)
+    if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);  // frontale lifestyle
+    if (immagine4)   setCellValue(sheet, 22, rowIdx, immagine4);  // di lato (laterale)
+    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);  // proporzione scala
+    // Dettagli dell'opera dal parent (slot 4-6) — arricchiscono il child con closeup
+    if (attrs['Immagine 2'])  setCellValue(sheet, 24, rowIdx, attrs['Immagine 2']);
+    if (attrs['Immagine 3'])  setCellValue(sheet, 25, rowIdx, attrs['Immagine 3']);
+    if (attrs['Immagine 4'])  setCellValue(sheet, 26, rowIdx, attrs['Immagine 4']);
   }
 }
 
