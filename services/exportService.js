@@ -231,11 +231,18 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   }
 
   // ── Attributi DB → colonne ───────────────────────────────
+  // Valori invalidi da non scrivere mai nel XLSM:
+  // - stringa vuota, undefined, null → già gestito da setCellValue
+  // - 'N/D' → placeholder UI, non un valore Amazon accettato
+  // - '0' o 0 come prezzo consigliato → mostra "€0" nel listing, penalizzante
+  const INVALID_VALUES = new Set(['N/D', 'n/d']);
   for (const [nome, col] of Object.entries(ATTR_COL)) {
     const val = attrs[nome];
-    if (val !== undefined && val !== '') {
-      setCellValue(sheet, col, rowIdx, val);
-    }
+    if (val === undefined || val === '') continue;
+    if (INVALID_VALUES.has(String(val).trim())) continue;
+    // Prezzo consigliato: non scrivere mai 0 (né numerico né stringa)
+    if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)' && (val === '0' || val === 0 || val === '' || !val)) continue;
+    setCellValue(sheet, col, rowIdx, val);
   }
 
   // ── Chiavi di ricerca → 5 slot (cols 43-47, max 250 byte ciascuno) ──────────
@@ -264,7 +271,7 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   if (peso !== null && peso !== undefined) {
     setCellValue(sheet, 296, rowIdx, Number(peso));              // peso articolo
     setCellValue(sheet, 297, rowIdx, 'Chilogrammi');
-    setCellValue(sheet, 236, rowIdx, Number(peso) + 0.3);       // peso imballaggio = peso + 0.3 kg cartone
+    setCellValue(sheet, 236, rowIdx, Math.round((Number(peso) + 0.3) * 10) / 10); // peso imballaggio = peso + 0.3 kg (arrotondato a 1 decimale)
     setCellValue(sheet, 237, rowIdx, 'Chilogrammi');             // unità peso imballaggio
   }
 

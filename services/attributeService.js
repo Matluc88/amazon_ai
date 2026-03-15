@@ -201,10 +201,8 @@ async function compileFixedAndAuto(productId, product) {
         value = product.sku_padre; compiledBy = 'AUTO';
       }
 
-      // Prezzo al pubblico consigliato: nessun listino separato → 0 (policy Amazon)
-      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)') {
-        value = '0'; compiledBy = 'AUTO';
-      }
+      // Prezzo al pubblico consigliato: non compilare — campo lasciato vuoto per policy Amazon
+      // (scrivere 0 causa visualizzazione "€0" nel listing → impatto negativo SEO e conversione)
     }
 
     if (value !== null) {
@@ -345,8 +343,7 @@ async function getProductListing(productId, product = null) {
     function autoFallback(nome) {
       if (!product) return '';
       if (nome === 'SKU') return product.sku_padre || '';
-      // Prezzo al pubblico consigliato: nessun listino separato → 0 (policy Amazon)
-      if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)') return '0';
+      // Prezzo al pubblico consigliato: non compilare — campo lasciato vuoto
       if (nome === "Peso dell'articolo") {
         const pesoSource = product.misura_max || product.descrizione_raw || '';
         return lookupWeight(pesoSource) || '';

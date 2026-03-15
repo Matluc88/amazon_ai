@@ -291,6 +291,8 @@ Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
 - "Famiglia di colori": SCEGLI ESATTAMENTE UNO di questi valori (nessun altro valore è accettato): "Bianco" | "Bianco e nero" | "Caldi" | "Freddi" | "Luminosi" | "Neutro" | "Pastelli" | "Scala di grigi" | "Tonalità della terra" | "Toni gioiello". Scegli il valore che meglio descrive la palette dominante dell'opera.
 - "Usi consigliati per il prodotto": usi pratici separati da virgola (es. "Decorazione parete, Regalo")
 - "Tema animali": SOLO se il soggetto principale dell'opera è un animale, indicare il tipo (es. "Cane", "Gatto", "Cavallo", "Uccello", "Leone"). Se l'opera non rappresenta animali, scrivi "N/D"
+- "Funzioni speciali": funzionalità fisiche del prodotto, separate da virgola. SCEGLI TRA: "Pronto da appendere", "Leggero", "Impermeabile", "Resistente agli strappi", "Senza cornice", "Con telaio in legno". Scrivi SEMPRE almeno "Pronto da appendere, Con telaio in legno".
+- "Stagioni": indica la stagionalità dell'opera. SCEGLI ESATTAMENTE UNO di questi valori: "Tutte le stagioni" (per arte decorativa generica, astratta, figure, paesaggi senza connotazione stagionale specifica) | "Primavera" (soggetti primaverili: fiori in bud, rinascita) | "Estate" (soggetti estivi: mare, sole, colori caldi) | "Autunno" (foglie rosse/gialle, zucche, toni caldi-scuri) | "Inverno" (neve, freddo, natale). Per la stragrande maggioranza delle opere d'arte decorativa usa "Tutte le stagioni".
 - "Edizione": breve descrizione dell'edizione artistica (es. "Stampa Artistica Moderna", "Edizione Limitata", "Prima Edizione")
 
 Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esattamente questi campi:
@@ -462,6 +464,8 @@ Output: UNA sola riga di testo, senza virgolette esterne.`,
     "Usi consigliati per il prodotto": 'usi pratici separati da virgola (es. Decorazione parete, Regalo, Arredamento...)',
     "Personaggio rappresentato": 'Analizza il soggetto dell\'opera. Se è presente una figura umana o un personaggio riconoscibile, indicalo con 1-3 parole (es. "Coppia", "Musicista", "Bambino", "Famiglia", "Donna", "Ballerina", "Trombettista"). Se l\'opera è paesaggistica, astratta o non contiene figure umane/personaggi, scrivi "N/D".',
     "Tema animali": 'SOLO se il soggetto principale dell\'opera è un animale: indicare il tipo (es. "Cane", "Gatto", "Cavallo", "Uccello", "Leone"). Se l\'opera non rappresenta animali, scrivi "N/D".',
+    "Funzioni speciali": 'Funzionalità fisiche del prodotto, separate da virgola. SCEGLI TRA: "Pronto da appendere", "Leggero", "Impermeabile", "Resistente agli strappi", "Senza cornice", "Con telaio in legno". Scrivi SEMPRE almeno "Pronto da appendere, Con telaio in legno". Aggiungi "Leggero" se il peso è inferiore a 3 kg.',
+    "Stagioni": 'SCEGLI ESATTAMENTE UNO di questi valori (nessun altro valore è accettato): "Tutte le stagioni" | "Primavera" | "Estate" | "Autunno" | "Inverno". Per la stragrande maggioranza delle opere d\'arte decorativa usa "Tutte le stagioni". Usa una stagione specifica SOLO se il soggetto è chiaramente stagionale (es. neve→Inverno, mare estivo→Estate, fiori primaverili→Primavera, foglie autunnali→Autunno).',
   };
 
   const guide = guideMap[nomeAttributo] || 'campo testo libero per listing Amazon Italia';
