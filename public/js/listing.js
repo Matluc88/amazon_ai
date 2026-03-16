@@ -551,9 +551,21 @@ function renderVariantsCard(product) {
     }
     dettagliAttrs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0));
     if (dettagliAttrs.length > 0) {
+      // Mapping nome attributo → campo currentProduct (fallback se non ancora salvato nel DB)
+      const DETTAGLIO_PRODUCT_FALLBACK = {
+        'immagine 2': 'dettaglio_1',
+        'immagine 3': 'dettaglio_2',
+        'immagine 4': 'dettaglio_3',
+      };
+
       const slots = dettagliAttrs.map(attr => {
-        // Usa pendingChanges se presente (es. auto-popolato ma non ancora salvato), altrimenti attr.value
-        const effectiveVal = (pendingChanges[attr.id] !== undefined ? pendingChanges[attr.id] : (attr.value || '')).trim();
+        // Priorità: 1) pendingChanges (modifica in corso) 2) attr.value (salvato DB) 3) currentProduct.dettaglio_*
+        const productKey = DETTAGLIO_PRODUCT_FALLBACK[attr.nome.toLowerCase()];
+        const productFallback = productKey ? (currentProduct?.[productKey] || '') : '';
+        const effectiveVal = (pendingChanges[attr.id] !== undefined
+          ? pendingChanges[attr.id]
+          : (attr.value || productFallback)
+        ).trim();
         const hasVal = !!effectiveVal;
         return `
           <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-200);">

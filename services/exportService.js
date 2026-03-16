@@ -296,14 +296,32 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     if (mainImgChild) setCellValue(sheet, 21, rowIdx, mainImgChild); // frontale lifestyle o fallback parent
     if (immagine4)    setCellValue(sheet, 22, rowIdx, immagine4);    // di lato (laterale)
     if (immagine3)    setCellValue(sheet, 23, rowIdx, immagine3);    // proporzione scala
-    // Dettagli dell'opera dal parent (slot 4-6) — arricchiscono il child con closeup
-    if (attrs['Immagine 2'])  setCellValue(sheet, 24, rowIdx, attrs['Immagine 2']);
-    if (attrs['Immagine 3'])  setCellValue(sheet, 25, rowIdx, attrs['Immagine 3']);
-    if (attrs['Immagine 4'])  setCellValue(sheet, 26, rowIdx, attrs['Immagine 4']);
-    // Dettagli aggiuntivi parent (slot 7-9) — colonne 27-29 precedentemente vuote
+    // Dettagli dell'opera dal parent (slot 4-6) — fallback diretto a product.dettaglio_* se attrs non salvati
+    const det1 = attrs['Immagine 2'] || product.dettaglio_1 || '';
+    const det2 = attrs['Immagine 3'] || product.dettaglio_2 || '';
+    const det3 = attrs['Immagine 4'] || product.dettaglio_3 || '';
+    if (det1) setCellValue(sheet, 24, rowIdx, det1);
+    if (det2) setCellValue(sheet, 25, rowIdx, det2);
+    if (det3) setCellValue(sheet, 26, rowIdx, det3);
+    // Dettagli aggiuntivi parent (slot 7-9) — solo da attrs (nessun campo DB dedicato)
     if (attrs['Immagine 5'])  setCellValue(sheet, 27, rowIdx, attrs['Immagine 5']);
     if (attrs['Immagine 6'])  setCellValue(sheet, 28, rowIdx, attrs['Immagine 6']);
     if (attrs['Immagine 7'])  setCellValue(sheet, 29, rowIdx, attrs['Immagine 7']);
+  }
+
+  // ── Fallback immagini parent (solo riga parent) ─────────────────────────────
+  // Se gli attributi "Immagine principale" / "Immagine 2/3/4" non sono stati salvati
+  // nel DB (product_attribute_values), usa direttamente i campi products.immagine_max
+  // e products.dettaglio_1/2/3 per non lasciare slot vuoti nella riga parent.
+  if (isParent) {
+    if (!attrs['Immagine principale'] && product.immagine_max)
+      setCellValue(sheet, 21, rowIdx, product.immagine_max);
+    if (!attrs['Immagine 2'] && product.dettaglio_1)
+      setCellValue(sheet, 22, rowIdx, product.dettaglio_1);
+    if (!attrs['Immagine 3'] && product.dettaglio_2)
+      setCellValue(sheet, 23, rowIdx, product.dettaglio_2);
+    if (!attrs['Immagine 4'] && product.dettaglio_3)
+      setCellValue(sheet, 24, rowIdx, product.dettaglio_3);
   }
 }
 
