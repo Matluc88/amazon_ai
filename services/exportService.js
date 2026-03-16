@@ -287,9 +287,12 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     // Svuota tutti gli slot immagine scritti dal parent (cols 21-29)
     for (let c = 21; c <= 29; c++) setCellValue(sheet, c, rowIdx, '');
     // Immagini specifiche della variante (slot 1-3)
-    if (immagine2)   setCellValue(sheet, 21, rowIdx, immagine2);  // frontale lifestyle
-    if (immagine4)   setCellValue(sheet, 22, rowIdx, immagine4);  // di lato (laterale)
-    if (immagine3)   setCellValue(sheet, 23, rowIdx, immagine3);  // proporzione scala
+    // Fallback col 21: se la variante non ha immagine lifestyle (immagine_*_2),
+    // usa l'immagine principale del parent (sfondo bianco) — evita placeholder grigio su Amazon
+    const mainImgChild = immagine2 || immagine || attrs['Immagine principale'] || null;
+    if (mainImgChild) setCellValue(sheet, 21, rowIdx, mainImgChild); // frontale lifestyle o fallback parent
+    if (immagine4)    setCellValue(sheet, 22, rowIdx, immagine4);    // di lato (laterale)
+    if (immagine3)    setCellValue(sheet, 23, rowIdx, immagine3);    // proporzione scala
     // Dettagli dell'opera dal parent (slot 4-6) — arricchiscono il child con closeup
     if (attrs['Immagine 2'])  setCellValue(sheet, 24, rowIdx, attrs['Immagine 2']);
     if (attrs['Immagine 3'])  setCellValue(sheet, 25, rowIdx, attrs['Immagine 3']);
