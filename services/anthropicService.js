@@ -2,18 +2,11 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ─── POOL ANTI-CANNIBALIZZAZIONE TITOLI ────────────────────────────────────
-// Rotazione deterministica: ogni ASIN riceve uno stile e una coppia di stanze
-// univoci, evitando che tutti i listing convergano sulle stesse keyword SEO.
-const STYLE_POOL = [
-  'Quadro Moderno',
-  'Stampa su Tela Canvas',
-  'Quadro Astratto Moderno',
-  'Arte Contemporanea Italiana',
-  'Wall Art Moderna',
-  'Stampa Artistica su Tela'
-];
-
+// ─── POOL ANTI-CANNIBALIZZAZIONE STANZE ────────────────────────────────────
+// Rotazione deterministica: ogni ASIN riceve una coppia di stanze univoca,
+// evitando che tutti i listing convergano sulle stesse stanze target.
+// Il TIPO di quadro (Moderno/Sacro/Paesaggio/etc.) è ora scelto da Claude
+// in base all'analisi dell'opera — non più da un pool fisso.
 const ROOM_POOL = [
   'Soggiorno e Camera da Letto',
   'Soggiorno e Ufficio',
@@ -126,7 +119,6 @@ async function generateAllAiAttributes(product, keywords = []) {
   // Hash deterministico sullo SKU del parent (stabile anche se gli ID cambiano)
   const stableKey = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
   const hashValue = simpleHash(stableKey);
-  const selectedStyle = STYLE_POOL[hashValue % STYLE_POOL.length];
   const selectedRooms = ROOM_POOL[(hashValue + 3) % ROOM_POOL.length];
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -187,36 +179,47 @@ ISTRUZIONI:
 Obiettivo: titolo CTR-first + SEO, leggibile su mobile, italiano naturale senza keyword stuffing.
 Range TARGET: 150–180 caratteri. MAI oltre 200. Mira ai 160–170.
 
-⚠️ ANTI-CANNIBALIZZAZIONE — Stile e stanze PRE-ASSEGNATI per questo prodotto (rotazione deterministica):
-- Stile OBBLIGATORIO nel titolo: "${selectedStyle}"
-- Stanze OBBLIGATORIE nel titolo: "${selectedRooms}"
-USA questi valori nel titolo. NON sostituirli con altri stili o stanze diversi da quelli assegnati.
-Se necessario, adatta la struttura della frase per garantire un titolo naturale e coerente con il soggetto dell'opera, ma le parole chiave dello stile e delle stanze assegnate devono comparire integralmente.
+⚠️ REGOLA CRITICA — PRIMA PAROLA: Il titolo DEVE INIZIARE SEMPRE con "Quadro".
+VIETATO ASSOLUTO: iniziare con "Stampa", "Arte", "Sivigliart" o qualsiasi altra parola diversa da "Quadro".
 
-STRUTTURA OBBLIGATORIA (segui quest'ordine esatto, massimo 3 virgole interne):
-"Stampa su Tela {soggetto}, ${selectedStyle} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRooms}, Pronto da Appendere{DIMENSIONE}"
+Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo):
+- "Quadro Sacro" → soggetti religiosi (Madonne, Santi, Angeli, Natività, Cristo, preghiera)
+- "Quadro Paesaggio" → paesaggi (mare, campagna, montagna, tramonti, città, boschi)
+- "Quadro Astratto Moderno" → opere astratte, geometriche, non figurative
+- "Quadro Figurativo Moderno" → figure umane realistiche, ritratti, corpi
+- "Quadro Romantico" → scene d'amore, coppie romantiche, sentimenti
+- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche
+- "Quadro Animali" → animali come soggetto principale
+- "Quadro Pop Art" → stile pop, street art, colori saturi e netti
+- "Quadro Naif" → stile naif, primitivo, pittoresco
+- "Quadro Contemporaneo" → arte contemporanea, mixed media
+- "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
+
+⚠️ ANTI-CANNIBALIZZAZIONE stanze PRE-ASSEGNATE (rotazione deterministica):
+- Stanze OBBLIGATORIE nel titolo: "${selectedRooms}" — NON sostituirle con altre stanze.
+
+STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
+"Quadro {tipo_scelto} {soggetto 2-5 parole} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRooms}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
-- {soggetto}: 2–5 parole descrittive dell'opera (es. "Coppia Romantica", "Paesaggio Astratto", "Figura Femminile al Mare")
-- {stile}: OBBLIGATORIO "${selectedStyle}" — non usare altri stili
+- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
+- {soggetto}: 2–5 parole specifiche e descrittive dell'opera
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
-- {stanza1} e {stanza2}: OBBLIGATORIO "${selectedRooms}" — non usare altre stanze
-- {DIMENSIONE}:
-  - hasSizeVariants = ${hasSizeVariants}
-  - Se hasSizeVariants è TRUE (prodotto parent con 3 taglie): NON aggiungere NESSUNA dimensione nel titolo
-  - Se hasSizeVariants è FALSE (single ASIN): aggiungi ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
+- hasSizeVariants = ${hasSizeVariants}
+- {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
 
-VIETATO (tassativo):
-- Inserire autore, artista o "Arte di [Autore]" nel titolo — il nome dell'autore NON va mai nel titolo
-- Inserire il brand "Sivigliart" nel titolo (è già nel campo "Nome del marchio" separato)
-- ⚠️ Se nel testo dell'opera compare un autore o un nome di brand, IGNORALO completamente nel titolo
-- Keyword stuffing: nessun elenco di parole separate da virgola senza senso compiuto
-- MAIUSCOLO totale su più parole consecutive
-- Parole vietate: migliore, premium, super qualità, gratis, spedizione veloce, esclusivo
+VIETATO TASSATIVO:
+- Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
+- Autore, artista o "Arte di [Autore]" nel titolo — il nome dell'autore NON va mai nel titolo
+- Brand "Sivigliart" ovunque nel titolo
+- ⚠️ Se nel testo dell'opera compare autore o brand, IGNORALI completamente nel titolo
+- Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
 ESEMPI CORRETTI:
-- Single: "Stampa su Tela Coppia Romantica, Quadro Moderno dai Colori Turchese e Verde Petrolio, Decorazione Parete per Soggiorno e Camera da Letto, Pronto da Appendere, 70x100 cm" (167 car.)
-- Parent: "Stampa su Tela Astratto Geometrico, Quadro Moderno dai Colori Nero e Oro, Decorazione Parete per Soggiorno e Ufficio, Pronto da Appendere" (138 car.)
+- "Quadro Sacro Madonna con Bambino dai Colori Oro e Avorio, Decorazione Parete per Soggiorno e Camera da Letto, Pronto da Appendere" (141 car.)
+- "Quadro Paesaggio Tramonto sul Mare dai Colori Arancio e Blu, Decorazione Parete per Soggiorno e Ufficio, Pronto da Appendere" (136 car.)
+- "Quadro Romantico Coppia in Abbraccio dai Colori Bordeaux e Oro, Decorazione Parete per Camera da Letto e Studio, Pronto da Appendere" (142 car.)
+- "Quadro Astratto Moderno Composizione Geometrica dai Colori Nero e Oro, Decorazione Parete per Ufficio e Studio Medico, Pronto da Appendere" (147 car.)
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
@@ -363,10 +366,9 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     ? `${product.misura_mini}, ${product.misura_media}, ${product.misura_max} cm`
     : null;
 
-  // ─── Rotazione anti-cannibalizzazione (stessa logica di generateAllAiAttributes) ──
+  // ─── Rotazione anti-cannibalizzazione stanze (stessa logica di generateAllAiAttributes) ──
   const stableKeyRegen = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
   const hashValueRegen = simpleHash(stableKeyRegen);
-  const selectedStyleRegen = STYLE_POOL[hashValueRegen % STYLE_POOL.length];
   const selectedRoomsRegen = ROOM_POOL[(hashValueRegen + 3) % ROOM_POOL.length];
   // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -385,28 +387,46 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
   const guideMap = {
     "Nome dell'articolo": `Titolo Amazon CTR-first + SEO. Range TARGET: 150–180 caratteri, MAI oltre 200.
 
-⚠️ ANTI-CANNIBALIZZAZIONE — Stile e stanze PRE-ASSEGNATI per questo prodotto (rotazione deterministica):
-- Stile OBBLIGATORIO nel titolo: "${selectedStyleRegen}"
-- Stanze OBBLIGATORIE nel titolo: "${selectedRoomsRegen}"
-USA questi valori nel titolo. NON sostituirli con altri stili o stanze diversi da quelli assegnati.
-Se necessario, adatta la struttura della frase per garantire un titolo naturale e coerente con il soggetto dell'opera, ma le parole chiave dello stile e delle stanze assegnate devono comparire integralmente.
+⚠️ REGOLA CRITICA — PRIMA PAROLA: Il titolo DEVE INIZIARE SEMPRE con "Quadro".
+VIETATO ASSOLUTO: iniziare con "Stampa", "Arte", "Sivigliart" o qualsiasi altra parola diversa da "Quadro".
+
+Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo):
+- "Quadro Sacro" → soggetti religiosi (Madonne, Santi, Angeli, Natività, Cristo, preghiera)
+- "Quadro Paesaggio" → paesaggi (mare, campagna, montagna, tramonti, città, boschi)
+- "Quadro Astratto Moderno" → opere astratte, geometriche, non figurative
+- "Quadro Figurativo Moderno" → figure umane realistiche, ritratti, corpi
+- "Quadro Romantico" → scene d'amore, coppie romantiche, sentimenti
+- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche
+- "Quadro Animali" → animali come soggetto principale
+- "Quadro Pop Art" → stile pop, street art, colori saturi e netti
+- "Quadro Naif" → stile naif, primitivo, pittoresco
+- "Quadro Contemporaneo" → arte contemporanea, mixed media
+- "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
+
+⚠️ ANTI-CANNIBALIZZAZIONE stanze PRE-ASSEGNATE (rotazione deterministica):
+- Stanze OBBLIGATORIE nel titolo: "${selectedRoomsRegen}" — NON sostituirle con altre stanze.
 
 STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Stampa su Tela {soggetto}, ${selectedStyleRegen} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRoomsRegen}, Pronto da Appendere{DIMENSIONE}"
+"Quadro {tipo_scelto} {soggetto 2-5 parole} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRoomsRegen}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
-- {soggetto}: 2–5 parole descrittive dell'opera (es. "Coppia Romantica", "Paesaggio Astratto")
-- {stile}: OBBLIGATORIO "${selectedStyleRegen}" — non usare altri stili
+- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
+- {soggetto}: 2–5 parole specifiche e descrittive dell'opera
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
-- {stanza1} e {stanza2}: OBBLIGATORIO "${selectedRoomsRegen}" — non usare altre stanze
 - hasSizeVariants = ${hasSizeVariantsRegen}
-- {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → aggiungi ", ${dimensioneSingleRegen} cm"
+- {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingleRegen} cm"
 
-VIETATO:
+VIETATO TASSATIVO:
+- Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
 - Autore, "Arte di [Autore]" o nome dell'artista nel titolo
-- Brand "Sivigliart" nel titolo
+- Brand "Sivigliart" ovunque nel titolo
 - Se nel testo compare autore o brand, IGNORALI completamente
 - Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
+
+ESEMPI CORRETTI:
+- "Quadro Sacro Madonna con Bambino dai Colori Oro e Avorio, Decorazione Parete per Soggiorno e Camera da Letto, Pronto da Appendere" (141 car.)
+- "Quadro Paesaggio Tramonto sul Mare dai Colori Arancio e Blu, Decorazione Parete per Soggiorno e Ufficio, Pronto da Appendere" (136 car.)
+- "Quadro Romantico Coppia in Abbraccio dai Colori Bordeaux e Oro, Decorazione Parete per Camera da Letto e Studio, Pronto da Appendere" (142 car.)
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
