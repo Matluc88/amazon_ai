@@ -277,12 +277,15 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
 
   // ── Immagini variante child ───────────────────────────────────────────────────
   // Per le righe child puliamo cols 21-29 e scriviamo:
-  //   col 21 (Immagine principale) = frontale lifestyle   (immagine_*_2)
+  //   col 21 (Immagine principale) = frontale lifestyle   (immagine_*_2) — fallback parent
   //   col 22 (Immagine 2)          = di lato / laterale   (immagine_*_4)
   //   col 23 (Immagine 3)          = proporzione scala    (immagine_*_3)
   //   col 24 (Immagine 4)          = dettaglio 1 del parent (attrs "Immagine 2")
   //   col 25 (Immagine 5)          = dettaglio 2 del parent (attrs "Immagine 3")
   //   col 26 (Immagine 6)          = dettaglio 3 del parent (attrs "Immagine 4")
+  //   col 27 (Immagine 7)          = dettaglio 4 del parent (attrs "Immagine 5") — NUOVO
+  //   col 28 (Immagine 8)          = dettaglio 5 del parent (attrs "Immagine 6") — NUOVO
+  //   col 29 (Immagine 9)          = dettaglio 6 del parent (attrs "Immagine 7") — NUOVO
   if (!isParent) {
     // Svuota tutti gli slot immagine scritti dal parent (cols 21-29)
     for (let c = 21; c <= 29; c++) setCellValue(sheet, c, rowIdx, '');
@@ -297,6 +300,10 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     if (attrs['Immagine 2'])  setCellValue(sheet, 24, rowIdx, attrs['Immagine 2']);
     if (attrs['Immagine 3'])  setCellValue(sheet, 25, rowIdx, attrs['Immagine 3']);
     if (attrs['Immagine 4'])  setCellValue(sheet, 26, rowIdx, attrs['Immagine 4']);
+    // Dettagli aggiuntivi parent (slot 7-9) — colonne 27-29 precedentemente vuote
+    if (attrs['Immagine 5'])  setCellValue(sheet, 27, rowIdx, attrs['Immagine 5']);
+    if (attrs['Immagine 6'])  setCellValue(sheet, 28, rowIdx, attrs['Immagine 6']);
+    if (attrs['Immagine 7'])  setCellValue(sheet, 29, rowIdx, attrs['Immagine 7']);
   }
 }
 

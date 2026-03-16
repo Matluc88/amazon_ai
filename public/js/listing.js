@@ -539,6 +539,59 @@ function renderVariantsCard(product) {
         <button class="btn btn-success" id="saveVariantsBtn" onclick="saveVariants()">💾 Salva variazioni</button>
       </div>
     </div>`;
+
+  // ── Sezione dettaglio condivisa (Immagine 2-7) ──
+  const picInner = card.querySelector('.product-info-card');
+  if (picInner && currentSections) {
+    const dettagliAttrs = [];
+    for (const attrs of Object.values(currentSections)) {
+      for (const attr of attrs) {
+        if (/^immagine\s+[2-7]$/i.test(attr.nome)) dettagliAttrs.push(attr);
+      }
+    }
+    dettagliAttrs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0));
+    if (dettagliAttrs.length > 0) {
+      const slots = dettagliAttrs.map(attr => {
+        const hasVal = !!(attr.value && attr.value.trim());
+        return `
+          <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-200);">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-700);">${escHtml(attr.nome)}</div>
+            <div style="height:90px;cursor:pointer;border-radius:6px;overflow:hidden;background:var(--gray-100);position:relative;"
+                 onclick="(function(){var i=document.getElementById('vardet-img-${attr.id}');if(i&&!i.classList.contains('hidden'))window.open(i.src,'_blank');})()">
+              <img id="vardet-img-${attr.id}"
+                   src="${escHtml(attr.value || '')}"
+                   class="${hasVal ? '' : 'hidden'}"
+                   style="width:100%;height:100%;object-fit:cover;" />
+              <div id="vardet-ph-${attr.id}"
+                   class="${hasVal ? 'hidden' : ''}"
+                   style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gray-400);">🖼️</div>
+            </div>
+            <input type="file" id="vardet-file-${attr.id}" accept="image/*" style="display:none"
+                   onchange="handleDettaglioImageSelect(${attr.id}, this, '${escHtml(attr.nome).replace(/'/g, "\\'")}')">
+            <button class="var-upload-btn" id="vardet-btn-${attr.id}"
+                    onclick="document.getElementById('vardet-file-${attr.id}').click()">📤 Carica</button>
+            <input type="url" id="vardet-url-${attr.id}" class="var-input url-input"
+                   value="${escHtml(attr.value || '')}"
+                   placeholder="https://..."
+                   oninput="pendingChanges[${attr.id}]=this.value; showSaveBar(); vardetThumbUpdate(${attr.id}, this);" />
+          </div>`;
+      }).join('');
+      picInner.insertAdjacentHTML('beforeend', `
+        <div style="margin-top:28px;padding-top:20px;border-top:2px solid var(--gray-200);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <h4 style="margin:0;">📷 Immagini Dettaglio Prodotto</h4>
+            <span class="badge-source MANUAL" style="font-size:10px;">✍️ MANUALE</span>
+          </div>
+          <p style="font-size:12px;color:var(--gray-400);margin:0 0 16px;">
+            Condivise tra tutte le varianti (slot 4–9 nell'export Amazon).
+            Salvare con <strong>💾 Salva modifiche</strong>.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;">
+            ${slots}
+          </div>
+        </div>`);
+    }
+  }
 }
 
 // =============================================
@@ -1707,6 +1760,68 @@ function varThumbUpdate(imgKey, input) {
     thumb.classList.remove('hidden');
   } else {
     thumb.classList.add('hidden');
+  }
+}
+
+/**
+ * Aggiorna la thumbnail nella sezione "Immagini Dettaglio Prodotto" del Tab Variazioni.
+ * @param {number} attrId - ID attributo (es. id di "Immagine 2")
+ * @param {HTMLInputElement} input - URL input
+ */
+function vardetThumbUpdate(attrId, input) {
+  const img = document.getElementById(`vardet-img-${attrId}`);
+  const ph  = document.getElementById(`vardet-ph-${attrId}`);
+  const val = (input.value || '').trim();
+  if (img && ph) {
+    if (val) { img.src = val; img.classList.remove('hidden'); ph.classList.add('hidden'); }
+    else     { img.classList.add('hidden'); ph.classList.remove('hidden'); }
+  }
+}
+
+/**
+ * Gestisce upload immagine dettaglio condivisa (Immagine 2-7) nel Tab Variazioni.
+ * @param {number} attrId    - ID attributo
+ * @param {HTMLInputElement} input    - file input
+ * @param {string} nomeCampo - nome attributo (es. "Immagine 2")
+ */
+async function handleDettaglioImageSelect(attrId, input, nomeCampo) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const btn      = document.getElementById(`vardet-btn-${attrId}`);
+  const img      = document.getElementById(`vardet-img-${attrId}`);
+  const ph       = document.getElementById(`vardet-ph-${attrId}`);
+  const urlInput = document.getElementById(`vardet-url-${attrId}`);
+
+  // Preview locale immediata
+  const localUrl = URL.createObjectURL(file);
+  if (img) { img.src = localUrl; img.classList.remove('hidden'); }
+  if (ph)  ph.classList.add('hidden');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="upload-spinner"></span>'; }
+
+  try {
+    const sku  = currentProduct?.sku_padre || `prod-${productId}`;
+    const tipo = nomeCampo.toLowerCase().replace(/\s+/g, '-');
+    const url  = await uploadImageToCloudinary(file, `${sku}_${tipo}`, `amazon-ai/${sku}`);
+
+    if (urlInput) {
+      urlInput.value = url;
+      pendingChanges[attrId] = url;
+      showSaveBar();
+      vardetThumbUpdate(attrId, urlInput);
+    }
+    if (img) { img.src = url; img.classList.remove('hidden'); }
+    URL.revokeObjectURL(localUrl);
+    showToast(`✅ ${nomeCampo} caricata!`, 'success');
+  } catch (err) {
+    showToast(`❌ Upload fallito: ${err.message}`, 'error');
+    if (!urlInput?.value) {
+      if (img) img.classList.add('hidden');
+      if (ph)  ph.classList.remove('hidden');
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '📤 Carica'; }
+    input.value = '';
   }
 }
 
