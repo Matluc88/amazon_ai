@@ -552,14 +552,16 @@ function renderVariantsCard(product) {
     dettagliAttrs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0));
     if (dettagliAttrs.length > 0) {
       const slots = dettagliAttrs.map(attr => {
-        const hasVal = !!(attr.value && attr.value.trim());
+        // Usa pendingChanges se presente (es. auto-popolato ma non ancora salvato), altrimenti attr.value
+        const effectiveVal = (pendingChanges[attr.id] !== undefined ? pendingChanges[attr.id] : (attr.value || '')).trim();
+        const hasVal = !!effectiveVal;
         return `
           <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-200);">
             <div style="font-size:12px;font-weight:600;color:var(--gray-700);">${escHtml(attr.nome)}</div>
             <div style="height:90px;cursor:pointer;border-radius:6px;overflow:hidden;background:var(--gray-100);position:relative;"
                  onclick="(function(){var i=document.getElementById('vardet-img-${attr.id}');if(i&&!i.classList.contains('hidden'))window.open(i.src,'_blank');})()">
               <img id="vardet-img-${attr.id}"
-                   src="${escHtml(attr.value || '')}"
+                   src="${escHtml(effectiveVal)}"
                    class="${hasVal ? '' : 'hidden'}"
                    style="width:100%;height:100%;object-fit:cover;" />
               <div id="vardet-ph-${attr.id}"
@@ -571,7 +573,7 @@ function renderVariantsCard(product) {
             <button class="var-upload-btn" id="vardet-btn-${attr.id}"
                     onclick="document.getElementById('vardet-file-${attr.id}').click()">📤 Carica</button>
             <input type="url" id="vardet-url-${attr.id}" class="var-input url-input"
-                   value="${escHtml(attr.value || '')}"
+                   value="${escHtml(effectiveVal)}"
                    placeholder="https://..."
                    oninput="pendingChanges[${attr.id}]=this.value; showSaveBar(); vardetThumbUpdate(${attr.id}, this);" />
           </div>`;
@@ -969,7 +971,7 @@ function discardChanges() {
 function showSaveBar() {
   const count = Object.keys(pendingChanges).length;
   document.getElementById('pendingCount').textContent =
-    `${count} modifica${count !== 1 ? 'he' : ''} non salvata${count !== 1 ? 'e' : ''}`;
+    count === 1 ? '1 modifica non salvata' : `${count} modifiche non salvate`;
   document.getElementById('saveBar').classList.add('visible');
 }
 
