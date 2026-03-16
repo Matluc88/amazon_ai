@@ -503,9 +503,12 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
     console.log(`[AI] Vision AI attiva — rigenera "${nomeAttributo}" con immagine`);
   }
 
+  // Le Chiavi di ricerca richiedono ~1200 byte di testo + wrapper JSON → servono più token
+  const maxTokensRegen = nomeAttributo === 'Chiavi di ricerca' ? 3000 : 1000;
+
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
-    max_tokens: 1000,
+    max_tokens: maxTokensRegen,
     messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
   });
 
