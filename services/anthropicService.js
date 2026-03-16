@@ -224,13 +224,22 @@ ESEMPI CORRETTI:
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
-- La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON modificarlo): "Quadro che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinto dall'artista")
-- ⚠️ REGOLA TECNICA: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano. VIETATO: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto venduto
-- ⚠️ VIETATO nel corpo della descrizione: "dipinto da ${autore}", "quadro di ${autore}", "opera di ${autore}" — usa SEMPRE "quadro che riproduce l'opera originale di ${autore}" o formulazioni equivalenti che chiariscono che è una riproduzione, non un originale
-- Prosegui raccontando l'opera con linguaggio evocativo
-- Suggerisci contesti d'uso e destinatari
-- ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI chiudere SEMPRE la descrizione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti.
-- Chiudi dopo le misure con una frase che invita all'acquisto
+⚠️ FORMATO TESTO PURO: il campo accetta SOLO testo normale — VIETATO TASSATIVO qualsiasi tag HTML (<b>, <br>, <p>, <div> o qualsiasi altro). Amazon mostrerebbe i tag come testo letterale ai clienti.
+
+Struttura in 4 sezioni ben distinte, separate da " — " (spazio-trattino-spazio):
+
+SEZIONE 1 — INTRO OPERA: La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON modificarlo): "Quadro che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinto dall'artista"). Continua con una prima impressione evocativa dell'opera.
+
+SEZIONE 2 — STILE, COLORI ED EMOZIONI: Descrivi lo stile artistico, i colori predominanti e le emozioni che l'opera trasmette. Usa aggettivi vividi e specifici per evidenziare i colori chiave (es. "i toni caldi dell'oro e del bordeaux dominano la composizione").
+
+SEZIONE 3 — CONTESTI D'USO: Suggerisci i contesti abitativi ideali, il tipo di arredamento che si abbina e il destinatario ideale (es. "ideale per il soggiorno moderno o la camera da letto").
+
+SEZIONE 4 — MISURE + CTA: ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI iniziare questa sezione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti. Chiudi con una frase che invita all'acquisto.
+
+REGOLE TECNICHE OBBLIGATORIE:
+- VIETATO: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto
+- VIETATO nel corpo: "dipinto da ${autore}", "quadro di ${autore}", "opera di ${autore}" — usa SEMPRE "quadro che riproduce l'opera originale di ${autore}"
+- Testo fluente e leggibile, senza simboli speciali o punteggiatura eccessiva
 
 ### CHIAVI DI RICERCA (campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali):
 ${formatoSection}
@@ -430,7 +439,21 @@ ESEMPI CORRETTI:
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
-    "Descrizione del prodotto": `200-2000 caratteri. La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON cambiarlo): "Quadro che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinto dall'artista"). REGOLA TECNICA: VIETATO "dipinto", "tela dipinta" come attributo del prodotto. VIETATO: "dipinto da ${autore}", "opera di ${autore}" — usa SEMPRE "quadro che riproduce l'opera originale di ${autore}". Poi racconta l'opera con linguaggio evocativo, suggerisci contesti d'uso. ⚠️ Se il prodotto ha varianti di taglia, DEVI chiudere SEMPRE con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Poi aggiungi una frase che invita all'acquisto.`,
+    "Descrizione del prodotto": `200-2000 caratteri.
+
+⚠️ FORMATO TESTO PURO: il campo accetta SOLO testo normale — VIETATO TASSATIVO qualsiasi tag HTML (<b>, <br>, <p>, <div> o qualsiasi altro). Amazon mostrerebbe i tag come testo letterale ai clienti.
+
+Struttura in 4 sezioni ben distinte, separate da " — " (spazio-trattino-spazio):
+
+SEZIONE 1 — INTRO OPERA: La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON cambiarlo): "Quadro che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinto dall'artista"). Continua con una prima impressione evocativa dell'opera.
+
+SEZIONE 2 — STILE, COLORI ED EMOZIONI: Descrivi lo stile artistico, i colori predominanti e le emozioni che l'opera trasmette. Usa aggettivi vividi e specifici per evidenziare i colori chiave.
+
+SEZIONE 3 — CONTESTI D'USO: Suggerisci i contesti abitativi ideali, il tipo di arredamento che si abbina e il destinatario ideale (es. "ideale per il soggiorno moderno o la camera da letto").
+
+SEZIONE 4 — MISURE + CTA: ⚠️ Se il prodotto ha varianti di taglia, DEVI iniziare con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Chiudi con una frase che invita all'acquisto.
+
+REGOLE: VIETATO "dipinto", "tela dipinta". VIETATO "dipinto da ${autore}", "opera di ${autore}" — usa SEMPRE "quadro che riproduce l'opera originale di ${autore}". Testo fluente senza simboli speciali o tag.`,
     "Punto elenco 1": `MATERIALE — usa QUESTA formulazione ESATTA (il nome è già inserito — NON cambiarlo con il titolo dell'opera): "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista ${autore}, montata su telaio in legno e pronta da appendere." ("${autore}" è il NOME DELL'ARTISTA). VIETATO: "dipinto", "tela dipinta". ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
     "Punto elenco 2": 'STILE/ARTE — inizia con "ARTE [STILE] –" e descrivi l\'opera, i colori principali, l\'impatto visivo ed emotivo',
     "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
