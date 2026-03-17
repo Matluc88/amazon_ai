@@ -140,6 +140,20 @@
           </select>
         </div>
       </div>
+      <!-- BARRA SELEZIONE -->
+      <div id="offersSelectionBar"
+           style="display:none;padding:10px 20px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span id="offersSelectionCount" style="font-size:13px;font-weight:600;color:#1d4ed8;">✅ 0 offerte selezionate</span>
+        <button onclick="exportSelectedOffers()"
+          style="padding:6px 16px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          📥 Esporta selezionate (.xlsx)
+        </button>
+        <button onclick="deselectAllOffers()"
+          style="padding:6px 12px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">
+          ✕ Deseleziona tutti
+        </button>
+      </div>
+
       <div id="offersContainer">
         <div class="empty-state">
           <span class="empty-icon">📋</span>

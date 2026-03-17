@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const XLSX = require('xlsx');
 const { query } = require('../database/db');
 
 const upload = multer({
@@ -197,6 +198,90 @@ router.get('/offers', async (req, res) => {
     res.json({ success: true, total, page: parseInt(page), data: dataResult.rows });
   } catch (err) {
     console.error('Errore offers international:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/international/export ──────────────────────────
+// Body: { ids: [1,2,3,...] } oppure { country, status } per esportare tutti i filtrati
+router.post('/export', async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    let rows;
+    if (ids && Array.isArray(ids) && ids.length > 0) {
+      // Esporta solo le offerte con gli ID selezionati
+      const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+      const result = await query(
+        `SELECT * FROM international_offers WHERE id IN (${placeholders}) ORDER BY country, item_name`,
+        ids
+      );
+      rows = result.rows;
+    } else {
+      return res.status(400).json({ error: 'Nessun ID selezionato.' });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Nessuna offerta trovata.' });
+    }
+
+    // Mappa nomi colonne → header Excel (stesso ordine del report Amazon originale)
+    const COUNTRY_NAMES = { FR: 'Francia', DE: 'Germania', ES: 'Spagna', IT: 'Italia' };
+
+    const wsData = [
+      // Header row
+      [
+        'Paese', 'item-name', 'listing-id', 'seller-sku', 'price', 'quantity',
+        'open-date', 'product-id-type', 'item-note', 'item-condition',
+        'will-ship-internationally', 'expedited-shipping', 'product-id',
+        'pending-quantity', 'fulfillment-channel', 'merchant-shipping-group',
+        'status', 'Minimum order quantity', 'Sell remainder'
+      ],
+      // Data rows
+      ...rows.map(r => [
+        COUNTRY_NAMES[r.country] || r.country,
+        r.item_name || '',
+        r.listing_id || '',
+        r.seller_sku || '',
+        r.price != null ? Number(r.price) : '',
+        r.quantity != null ? Number(r.quantity) : '',
+        r.open_date ? new Date(r.open_date).toLocaleDateString('it-IT') : '',
+        r.product_id_type || '',
+        r.item_note || '',
+        r.item_condition || '',
+        r.will_ship_internationally || '',
+        r.expedited_shipping || '',
+        r.product_id || '',
+        r.pending_quantity != null ? Number(r.pending_quantity) : '',
+        r.fulfillment_channel || '',
+        r.merchant_shipping_group || '',
+        r.status || '',
+        r.minimum_order_quantity != null ? Number(r.minimum_order_quantity) : '',
+        r.sell_remainder || '',
+      ])
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Larghezza colonne auto
+    ws['!cols'] = [
+      { wch: 10 }, { wch: 60 }, { wch: 15 }, { wch: 20 }, { wch: 8 },
+      { wch: 8 }, { wch: 18 }, { wch: 8 }, { wch: 20 }, { wch: 10 },
+      { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 8 }, { wch: 18 },
+      { wch: 30 }, { wch: 10 }, { wch: 8 }, { wch: 8 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Offerte EU');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const timestamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Disposition', `attachment; filename="offerte-eu-${timestamp}.xlsx"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (err) {
+    console.error('Errore export international:', err);
     res.status(500).json({ error: err.message });
   }
 });

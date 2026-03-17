@@ -8,6 +8,8 @@ const COUNTRY_META = {
 };
 
 let selectedFile = null;
+let selectedOfferIds = new Set(); // ID delle offerte selezionate
+let allLoadedOffers  = [];        // tutte le offerte caricate nella tabella
 
 // ─── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -262,7 +264,7 @@ async function loadDashboard() {
   }
 }
 
-// ─── OFFERTE DETTAGLIO ────────────────────────────────────────
+// ─── OFFERTE DETTAGLIO (con checkbox di selezione) ────────────
 async function loadOffers() {
   const container = document.getElementById('offersContainer');
   if (!container) return;
@@ -274,14 +276,17 @@ async function loadOffers() {
     const params = new URLSearchParams();
     if (country !== 'all') params.set('country', country);
     if (status  !== 'all') params.set('status', status);
-    params.set('limit', '200');
+    params.set('limit', '500');
 
     const r = await fetch(`/api/international/offers?${params}`);
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
 
-    const rows = data.data || [];
-    if (rows.length === 0) {
+    allLoadedOffers = data.data || [];
+    selectedOfferIds.clear();
+    updateSelectionBar();
+
+    if (allLoadedOffers.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <span class="empty-icon">📋</span>
@@ -293,12 +298,16 @@ async function loadOffers() {
 
     let html = `
       <div style="padding:12px 20px;font-size:13px;color:var(--gray-600);">
-        Visualizzando <strong>${rows.length}</strong> offerte su <strong>${data.total}</strong> totali
+        Visualizzando <strong>${allLoadedOffers.length}</strong> offerte su <strong>${data.total}</strong> totali
       </div>
       <div style="overflow-x:auto;">
       <table class="products-table">
         <thead>
           <tr>
+            <th style="width:36px;text-align:center;">
+              <input type="checkbox" id="selectAllOffers" onchange="toggleSelectAllOffers(this)"
+                style="cursor:pointer;width:15px;height:15px;">
+            </th>
             <th style="width:36px;">Paese</th>
             <th>Nome prodotto</th>
             <th>SKU</th>
@@ -313,17 +322,24 @@ async function loadOffers() {
         <tbody>
     `;
 
-    for (const row of rows) {
-      const meta   = COUNTRY_META[row.country] || { flag: '🌍', name: row.country };
+    for (const row of allLoadedOffers) {
+      const meta     = COUNTRY_META[row.country] || { flag: '🌍', name: row.country };
       const isActive = (row.status || '').toLowerCase() === 'active';
-      const date   = row.open_date
+      const date     = row.open_date
         ? new Date(row.open_date).toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
         : '—';
+      const countryCode = row.country;
+      const amazonDomain = countryCode === 'FR' ? 'fr' : countryCode === 'DE' ? 'de' : countryCode === 'IT' ? 'it' : 'es';
 
       html += `
-        <tr>
+        <tr id="offer-row-${row.id}" style="cursor:default;">
+          <td style="text-align:center;">
+            <input type="checkbox" class="offer-checkbox" data-id="${row.id}"
+              onchange="toggleOfferSelection(${row.id}, this.checked)"
+              style="cursor:pointer;width:15px;height:15px;">
+          </td>
           <td style="text-align:center;font-size:20px;" title="${meta.name}">${meta.flag}</td>
-          <td style="max-width:320px;">
+          <td style="max-width:300px;">
             <div style="font-size:12px;color:var(--gray-800);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;" title="${escHtml(row.item_name || '')}">
               ${escHtml(row.item_name || '—')}
             </div>
@@ -331,7 +347,7 @@ async function loadOffers() {
           <td style="font-size:11px;color:var(--gray-600);font-family:monospace;">${escHtml(row.seller_sku || '—')}</td>
           <td style="font-size:11px;font-family:monospace;">
             ${row.product_id
-              ? `<a href="https://www.amazon.${country === 'FR' ? 'fr' : country === 'DE' ? 'de' : country === 'IT' ? 'it' : 'es'}/dp/${row.product_id}" target="_blank" style="color:var(--primary);text-decoration:none;" title="Apri su Amazon">${escHtml(row.product_id)} 🔗</a>`
+              ? `<a href="https://www.amazon.${amazonDomain}/dp/${row.product_id}" target="_blank" style="color:var(--primary);text-decoration:none;" title="Apri su Amazon">${escHtml(row.product_id)} 🔗</a>`
               : '—'}
           </td>
           <td style="text-align:right;font-weight:700;">€${row.price != null ? Number(row.price).toFixed(2) : '—'}</td>
@@ -349,6 +365,101 @@ async function loadOffers() {
     container.innerHTML = html;
   } catch (err) {
     container.innerHTML = `<div style="padding:20px;color:var(--danger);">❌ Errore: ${escHtml(err.message)}</div>`;
+  }
+}
+
+// ─── SELEZIONE OFFERTE ────────────────────────────────────────
+function toggleOfferSelection(id, checked) {
+  if (checked) {
+    selectedOfferIds.add(id);
+  } else {
+    selectedOfferIds.delete(id);
+  }
+  updateSelectAllCheckbox();
+  updateSelectionBar();
+}
+
+function toggleSelectAllOffers(checkbox) {
+  const checkboxes = document.querySelectorAll('.offer-checkbox');
+  checkboxes.forEach(cb => {
+    const id = parseInt(cb.dataset.id);
+    cb.checked = checkbox.checked;
+    if (checkbox.checked) {
+      selectedOfferIds.add(id);
+    } else {
+      selectedOfferIds.delete(id);
+    }
+  });
+  updateSelectionBar();
+}
+
+function deselectAllOffers() {
+  selectedOfferIds.clear();
+  document.querySelectorAll('.offer-checkbox').forEach(cb => cb.checked = false);
+  const selectAll = document.getElementById('selectAllOffers');
+  if (selectAll) selectAll.checked = false;
+  updateSelectionBar();
+}
+
+function updateSelectAllCheckbox() {
+  const selectAll  = document.getElementById('selectAllOffers');
+  const checkboxes = document.querySelectorAll('.offer-checkbox');
+  if (!selectAll || checkboxes.length === 0) return;
+  const allChecked = [...checkboxes].every(cb => cb.checked);
+  const anyChecked = [...checkboxes].some(cb => cb.checked);
+  selectAll.checked       = allChecked;
+  selectAll.indeterminate = anyChecked && !allChecked;
+}
+
+function updateSelectionBar() {
+  const bar   = document.getElementById('offersSelectionBar');
+  const count = document.getElementById('offersSelectionCount');
+  if (!bar) return;
+  const n = selectedOfferIds.size;
+  if (n > 0) {
+    bar.style.display = 'flex';
+    if (count) count.textContent = `✅ ${n} offert${n === 1 ? 'a' : 'e'} selezionat${n === 1 ? 'a' : 'e'}`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+// ─── EXPORT SELEZIONATI ───────────────────────────────────────
+async function exportSelectedOffers() {
+  if (selectedOfferIds.size === 0) {
+    showToast('⚠️ Seleziona almeno un\'offerta.', 'warning');
+    return;
+  }
+
+  showLoading('Generazione Excel...', `Export di ${selectedOfferIds.size} offerte in corso`);
+
+  try {
+    const ids = [...selectedOfferIds];
+    const r = await fetch('/api/international/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.error || 'Errore export');
+    }
+
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const ts   = new Date().toISOString().slice(0, 10);
+    a.href     = url;
+    a.download = `offerte-eu-${ts}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast(`✅ Export completato: ${ids.length} offerte scaricate!`, 'success');
+  } catch (err) {
+    showToast(`❌ ${err.message}`, 'error');
+  } finally {
+    hideLoading();
   }
 }
 
