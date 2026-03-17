@@ -179,6 +179,41 @@ async function initDatabase() {
       )
     `);
 
+    // Tabella offerte internazionali (EU)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS international_offers (
+        id SERIAL PRIMARY KEY,
+        country VARCHAR(2) NOT NULL,
+        item_name TEXT,
+        listing_id VARCHAR(100),
+        seller_sku VARCHAR(200),
+        price DECIMAL(10,2),
+        quantity INTEGER DEFAULT 0,
+        open_date TIMESTAMP,
+        product_id_type VARCHAR(20),
+        item_note TEXT,
+        item_condition VARCHAR(20),
+        will_ship_internationally VARCHAR(5),
+        expedited_shipping VARCHAR(5),
+        product_id VARCHAR(20),
+        pending_quantity INTEGER DEFAULT 0,
+        fulfillment_channel VARCHAR(50),
+        merchant_shipping_group VARCHAR(200),
+        status VARCHAR(20),
+        minimum_order_quantity INTEGER,
+        sell_remainder VARCHAR(10),
+        uploaded_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_international_offers_country
+      ON international_offers (country)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_international_offers_status
+      ON international_offers (status)
+    `);
+
     // Tabella chat interna
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (

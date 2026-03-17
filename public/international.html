@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amazon AI — Offerte Internazionali EU</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <span class="logo-icon">🎨</span>
+      <span>Amazon <em>AI</em> Listing Tool</span>
+    </a>
+    <nav class="navbar-nav">
+      <span id="userBadge" style="color:var(--gray-400);font-size:13px;"></span>
+      <a href="/" class="nav-link">📋 Dashboard</a>
+      <a href="/international.html" class="nav-link active">🌍 Offerte EU</a>
+      <a href="/config.html" class="nav-link">⚙️ Config</a>
+      <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
+    </nav>
+  </nav>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay d-none" id="loadingOverlay">
+    <div class="loading-card">
+      <div class="big-spinner"></div>
+      <h3 id="loadingTitle">Caricamento in corso...</h3>
+      <p id="loadingSubtitle">Elaborazione del file</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <h1>🌍 Offerte Internazionali EU</h1>
+      <p>Carica i report Amazon per ogni mercato europeo e confronta le performance dei diversi negozi.</p>
+    </div>
+
+    <!-- UPLOAD CARD -->
+    <div class="card mb-4" style="margin-bottom:24px;">
+      <div class="card-header">
+        <h2>📤 Carica Report Offerte</h2>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:20px;">
+          Carica il file <strong>Report di tutte le offerte</strong> scaricato da Amazon Seller Central
+          (<em>Inventario → Gestisci inventario → Esporta → Report di tutte le offerte</em>).
+          Seleziona il paese corrispondente. I dati precedenti dello stesso paese verranno sostituiti.
+        </p>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+
+          <!-- Selezione Paese -->
+          <div style="flex:0 0 220px;">
+            <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:8px;">
+              🌍 Seleziona Paese:
+            </label>
+            <select id="countrySelect"
+              style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-300);border-radius:var(--radius);font-size:15px;font-family:inherit;background:white;cursor:pointer;">
+              <option value="">— Seleziona —</option>
+              <option value="FR">🇫🇷 Francia</option>
+              <option value="DE">🇩🇪 Germania</option>
+              <option value="ES">🇪🇸 Spagna</option>
+              <option value="IT">🇮🇹 Italia</option>
+            </select>
+          </div>
+
+          <!-- Upload Area -->
+          <div style="flex:1;min-width:280px;">
+            <div class="upload-area" id="euUploadArea" onclick="document.getElementById('euFileInput').click()" style="cursor:pointer;padding:24px;">
+              <span class="upload-icon" id="euUploadIcon">📄</span>
+              <h3 id="euUploadTitle">Trascina il report oppure clicca per selezionarlo</h3>
+              <p id="euUploadSubtitle">File TXT/TSV scaricato da Amazon Seller Central</p>
+              <div class="format-badges">
+                <span class="badge badge-format">TXT</span>
+                <span class="badge badge-format">TSV</span>
+                <span class="badge badge-format">CSV</span>
+              </div>
+            </div>
+            <input type="file" id="euFileInput" accept=".txt,.tsv,.csv" style="display:none" onchange="handleEuFileSelect(this)" />
+          </div>
+
+        </div>
+
+        <!-- File selezionato info -->
+        <div id="euFileInfo" style="display:none;margin-top:12px;padding:10px 16px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);font-size:13px;color:var(--gray-700);">
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="uploadEuBtn" onclick="uploadEuFile()" disabled>
+            📤 Carica Offerte
+          </button>
+          <span style="font-size:12px;color:var(--gray-500);">Sostituisce i dati esistenti per il paese selezionato</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD COMPARATIVA -->
+    <div class="card mb-4" style="margin-bottom:24px;" id="dashboardCard">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <h2>📊 Dashboard Comparativa EU</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">🔄 Aggiorna</button>
+      </div>
+      <div class="card-body" id="dashboardBody">
+        <div class="empty-state">
+          <span class="empty-icon">🌍</span>
+          <h3>Nessun dato ancora</h3>
+          <p>Carica i report dei mercati europei per vedere la dashboard comparativa.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABELLA OFFERTE DETTAGLIO -->
+    <div class="card" id="offersCard">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <h2>📋 Dettaglio Offerte</h2>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:12px;font-weight:600;color:var(--gray-600);">🌍 Paese:</label>
+          <select id="filterCountry" onchange="loadOffers()"
+            style="padding:5px 10px;font-size:13px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;cursor:pointer;background:white;">
+            <option value="all">Tutti i Paesi</option>
+            <option value="FR">🇫🇷 Francia</option>
+            <option value="DE">🇩🇪 Germania</option>
+            <option value="ES">🇪🇸 Spagna</option>
+            <option value="IT">🇮🇹 Italia</option>
+          </select>
+          <label style="font-size:12px;font-weight:600;color:var(--gray-600);">Stato:</label>
+          <select id="filterStatus" onchange="loadOffers()"
+            style="padding:5px 10px;font-size:13px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;cursor:pointer;background:white;">
+            <option value="all">Tutti</option>
+            <option value="Active">🟢 Attive</option>
+            <option value="Inactive">🔴 Inattive</option>
+          </select>
+        </div>
+      </div>
+      <div id="offersContainer">
+        <div class="empty-state">
+          <span class="empty-icon">📋</span>
+          <h3>Nessuna offerta da mostrare</h3>
+          <p>Carica i report per visualizzare le offerte.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/international.js"></script>
+  <script src="/js/chat-widget.js"></script>
+</body>
+</html>

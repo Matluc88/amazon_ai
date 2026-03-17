@@ -973,3 +973,200 @@ input.field-input:focus {
   color: #991b1b;
   border: 1px solid #fca5a5;
 }
+
+/* =============================================
+   OFFERTE INTERNAZIONALI EU — Dashboard
+   ============================================= */
+
+/* Griglia card per paese */
+.eu-country-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 8px;
+}
+
+.eu-country-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
+}
+
+.eu-country-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.eu-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.eu-flag {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.eu-country-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-900);
+  flex: 1;
+}
+
+.eu-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.5;
+  transition: opacity var(--transition);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.eu-delete-btn:hover {
+  opacity: 1;
+  background: var(--danger-light);
+}
+
+/* Statistiche nella card paese */
+.eu-card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.eu-stat {
+  text-align: center;
+}
+
+.eu-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1.1;
+}
+
+.eu-stat-label {
+  font-size: 10px;
+  color: var(--gray-500);
+  font-weight: 500;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Tabella comparativa EU */
+.eu-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.eu-compare-table th {
+  background: var(--secondary);
+  color: var(--gray-300);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: none;
+  white-space: nowrap;
+}
+
+.eu-compare-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+  color: var(--gray-800);
+}
+
+.eu-compare-table tr:last-child td {
+  border-bottom: none;
+}
+
+.eu-compare-table tr:hover td {
+  background: var(--gray-50);
+}
+
+/* Badge success/danger usati nella tabella offerte */
+.badge-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Tabella offerte prodotti (riusa .products-table) */
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.products-table th {
+  background: var(--gray-50);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--gray-600);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--gray-200);
+  white-space: nowrap;
+}
+
+.products-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+  color: var(--gray-800);
+}
+
+.products-table tr:last-child td {
+  border-bottom: none;
+}
+
+.products-table tr:hover td {
+  background: var(--gray-50);
+}
+
+/* Drag-over state per upload area */
+.upload-area.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: scale(1.01);
+}
+
+@media (max-width: 768px) {
+  .eu-country-cards {
+    grid-template-columns: 1fr;
+  }
+  .eu-card-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

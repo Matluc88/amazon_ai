@@ -101,6 +101,7 @@ app.use('/api/config',   requireAuth, require('./routes/config'));
 app.use('/api/export',   requireAuth, require('./routes/export'));
 app.use('/api/images',   requireAuth, require('./routes/images'));
 app.use('/api/chat',     requireAuth, require('./routes/chat'));
+app.use('/api/international', requireAuth, require('./routes/international'));
 
 // ─── Avvio ───────────────────────────────────────────────────
 async function start() {
