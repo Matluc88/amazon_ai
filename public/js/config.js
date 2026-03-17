@@ -30,6 +30,8 @@ async function loadCurrentUser() {
       if (usersTab) usersTab.style.display = 'none';
       const addUserForm = document.getElementById('addUserForm');
       if (addUserForm) addUserForm.style.display = 'none';
+      const clearChatForm = document.getElementById('clearChatForm');
+      if (clearChatForm) clearChatForm.style.display = 'none';
     } else {
       loadUsers();
     }
@@ -269,6 +271,20 @@ async function addUser() {
     document.getElementById('newPassword').value = '';
     document.getElementById('newRuolo').value = 'operatore';
     loadUsers();
+  } catch (err) {
+    showToast(`Errore: ${err.message}`, 'error');
+  }
+}
+
+// =============================================
+// CLEAR CHAT (solo admin)
+// =============================================
+async function clearChat() {
+  if (!confirm('⚠️ Sei sicuro di voler cancellare TUTTI i messaggi della chat?\nQuesta operazione è irreversibile.')) return;
+  try {
+    const res = await fetch('/api/chat', { method: 'DELETE' });
+    if (!res.ok) throw new Error((await res.json()).error);
+    showToast('✅ Chat svuotata con successo!', 'success');
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
   }

@@ -46,4 +46,18 @@ router.post('/', async (req, res) => {
   }
 });
 
+// DELETE /api/chat — svuota tutta la chat (solo admin)
+router.delete('/', async (req, res) => {
+  if (req.session.ruolo !== 'admin') {
+    return res.status(403).json({ error: 'Accesso riservato agli amministratori.' });
+  }
+  try {
+    await query('DELETE FROM chat_messages');
+    res.json({ success: true, message: 'Chat svuotata con successo' });
+  } catch (err) {
+    console.error('Chat DELETE error:', err);
+    res.status(500).json({ error: 'Errore cancellazione messaggi' });
+  }
+});
+
 module.exports = router;
