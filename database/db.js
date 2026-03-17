@@ -213,6 +213,13 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_international_offers_status
       ON international_offers (status)
     `);
+    // Colonne parent/child detection
+    await client.query(`ALTER TABLE international_offers ADD COLUMN IF NOT EXISTS is_parent BOOLEAN DEFAULT false`);
+    await client.query(`ALTER TABLE international_offers ADD COLUMN IF NOT EXISTS parent_sku VARCHAR(200)`);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_international_offers_parent_sku
+      ON international_offers (parent_sku)
+    `);
 
     // Tabella chat interna
     await client.query(`

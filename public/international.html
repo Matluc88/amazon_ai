@@ -122,6 +122,9 @@
       <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <h2>📋 Dettaglio Offerte</h2>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="relinkAllParents()" title="Ricalcola relazioni parent/child dai dati esistenti">
+            🔗 Rileva parent/child
+          </button>
           <label style="font-size:12px;font-weight:600;color:var(--gray-600);">🌍 Paese:</label>
           <select id="filterCountry" onchange="loadOffers()"
             style="padding:5px 10px;font-size:13px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;cursor:pointer;background:white;">
