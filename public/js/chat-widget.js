@@ -372,11 +372,19 @@
     }
   }
 
+  // ─── Reset chat (quando admin svuota) ────────────────────────────────────
+  function resetChat() {
+    _messages = [];
+    _lastId   = 0;
+    renderMessages([], false);
+  }
+
   // ─── Init ─────────────────────────────────────────────────────────────────
   function init() {
     buildWidget();
     fetchMessages(true);
     startPolling();
+    window.addEventListener('chat-cleared', resetChat);
   }
 
   if (document.readyState === 'loading') {

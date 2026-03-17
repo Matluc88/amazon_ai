@@ -285,6 +285,8 @@ async function clearChat() {
     const res = await fetch('/api/chat', { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error);
     showToast('✅ Chat svuotata con successo!', 'success');
+    // Notifica il widget di aggiornarsi
+    window.dispatchEvent(new CustomEvent('chat-cleared'));
   } catch (err) {
     showToast(`Errore: ${err.message}`, 'error');
   }
