@@ -292,8 +292,8 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     // Immagini specifiche della variante (slot 1-3)
     // Fallback col 21: se la variante non ha immagine lifestyle (immagine_*_2),
     // usa l'immagine principale del parent (sfondo bianco) — evita placeholder grigio su Amazon
-    const mainImgChild = immagine || immagine2 || attrs['Immagine principale'] || null;
-    if (mainImgChild) setCellValue(sheet, 21, rowIdx, mainImgChild); // principale sfondo bianco, fallback frontale o parent
+    const mainImgChild = attrs['Immagine principale'] || immagine || immagine2 || null;
+    if (mainImgChild) setCellValue(sheet, 21, rowIdx, mainImgChild); // principale sfondo bianco (attr salvato), fallback immagine_max, poi frontale
     if (immagine4)    setCellValue(sheet, 22, rowIdx, immagine4);    // di lato (laterale)
     if (immagine3)    setCellValue(sheet, 23, rowIdx, immagine3);    // proporzione scala
     // Dettagli dell'opera dal parent (slot 4-6) — fallback diretto a product.dettaglio_* se attrs non salvati
