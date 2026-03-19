@@ -277,7 +277,7 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
 
   // ── Immagini variante child ───────────────────────────────────────────────────
   // Per le righe child puliamo cols 21-29 e scriviamo:
-  //   col 21 (Immagine principale) = frontale lifestyle   (immagine_*_2) — fallback parent
+  //   col 21 (Immagine principale) = sfondo bianco        (immagine_*)   — fallback frontale o parent
   //   col 22 (Immagine 2)          = di lato / laterale   (immagine_*_4)
   //   col 23 (Immagine 3)          = proporzione scala    (immagine_*_3)
   //   col 24 (Immagine 4)          = dettaglio 1 del parent (attrs "Immagine 2")
@@ -292,8 +292,8 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     // Immagini specifiche della variante (slot 1-3)
     // Fallback col 21: se la variante non ha immagine lifestyle (immagine_*_2),
     // usa l'immagine principale del parent (sfondo bianco) — evita placeholder grigio su Amazon
-    const mainImgChild = immagine2 || immagine || attrs['Immagine principale'] || null;
-    if (mainImgChild) setCellValue(sheet, 21, rowIdx, mainImgChild); // frontale lifestyle o fallback parent
+    const mainImgChild = immagine || immagine2 || attrs['Immagine principale'] || null;
+    if (mainImgChild) setCellValue(sheet, 21, rowIdx, mainImgChild); // principale sfondo bianco, fallback frontale o parent
     if (immagine4)    setCellValue(sheet, 22, rowIdx, immagine4);    // di lato (laterale)
     if (immagine3)    setCellValue(sheet, 23, rowIdx, immagine3);    // proporzione scala
     // Dettagli dell'opera dal parent (slot 4-6) — fallback diretto a product.dettaglio_* se attrs non salvati
