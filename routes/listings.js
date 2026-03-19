@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../database/db');
 const { generateAllAiAttributes, regenerateSingleAttribute } = require('../services/anthropicService');
 const { compileFixedAndAuto, saveAiValues, getProductListing, upsertAttributeValue, getCachedKeywords } = require('../services/attributeService');
+const { getCerebroPromptSection } = require('../services/cerebroService');
 
 // GET /api/listings — tutti i prodotti con conteggio attributi compilati
 router.get('/', async (req, res) => {
@@ -50,14 +51,20 @@ router.post('/generate/:productId', async (req, res) => {
     // 1. Compila FIXED + AUTO
     await compileFixedAndAuto(req.params.productId, product);
 
-    // 2. Recupera keyword in cache
+    // 2. Recupera keyword AI in cache
     const keywords = await getCachedKeywords(req.params.productId);
 
-    // 3. Genera attributi AI con Claude
-    const aiValues = await generateAllAiAttributes(product, keywords);
+    // 3. Recupera sezione Cerebro (keyword reali da Helium 10, se cluster associato)
+    const cerebroSection = await getCerebroPromptSection(product.cerebro_cluster_id);
+    if (cerebroSection) {
+      console.log(`[Listings] Cerebro keywords iniettate per prodotto ${req.params.productId} (cluster: ${product.cerebro_cluster_id})`);
+    }
+
+    // 4. Genera attributi AI con Claude (keyword AI + Cerebro)
+    const aiValues = await generateAllAiAttributes(product, keywords, cerebroSection);
     await saveAiValues(req.params.productId, aiValues);
 
-    // 4. Ritorna il listing completo
+    // 5. Ritorna il listing completo
     const sections = await getProductListing(req.params.productId, product);
     res.json({ success: true, sections });
   } catch (err) {
@@ -111,7 +118,8 @@ router.post('/:productId/regenerate', async (req, res) => {
     if (!product) return res.status(404).json({ error: 'Prodotto non trovato' });
 
     const keywords = await getCachedKeywords(req.params.productId);
-    const result = await regenerateSingleAttribute(product, nome_attributo, current_value, keywords);
+    const cerebroSection = await getCerebroPromptSection(product.cerebro_cluster_id);
+    const result = await regenerateSingleAttribute(product, nome_attributo, current_value, keywords, cerebroSection);
 
     const newValue = result[nome_attributo] || '';
     await upsertAttributeValue(req.params.productId, attribute_id, newValue, 'AI');

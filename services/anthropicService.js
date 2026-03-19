@@ -110,7 +110,7 @@ function calcOrientamento(misuraStr) {
  * @param {string[]} keywords - keyword minate da Amazon (opzionale)
  * @returns {object} - { "Nome dell'articolo": "...", "Punto elenco 1": "...", ... }
  */
-async function generateAllAiAttributes(product, keywords = []) {
+async function generateAllAiAttributes(product, keywords = [], cerebroSection = '') {
   const imageUrl = getProductImageUrl(product);
   // ⚠️ Autore con fallback — evita che Claude usi il titolo dell'opera come nome artista
   const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
@@ -125,6 +125,8 @@ async function generateAllAiAttributes(product, keywords = []) {
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
+
+  const cerebroSectionText = cerebroSection ? `\n${cerebroSection}\n` : '';
 
   // Sezione varianti per il prompt
   const variantiSection = (product.misura_max || product.sku_max)
@@ -167,7 +169,7 @@ AUTORE DELL'OPERA: ${autore}
 ⚠️ CRITICO — NON CONFONDERE: "${autore}" è il NOME DELL'ARTISTA. Il titolo dell'opera (es. "${product.titolo_opera || product.descrizione_raw?.split('\n')[0]?.slice(0, 40) || ''}") è il TITOLO, non l'autore. Usa SEMPRE e SOLO "${autore}" dove richiesto il nome dell'artista/autore.
 ${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
 ${variantiSection}
-${keywordsSection}
+${keywordsSection}${cerebroSectionText}
 
 ISTRUZIONI:
 - Analizza il testo e comprendi il soggetto, lo stile e il contesto dell'opera
@@ -362,13 +364,14 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
  * @param {string} currentValue - valore attuale
  * @param {string[]} keywords
  */
-async function regenerateSingleAttribute(product, nomeAttributo, currentValue, keywords = []) {
+async function regenerateSingleAttribute(product, nomeAttributo, currentValue, keywords = [], cerebroSection = '') {
   const imageUrl = getProductImageUrl(product);
   // ⚠️ Autore con fallback — stesso pattern di generateAllAiAttributes
   const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT:\n${keywords.slice(0, 20).join(', ')}\n`
     : '';
+  const cerebroSectionText = cerebroSection ? `\n${cerebroSection}\n` : '';
 
   // Calcola misure varianti per la guida (se disponibili)
   const misureVarianti = (product.misura_mini && product.misura_media && product.misura_max)
@@ -533,7 +536,7 @@ ${product.tecnica ? `\nTECNICA: ${product.tecnica}` : ''}
 
 VALORE ATTUALE (da migliorare):
 ${currentValue || 'Non presente'}
-${keywordsSection}
+${keywordsSection}${cerebroSectionText}
 ⚠️ REGOLA CRITICA — AMAZON POLICY: VIETATO TASSATIVO in qualsiasi campo: "contenuti per adulti", "per adulti", "adult", "erotico", "sensuale", "intimo", "sexy" o qualsiasi termine che Amazon possa classificare come adult content. Per soggetti romantici (baci, coppie, abbracci): usa SOLO "romantico", "coppia", "amore", "sentimentale", "arte figurativa".
 
 ${formatoInfoRegen}

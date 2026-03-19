@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cerebro — Amazon AI Tool</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    /* ─── Layout ─── */
+    .cerebro-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .cerebro-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Cluster Panel ─── */
+    .cluster-panel {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .cluster-panel-header {
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cluster-panel-header h3 { font-size: 14px; margin: 0; }
+    .cluster-list { padding: 8px; max-height: 420px; overflow-y: auto; }
+    .cluster-item {
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1.5px solid transparent;
+      margin-bottom: 4px;
+    }
+    .cluster-item:hover { background: var(--gray-50); }
+    .cluster-item.active {
+      background: #eff6ff;
+      border-color: #3b82f6;
+    }
+    .cluster-item-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 3px;
+    }
+    .cluster-item-stats {
+      font-size: 11px;
+      color: var(--gray-500);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cluster-stat { display: inline-flex; align-items: center; gap: 3px; }
+
+    /* ─── Create Cluster Form ─── */
+    .cluster-create-form {
+      padding: 12px 16px;
+      border-top: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+    .cluster-create-form input {
+      width: 100%;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    .cluster-create-form input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* ─── Main Panel ─── */
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ─── Upload Card ─── */
+    .upload-card {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      color: var(--white);
+    }
+    .upload-card h3 { font-size: 16px; margin-bottom: 6px; }
+    .upload-card p { font-size: 13px; color: #9ca3af; margin-bottom: 16px; }
+    .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .upload-file-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .upload-file-label:hover { background: rgba(255,255,255,0.2); }
+    #uploadFileName {
+      font-size: 12px;
+      color: #9ca3af;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ─── Keyword Table Card ─── */
+    .kw-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .kw-card-header {
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .kw-filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--gray-100);
+      background: #fafafa;
+    }
+    .kw-filter-select {
+      padding: 6px 10px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--white);
+      color: var(--gray-700);
+      cursor: pointer;
+    }
+    .kw-filter-select:focus { outline: none; border-color: var(--primary); }
+    .kw-search {
+      flex: 1;
+      min-width: 150px;
+      padding: 6px 10px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .kw-search:focus { outline: none; border-color: var(--primary); }
+
+    /* Bulk actions bar */
+    .bulk-bar {
+      padding: 8px 16px;
+      background: #eff6ff;
+      border-bottom: 1px solid #bfdbfe;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .bulk-bar.visible { display: flex; }
+    .bulk-bar-info { font-size: 13px; font-weight: 600; color: #1e40af; }
+
+    /* Table */
+    .kw-table-wrap { overflow-x: auto; }
+    .kw-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .kw-table th {
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--gray-200);
+      background: var(--gray-50);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--gray-500);
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    .kw-table th:hover { color: var(--gray-800); }
+    .kw-table th.sort-asc::after  { content: ' ▲'; font-size: 9px; }
+    .kw-table th.sort-desc::after { content: ' ▼'; font-size: 9px; }
+    .kw-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: middle;
+    }
+    .kw-table tr:last-child td { border-bottom: none; }
+    .kw-table tr:hover td { background: #f9fafb; }
+    .kw-table tr.selected td { background: #eff6ff; }
+
+    /* Keyword text */
+    .kw-text {
+      font-size: 13px;
+      color: var(--gray-800);
+      max-width: 280px;
+    }
+
+    /* Volume badge */
+    .vol-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-700);
+    }
+    .vol-badge.high { color: #059669; }
+    .vol-badge.med  { color: #d97706; }
+    .vol-badge.low  { color: var(--gray-400); }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .status-badge.pending  { background: #f3f4f6; color: #4b5563; }
+    .status-badge.approved { background: #d1fae5; color: #065f46; }
+    .status-badge.rejected { background: #fee2e2; color: #991b1b; }
+
+    /* Tier badge */
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px dashed var(--gray-300);
+      background: var(--white);
+      color: var(--gray-500);
+      white-space: nowrap;
+    }
+    .tier-badge.title   { background: #fef3c7; color: #92400e; border-style: solid; border-color: #f59e0b; }
+    .tier-badge.bullet  { background: #dbeafe; color: #1e40af; border-style: solid; border-color: #3b82f6; }
+    .tier-badge.backend { background: #ede9fe; color: #6d28d9; border-style: solid; border-color: #8b5cf6; }
+
+    /* Inline action buttons */
+    .kw-action-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 5px;
+      cursor: pointer;
+      background: var(--white);
+      color: var(--gray-600);
+      transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .kw-action-btn:hover { background: var(--gray-50); }
+    .kw-action-btn.approve { border-color: #059669; color: #059669; }
+    .kw-action-btn.approve:hover { background: #d1fae5; }
+    .kw-action-btn.reject  { border-color: #ef4444; color: #ef4444; }
+    .kw-action-btn.reject:hover  { background: #fee2e2; }
+
+    /* Pagination */
+    .kw-pagination {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-top: 1px solid var(--gray-100);
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .page-btns { display: flex; gap: 4px; }
+    .page-btn {
+      padding: 5px 10px;
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .page-btn:not(:disabled):hover { background: var(--gray-50); }
+
+    /* Empty state */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--gray-400);
+    }
+    .empty-state p { font-size: 14px; margin-top: 12px; }
+
+    /* Tier tier-select inline */
+    .tier-select {
+      padding: 3px 8px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 5px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      background: var(--white);
+    }
+    .tier-select:focus { outline: none; border-color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <span class="logo-icon">🎨</span>
+      <span>Amazon <em>AI</em> Listing Tool</span>
+    </a>
+    <nav class="navbar-nav" id="navbarNav">
+      <a href="/" class="nav-link">📋 Dashboard</a>
+      <a href="/cerebro" class="nav-link active">🔬 Cerebro</a>
+      <a href="/international.html" class="nav-link">🌍 Offerte EU</a>
+      <a href="/config.html" class="nav-link">⚙️ Config</a>
+      <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
+    </nav>
+  </nav>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container" style="padding-bottom: 80px;">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <h1>🔬 Cerebro — Keyword Manager</h1>
+      <p class="text-muted">Importa ricerche Helium 10 Cerebro, curate le keyword per nicchia e iniettale nei listing AI.</p>
+    </div>
+
+    <div class="cerebro-layout">
+
+      <!-- ═══ CLUSTER PANEL (sinistra) ═══ -->
+      <div>
+        <div class="cluster-panel">
+          <div class="cluster-panel-header">
+            <h3>📂 Cluster / Nicchie</h3>
+            <button class="btn btn-sm btn-primary" onclick="openCreateCluster()">+ Nuovo</button>
+          </div>
+          <div class="cluster-list" id="clusterList">
+            <div class="empty-state" style="padding:30px 20px;">
+              <div style="font-size:28px;">📂</div>
+              <p style="font-size:12px;">Nessun cluster.<br>Crea il primo cluster.</p>
+            </div>
+          </div>
+          <div class="cluster-create-form" id="clusterCreateForm" style="display:none;">
+            <div style="font-size:12px;font-weight:700;color:var(--gray-600);margin-bottom:8px;">
+              ✏️ <span id="clusterFormTitle">Nuovo cluster</span>
+            </div>
+            <input type="text" id="clusterName" placeholder="Nome (es. quadri moderni)" maxlength="120" />
+            <input type="text" id="clusterDesc" placeholder="Descrizione (opzionale)" maxlength="300" />
+            <input type="hidden" id="clusterEditId" value="" />
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm btn-primary" style="flex:1;" onclick="saveCluster()">💾 Salva</button>
+              <button class="btn btn-sm" style="flex:1;" onclick="closeCreateCluster()">✖ Annulla</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload CSV -->
+        <div class="upload-card" style="margin-top:16px;" id="uploadSection" style="display:none;">
+          <h3>📤 Importa CSV Cerebro</h3>
+          <p>Carica il file CSV esportato da Helium 10 Cerebro (multi-ASIN). Verrà importato nel cluster selezionato.</p>
+          <div class="upload-row">
+            <label class="upload-file-label" for="csvFileInput">
+              📄 Scegli file CSV
+            </label>
+            <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCsvFileChange(this)" />
+            <span id="uploadFileName">Nessun file selezionato</span>
+          </div>
+          <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="uploadBtn" onclick="uploadCsv()" disabled
+                    style="background:linear-gradient(135deg,#ff9900,#e68900);">
+              🚀 Importa keyword
+            </button>
+            <div id="uploadProgress" style="font-size:12px;color:#9ca3af;"></div>
+          </div>
+        </div>
+
+        <!-- Cluster stats card -->
+        <div id="clusterStatsCard" style="display:none;margin-top:16px;background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);">
+          <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">📊 Statistiche cluster</div>
+          <div id="clusterStats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+          <div style="margin-top:14px;border-top:1px solid var(--gray-100);padding-top:12px;">
+            <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin-bottom:8px;">Tier approvate</div>
+            <div id="clusterTierStats" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+          <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px;">
+            <button class="btn btn-sm" onclick="editCurrentCluster()"
+                    style="font-size:11px;background:var(--gray-50);color:var(--gray-600);border:1px solid var(--gray-200);">
+              ✏️ Modifica
+            </button>
+            <button class="btn btn-sm" onclick="deleteCurrentCluster()"
+                    style="font-size:11px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;">
+              🗑 Elimina cluster
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MAIN PANEL (destra) ═══ -->
+      <div class="main-panel">
+
+        <!-- Empty placeholder (no cluster selected) -->
+        <div id="noClusterMsg" class="kw-card">
+          <div class="empty-state">
+            <div style="font-size:40px;">🔬</div>
+            <p>Seleziona un cluster a sinistra<br>per gestire le sue keyword.</p>
+          </div>
+        </div>
+
+        <!-- Keywords table card -->
+        <div id="kwCard" class="kw-card" style="display:none;">
+          <div class="kw-card-header">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--gray-800);" id="kwCardTitle">Keyword</div>
+              <div style="font-size:12px;color:var(--gray-400);margin-top:2px;" id="kwCardSub"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm" id="approveAllVisibleBtn"
+                      style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;font-weight:600;"
+                      onclick="approveAllVisible()">
+                ✅ Approva visibili
+              </button>
+              <button class="btn btn-sm" id="rejectAllVisibleBtn"
+                      style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-weight:600;"
+                      onclick="rejectAllVisible()">
+                ❌ Rifiuta visibili
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters bar -->
+          <div class="kw-filters">
+            <input type="text" class="kw-search" id="kwSearch" placeholder="🔍 Cerca keyword..." oninput="debounceSearch()" />
+            <select class="kw-filter-select" id="filterStatus" onchange="applyFilters()">
+              <option value="">Tutti gli stati</option>
+              <option value="pending">⏳ In attesa</option>
+              <option value="approved">✅ Approvate</option>
+              <option value="rejected">❌ Rifiutate</option>
+            </select>
+            <select class="kw-filter-select" id="filterTier" onchange="applyFilters()">
+              <option value="">Tutti i tier</option>
+              <option value="title">🥇 Titolo</option>
+              <option value="bullet">🥈 Bullet</option>
+              <option value="backend">🧠 Backend</option>
+              <option value="none">— Nessun tier</option>
+            </select>
+            <select class="kw-filter-select" id="filterSort" onchange="applyFilters()">
+              <option value="volume_desc">↓ Volume</option>
+              <option value="volume_asc">↑ Volume</option>
+              <option value="iq_desc">↓ IQ Score</option>
+              <option value="keyword_asc">A→Z</option>
+              <option value="imported_asc">✨ Recenti</option>
+            </select>
+            <button class="btn btn-sm" onclick="resetFilters()"
+                    style="font-size:11px;background:var(--gray-50);color:var(--gray-500);border:1px solid var(--gray-200);">
+              ✖ Reset
+            </button>
+          </div>
+
+          <!-- Bulk actions bar -->
+          <div class="bulk-bar" id="bulkBar">
+            <span class="bulk-bar-info" id="bulkInfo">0 selezionate</span>
+            <button class="btn btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;"
+                    onclick="bulkSetStatus('approved')">✅ Approva</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;"
+                    onclick="bulkSetStatus('rejected')">❌ Rifiuta</button>
+            <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b;"
+                    onclick="bulkSetTier('title')">🥇 Titolo</button>
+            <button class="btn btn-sm" style="background:#dbeafe;color:#1e40af;border:1px solid #3b82f6;"
+                    onclick="bulkSetTier('bullet')">🥈 Bullet</button>
+            <button class="btn btn-sm" style="background:#ede9fe;color:#6d28d9;border:1px solid #8b5cf6;"
+                    onclick="bulkSetTier('backend')">🧠 Backend</button>
+            <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-600);"
+                    onclick="clearSelection()">✖ Deseleziona</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;"
+                    onclick="bulkDelete()">🗑 Elimina</button>
+          </div>
+
+          <!-- Table -->
+          <div class="kw-table-wrap">
+            <table class="kw-table">
+              <thead>
+                <tr>
+                  <th style="width:36px;cursor:default;">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" />
+                  </th>
+                  <th onclick="setSortBy('keyword')">Keyword</th>
+                  <th onclick="setSortBy('search_volume')">Volume 🔍</th>
+                  <th onclick="setSortBy('cerebro_iq')">IQ Score</th>
+                  <th onclick="setSortBy('title_density')">Densità titolo</th>
+                  <th>Stato</th>
+                  <th>Tier</th>
+                  <th style="cursor:default;">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="kwTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--gray-400);">Caricamento...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="kw-pagination" id="kwPagination">
+            <div id="paginationInfo">— risultati</div>
+            <div class="page-btns" id="pageButtons"></div>
+          </div>
+        </div>
+
+      </div> <!-- /main-panel -->
+    </div> <!-- /cerebro-layout -->
+  </div>
+
+  <script src="/js/cerebro.js"></script>
+</body>
+</html>

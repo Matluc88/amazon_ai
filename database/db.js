@@ -221,6 +221,45 @@ async function initDatabase() {
       ON international_offers (parent_sku)
     `);
 
+    // Tabella cluster Cerebro (nicchie di ricerca competitiva)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cerebro_clusters (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Tabella keyword Cerebro (importate da Helium 10 Cerebro multi-ASIN)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cerebro_keywords (
+        id SERIAL PRIMARY KEY,
+        cluster_id INTEGER REFERENCES cerebro_clusters(id) ON DELETE CASCADE,
+        keyword TEXT NOT NULL,
+        search_volume INTEGER,
+        cerebro_iq INTEGER,
+        volume_trend INTEGER,
+        competing_products TEXT,
+        cpr INTEGER,
+        title_density INTEGER,
+        status VARCHAR(20) DEFAULT 'pending',
+        tier VARCHAR(20) DEFAULT NULL,
+        imported_at TIMESTAMP DEFAULT NOW(),
+        source_file TEXT,
+        UNIQUE(cluster_id, keyword)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_cerebro_keywords_cluster
+      ON cerebro_keywords (cluster_id, status)
+    `);
+
+    // Colonna cluster Cerebro sui prodotti
+    await client.query(`
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS cerebro_cluster_id INTEGER REFERENCES cerebro_clusters(id) ON DELETE SET NULL
+    `);
+
     // Tabella chat interna
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (

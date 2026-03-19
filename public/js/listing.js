@@ -10,6 +10,7 @@ let pendingChanges = {};              // { attribute_id: new_value }
 let minedKeywords = [];
 let currentTab = 'identità';          // tab attivo corrente
 let variantsDirty = false;            // traccia modifiche varianti
+let currentCerebroCluster = null;     // cluster Cerebro associato al prodotto
 
 // Limiti caratteri noti (Amazon Italy) — nomi allineati al seed
 const CHAR_LIMITS = {
@@ -116,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   loadListing();
+  loadClusters();
   startHeartbeat(); // notifica la dashboard che questa scheda è aperta
 });
 
@@ -2216,4 +2218,73 @@ async function sendHeartbeat() {
   try {
     await fetch(`/api/products/${productId}/heartbeat`, { method: 'POST' });
   } catch (_) { /* ignora errori di rete */ }
+}
+
+// =============================================
+// CEREBRO CLUSTER SELECTOR
+// =============================================
+
+/**
+ * Carica la lista cluster Cerebro e popola il selector nella toolbar.
+ * Attende che currentProduct sia disponibile (chiama se stesso con retry).
+ */
+async function loadClusters() {
+  try {
+    const res = await fetch('/api/cerebro/clusters');
+    if (!res.ok) return;
+    const clusters = await res.json();
+    // currentProduct potrebbe non essere ancora caricato — attendi
+    if (!currentProduct) {
+      setTimeout(() => renderClusterSelector(clusters), 400);
+    } else {
+      renderClusterSelector(clusters);
+    }
+  } catch (_) { /* ignora errori di rete — cluster non critico */ }
+}
+
+/**
+ * Renderizza il <select> cluster nella toolbar.
+ * Seleziona il cluster già associato al prodotto (currentProduct.cerebro_cluster_id).
+ */
+function renderClusterSelector(clusters) {
+  const wrap = document.getElementById('cerebroSelectorWrap');
+  if (!wrap) return;
+  if (!clusters || !clusters.length) { wrap.innerHTML = ''; return; }
+
+  const current = currentProduct ? currentProduct.cerebro_cluster_id : null;
+  wrap.innerHTML = `
+    <label style="font-size:11px;font-weight:700;color:var(--gray-500);white-space:nowrap;">🔬 Cluster:</label>
+    <select id="cerebroClusterSelect"
+            style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;
+                   font-size:12px;font-family:inherit;background:var(--white);color:var(--gray-700);"
+            onchange="setCluster(this.value)">
+      <option value="">— Nessuno</option>
+      ${clusters.map(c =>
+        `<option value="${c.id}" ${c.id == current ? 'selected' : ''}>${escHtml(c.name)}</option>`
+      ).join('')}
+    </select>`;
+}
+
+/**
+ * Associa (o rimuove) il cluster Cerebro al prodotto corrente.
+ * Chiama PATCH /api/cerebro/products/:productId/cluster
+ */
+async function setCluster(clusterId) {
+  if (!productId) return;
+  try {
+    const res = await fetch(`/api/cerebro/products/${productId}/cluster`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cluster_id: clusterId ? parseInt(clusterId) : null })
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || 'Errore associazione cluster');
+    }
+    currentCerebroCluster = clusterId ? parseInt(clusterId) : null;
+    if (currentProduct) currentProduct.cerebro_cluster_id = currentCerebroCluster;
+    showToast(clusterId ? '🔬 Cluster Cerebro associato!' : '🔬 Cluster rimosso', 'success');
+  } catch (err) {
+    showToast('Errore: ' + err.message, 'error');
+  }
 }
