@@ -1,6 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { exportProductToXlsm, exportAllProductsToXlsm } = require('../services/exportService');
+const { exportProductToXlsmFR, exportAllProductsToXlsmFR } = require('../services/exportServiceFR');
 
 /**
  * POST /api/export/selected
@@ -47,6 +48,76 @@ router.get('/all', async (req, res) => {
     res.status(500).json({ error: err.message || 'Errore durante l\'export' });
   }
 });
+
+// ─── ENDPOINTS FRANCIA (FR) ───────────────────────────────────────────────────
+
+/**
+ * POST /api/export/fr/selected
+ * Genera e scarica un WALL_ART_FR.xlsm con i soli prodotti selezionati.
+ * Body: { productIds: [1, 5, 12, ...] }
+ */
+router.post('/fr/selected', async (req, res) => {
+  try {
+    const { productIds } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ error: 'Lista productIds mancante o vuota' });
+    }
+    const ids = productIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+    const { buffer, filename, count } = await exportAllProductsToXlsmFR(ids);
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('X-Product-Count', count);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export FR SELECTED error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export FR' });
+  }
+});
+
+/**
+ * GET /api/export/fr/all
+ * Genera e scarica un WALL_ART_FR_ALL.xlsm con TUTTI i prodotti compilati.
+ */
+router.get('/fr/all', async (req, res) => {
+  try {
+    const { buffer, filename, count } = await exportAllProductsToXlsmFR();
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('X-Product-Count', count);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export FR ALL error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export FR' });
+  }
+});
+
+/**
+ * GET /api/export/fr/:productId
+ * Genera e scarica il file WALL_ART_FR.xlsm per il singolo prodotto.
+ */
+router.get('/fr/:productId', async (req, res) => {
+  const productId = parseInt(req.params.productId);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'ID prodotto non valido' });
+  }
+  try {
+    const { buffer, filename } = await exportProductToXlsmFR(productId);
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export FR error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export FR' });
+  }
+});
+
+// ─── ENDPOINTS ITALIA (IT) ────────────────────────────────────────────────────
 
 /**
  * GET /api/export/:productId

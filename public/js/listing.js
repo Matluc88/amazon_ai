@@ -2117,7 +2117,7 @@ async function handleProductImageFileSelect(attrId, input, tipo) {
 }
 
 // =============================================
-// DOWNLOAD PER AMAZON (WALL_ART.xlsm)
+// DOWNLOAD PER AMAZON (WALL_ART.xlsm) — IT
 // =============================================
 async function downloadForAmazon() {
   const btn = document.getElementById('downloadAmazonBtn');
@@ -2149,11 +2149,52 @@ async function downloadForAmazon() {
     a.remove();
     URL.revokeObjectURL(url);
 
-    showToast('✅ File scaricato! Carica su Amazon Seller Central.', 'success');
+    showToast('✅ File scaricato! Carica su Amazon Seller Central (IT).', 'success');
   } catch (err) {
     showToast(`❌ Download fallito: ${err.message}`, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '📥 Scarica per Amazon'; }
+  }
+}
+
+// =============================================
+// DOWNLOAD PER AMAZON FRANCE (WALL_ART_FR.xlsm) — FR
+// =============================================
+async function downloadForAmazonFR() {
+  const btn = document.getElementById('downloadAmazonFRBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Download FR...'; }
+
+  try {
+    const res = await fetch(`/api/export/fr/${productId}`);
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export FR';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    // Leggi il buffer e crea un link di download
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+
+    // Recupera il filename dall'header Content-Disposition
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_FR_${productId}.xlsm`;
+
+    const a = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showToast('✅ File Francia scaricato! Carica su Amazon Seller Central (FR).', 'success');
+  } catch (err) {
+    showToast(`❌ Download FR fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇫🇷 Esporta FR'; }
   }
 }
 
