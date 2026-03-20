@@ -2,9 +2,9 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ─── POOL SEO + ANTI-CANNIBALIZZAZIONE STANZE ─────────────────────────────
-// Rotazione deterministica: ogni ASIN riceve una frase SEO univoca con
-// keyword Cerebro tier TITLE incorporate direttamente nel titolo Amazon.
+// ─── POOL SEO STANZE ──────────────────────────────────────────────────────
+// 6 frasi SEO con keyword Cerebro tier TITLE incorporate direttamente nel
+// titolo Amazon. Claude sceglie la più coerente con il tipo/soggetto dell'opera.
 // Ogni voce è una frase SEO pronta da inserire nel titolo come frase contigua.
 const ROOM_POOL = [
   'Quadri Moderni Soggiorno e Camera da Letto',    // kw: "quadri moderni soggiorno", "camera da letto"
@@ -14,23 +14,6 @@ const ROOM_POOL = [
   'Quadri Moderni Ufficio e Studio',                // kw: "quadri moderni"
   'Decorazioni Parete Sala da Pranzo e Corridoio'   // kw: "decorazioni parete"
 ];
-
-/**
- * Hash deterministico su stringa → intero positivo a 32 bit.
- * Permette di derivare stile/stanze dall'SKU del prodotto in modo stabile,
- * indipendentemente dagli ID del database.
- *
- * @param {string} str
- * @returns {number}
- */
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0; // forza 32-bit integer
-  }
-  return Math.abs(hash);
-}
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
@@ -114,12 +97,8 @@ async function generateAllAiAttributes(product, keywords = [], cerebroSection = 
   // ⚠️ Autore con fallback — evita che Claude usi il titolo dell'opera come nome artista
   const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
 
-  // ─── Rotazione anti-cannibalizzazione ────────────────────────────────────
-  // Hash deterministico sullo SKU del parent (stabile anche se gli ID cambiano)
+  // stableKey usato per smartTruncateTitle (log)
   const stableKey = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
-  const hashValue = simpleHash(stableKey);
-  const selectedRooms = ROOM_POOL[(hashValue + 3) % ROOM_POOL.length];
-  // ─────────────────────────────────────────────────────────────────────────
 
   const keywordsSection = keywords.length > 0
     ? `\nKEYWORD REALI CERCATE SU AMAZON.IT — usa queste dove naturale (NON ripeterle nel titolo se già presenti):\n${keywords.slice(0, 20).join(', ')}\n`
@@ -196,16 +175,25 @@ Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + t
 - "Quadro Contemporaneo" → arte contemporanea, mixed media
 - "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
 
-⚠️ ANTI-CANNIBALIZZAZIONE + KEYWORD SEO PRE-ASSEGNATE (rotazione deterministica):
-- Frase SEO OBBLIGATORIA nel titolo: "${selectedRooms}" — inseriscila ESATTAMENTE come scritta, senza modifiche.
+⚠️ KEYWORD SEO — scegli la frase più coerente con il tipo dell'opera identificato sopra:
+
+FRASI SEO DISPONIBILI (inseriscine UNA, copiandola ESATTAMENTE come scritta):
+- "Quadri Moderni Soggiorno e Camera da Letto"    → per: Quadro Romantico, Quadro Famiglia
+- "Quadri Moderni Soggiorno e Ufficio"            → per: Quadro Figurativo Moderno, Quadro Contemporaneo
+- "Quadri Moderni Camera da Letto e Studio"       → per: Quadro Romantico (alternativa), Quadro Famiglia (alternativa)
+- "Decorazioni Parete Salotto e Ingresso"         → per: Quadro Sacro, Quadro Naif, Quadro Animali, Quadro Paesaggio
+- "Quadri Moderni Ufficio e Studio"               → per: Quadro Astratto Moderno, Quadro Moderno
+- "Decorazioni Parete Sala da Pranzo e Corridoio" → per: Quadro Pop Art, Quadro Paesaggio (alternativa), Quadro Naif (alternativa)
+
+Scegli la frase più adatta al tipo dell'opera che hai identificato sopra. Copiala ESATTAMENTE, senza modifiche.
 
 STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Quadro {tipo_scelto} {soggetto 2-5 parole}, ${selectedRooms}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
+"Quadro {tipo_scelto} {soggetto 2-5 parole}, {FRASE_SEO_SCELTA}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
 - {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
 - {soggetto}: 2–5 parole specifiche e descrittive dell'opera
-- "${selectedRooms}": frase SEO già pronta — copiala ESATTAMENTE (es. "Quadri Moderni Soggiorno e Camera da Letto")
+- {FRASE_SEO_SCELTA}: la frase scelta dalla lista sopra — copiala ESATTAMENTE
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
 - hasSizeVariants = ${hasSizeVariants}
 - {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
@@ -387,11 +375,8 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     ? `${product.misura_mini}, ${product.misura_media}, ${product.misura_max} cm`
     : null;
 
-  // ─── Rotazione anti-cannibalizzazione stanze (stessa logica di generateAllAiAttributes) ──
+  // stableKeyRegen usato per smartTruncateTitle (log)
   const stableKeyRegen = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
-  const hashValueRegen = simpleHash(stableKeyRegen);
-  const selectedRoomsRegen = ROOM_POOL[(hashValueRegen + 3) % ROOM_POOL.length];
-  // ─────────────────────────────────────────────────────────────────────────────────
 
   // hasSizeVariants per regenerate (stessa logica di generateAllAiAttributes)
   const hasSizeVariantsRegen = typeof product.misura_max === 'string'
@@ -424,16 +409,25 @@ Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + t
 - "Quadro Contemporaneo" → arte contemporanea, mixed media
 - "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
 
-⚠️ ANTI-CANNIBALIZZAZIONE + KEYWORD SEO PRE-ASSEGNATE (rotazione deterministica):
-- Frase SEO OBBLIGATORIA nel titolo: "${selectedRoomsRegen}" — inseriscila ESATTAMENTE come scritta, senza modifiche.
+⚠️ KEYWORD SEO — scegli la frase più coerente con il tipo dell'opera identificato sopra:
+
+FRASI SEO DISPONIBILI (inseriscine UNA, copiandola ESATTAMENTE come scritta):
+- "Quadri Moderni Soggiorno e Camera da Letto"    → per: Quadro Romantico, Quadro Famiglia
+- "Quadri Moderni Soggiorno e Ufficio"            → per: Quadro Figurativo Moderno, Quadro Contemporaneo
+- "Quadri Moderni Camera da Letto e Studio"       → per: Quadro Romantico (alternativa), Quadro Famiglia (alternativa)
+- "Decorazioni Parete Salotto e Ingresso"         → per: Quadro Sacro, Quadro Naif, Quadro Animali, Quadro Paesaggio
+- "Quadri Moderni Ufficio e Studio"               → per: Quadro Astratto Moderno, Quadro Moderno
+- "Decorazioni Parete Sala da Pranzo e Corridoio" → per: Quadro Pop Art, Quadro Paesaggio (alternativa), Quadro Naif (alternativa)
+
+Scegli la frase più adatta al tipo dell'opera che hai identificato sopra. Copiala ESATTAMENTE, senza modifiche.
 
 STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Quadro {tipo_scelto} {soggetto 2-5 parole}, ${selectedRoomsRegen}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
+"Quadro {tipo_scelto} {soggetto 2-5 parole}, {FRASE_SEO_SCELTA}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
 - {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
 - {soggetto}: 2–5 parole specifiche e descrittive dell'opera
-- "${selectedRoomsRegen}": frase SEO già pronta — copiala ESATTAMENTE (es. "Quadri Moderni Soggiorno e Camera da Letto")
+- {FRASE_SEO_SCELTA}: la frase scelta dalla lista sopra — copiala ESATTAMENTE
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
 - hasSizeVariants = ${hasSizeVariantsRegen}
 - {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingleRegen} cm"
