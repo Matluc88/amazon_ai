@@ -256,14 +256,14 @@ async function getCerebroPromptSection(clusterId) {
   }
 
   lines.push(`⚠️ REGOLE D'USO DELLE KEYWORD CEREBRO:`);
-  lines.push(`1. PERTINENZA PRIMA DI TUTTO: Usa solo keyword realmente coerenti con il soggetto, lo stile, il formato e l'ambiente d'uso dell'opera specifica.`);
-  lines.push(`2. NATURALEZZA: Integra le keyword in modo naturale e leggibile. Il titolo deve sembrare scritto per un cliente reale, non per un motore di ricerca.`);
-  lines.push(`3. ZERO STUFFING: Non forzare keyword nei bullet o nella descrizione. Se una keyword non entra bene, non usarla lì.`);
-  lines.push(`4. NO RIPETIZIONI INUTILI: Evita di ripetere la stessa keyword identica in più campi, salvo casi in cui la ripetizione sia davvero utile e naturale.`);
-  lines.push(`5. PRIORITÀ DEI TIER: Prova prima a usare le keyword del titolo nel titolo, quelle bullet nei bullet, e quelle backend nel backend. Se non pertinenti, saltale.`);
-  lines.push(`6. BACKEND = COMPLETAMENTO: Le chiavi backend servono per keyword pertinenti che non entrano in modo naturale in titolo e bullet.`);
-  lines.push(`7. NON USARE KEYWORD FUORI SOGGETTO: Ignora keyword approvate ma non coerenti con il prodotto specifico, anche se hanno volume alto.`);
-  lines.push(`8. NO CLAIM FALSI: Non inserire keyword che implicano elementi non presenti nell'opera (es. mare, fiori, astratto, camera da letto, oro, blu, trittico) se non sono realmente pertinenti.`);
+  lines.push(`IMPORTANTE: Queste keyword provengono da Helium 10 Cerebro — sono le keyword REALI con cui i clienti cercano quadri e stampe su Amazon.it nella nicchia wall art. Sono keyword DI CATEGORIA (valgono per tutti i quadri), NON solo per soggetti specifici.`);
+  lines.push(``);
+  lines.push(`1. USO OBBLIGATORIO NEL BACKEND: Le keyword tier BACKEND devono essere TUTTE incluse nelle Chiavi di ricerca (search terms backend). Queste keyword sono già validate con volumi reali — inseriscile anche se sembrano generiche (es. "quadri moderni soggiorno", "stampa su tela", "quadri camera da letto"). Sono esattamente come i clienti cercano qualsiasi quadro su Amazon.`);
+  lines.push(`2. TITOLO: Incorpora almeno 1-2 keyword Cerebro tier TITLE nel titolo in modo naturale (es. "Quadro Moderno per Soggiorno" integra "quadro moderno soggiorno"). La struttura template è flessibile — adattala per includere queste keyword ad altissimo volume.`);
+  lines.push(`3. BULLET POINTS: Integra le keyword Cerebro tier BULLET nei punti elenco dove è naturale (es. "ideale come quadri soggiorno, quadri cucina o decorazione camera da letto").`);
+  lines.push(`4. NO KEYWORD SPECIFICHE FUORI SOGGETTO: L'unica eccezione sono keyword che implicano un soggetto NON presente nell'opera (es. "albero della vita" per un ritratto, "quadro mare" per un'opera urbana). Queste sì, evitale.`);
+  lines.push(`5. NATURALEZZA: Integra le keyword in modo leggibile. Il testo deve sembrare scritto per un cliente reale.`);
+  lines.push(`6. BACKEND NON HA LIMITI DI DUPLICATI CON CEREBRO: La regola "zero duplicati" del backend NON si applica alle keyword Cerebro — queste DEVONO essere inserite anche se alcune parole simili compaiono nel titolo.`);
 
   return lines.join('\n');
 }

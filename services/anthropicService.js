@@ -248,34 +248,41 @@ ${formatoSection}
 Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. SOLO ITALIANO — zero parole in inglese o altra lingua.
 ⚠️ TARGET LUNGHEZZA OBBLIGATORIO: genera ESATTAMENTE 1100–1200 byte UTF-8. Questo corrisponde a circa 160–190 parole italiane. Se non raggiungi 1100 byte il campo NON è compilato correttamente.
 
-⚠️ REGOLA FONDAMENTALE — ZERO DUPLICATI:
-Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già presenti nel titolo o nei bullet è uno spreco di byte e NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole che NON compaiono già nel Nome dell'articolo e nei Punti elenco.
+⚠️ REGOLA CEREBRO OBBLIGATORIA — INIZIA DA QUI:
+Se sono presenti keyword Cerebro nel prompt (sezione "KEYWORD REALI DA HELIUM 10 CEREBRO"), le keyword del tier BACKEND e BULLET devono essere TUTTE incluse nelle chiavi di ricerca. Queste keyword hanno volumi di ricerca reali validati — DEVONO comparire nel backend. Esempio obbligatorio: se ci sono "quadri moderni soggiorno", "quadri camera da letto", "stampa su tela", "quadretti da parete" tra le keyword Cerebro, inseriscile TUTTE. Sono come i clienti cercano qualsiasi quadro su Amazon, non sono duplicati inutili.
 
-STRUTTURA A 5 AREE COMPLEMENTARI — OGNUNA DEVE ESSERE AMPIA E DETTAGLIATA (tutte parole NUOVE, non già nel titolo/bullet):
+⚠️ REGOLA DUPLICATI (applicazione limitata):
+La regola "zero duplicati" si applica SOLO a parole inventate generiche, NON alle keyword Cerebro. Le keyword Cerebro devono essere inserite nel backend ANCHE SE parole simili compaiono nel titolo.
 
-AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO (almeno 25 termini diversi):
+STRUTTURA A 5 AREE COMPLEMENTARI — OGNUNA DEVE ESSERE AMPIA E DETTAGLIATA:
+
+AREA 0 — KEYWORD CEREBRO (OBBLIGATORIA — inserisci TUTTE le keyword Cerebro tier BACKEND e BULLET):
+Copia qui TUTTE le keyword Cerebro del tier backend e bullet ricevute nel prompt. Non saltarne nessuna.
+Esempio: quadri moderni soggiorno quadro moderno soggiorno quadri camera da letto stampa su tela quadretti da parete decorazione da parete decorazioni camera da letto...
+
+AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO (almeno 20 termini diversi):
 Tutti i modi in cui i clienti italiani cercano stampe/quadri su Amazon.it. Sii esaustivo.
-es. poster quadro pittura dipinto illustrazione arte tela arredamento decorazione casa parete muro cornice regalo anniversario
+es. poster pittura dipinto illustrazione arte tela arredamento decorazione casa parete muro cornice regalo anniversario
 
-AREA 2 — SOGGETTO SPECIFICO (almeno 30 parole — varianti, sinonimi, dettagli visivi dell'opera):
+AREA 2 — SOGGETTO SPECIFICO (almeno 25 parole — varianti, sinonimi, dettagli visivi dell'opera):
 Tutte le varianti possibili del soggetto, personaggi, azioni, elementi visivi dell'opera.
 es. se c'è un circo → circo artisti giocolieri clown pagliaccio tendone acrobati funamboli saltimbanchi spettacolo festival divertimento
 
-AREA 3 — STILE E TECNICA ARTISTICA (almeno 20 parole diverse):
+AREA 3 — STILE E TECNICA ARTISTICA (almeno 15 parole diverse):
 Tutte le correnti artistiche, tecniche, aggettivi stilistici non già nel titolo.
 es. figurativo astratto contemporaneo moderno naif pop realistico impressionista espressionista surrealista cubista pittura italiana vivaci
 
-AREA 4 — AMBIENTI E CONTESTI D'USO (almeno 30 parole — tutti gli ambienti non nei bullet):
-Ogni possibile stanza, ambiente, luogo dove l'opera può essere appesa.
-es. ingresso corridoio scala anticamera cucina bagno terrazzo balcone mansarda hotel ristorante bar ufficio medico ambulatorio reception albergo cantina
+AREA 4 — AMBIENTI E CONTESTI D'USO (almeno 20 parole — tutti gli ambienti non già nelle keyword Cerebro):
+Ogni possibile stanza, ambiente, luogo dove l'opera può essere appesa, non già coperto dalle keyword Cerebro.
+es. ingresso corridoio scala anticamera bagno terrazzo balcone mansarda hotel ristorante bar ufficio medico ambulatorio reception albergo cantina
 
-AREA 5 — OCCASIONI REGALO E LONG-TAIL (almeno 40 parole — frasi di ricerca con intento d'acquisto):
+AREA 5 — OCCASIONI REGALO E LONG-TAIL (almeno 30 parole — frasi di ricerca con intento d'acquisto):
 Tutte le occasioni regalo e frasi di acquisto specifiche.
 es. regalo laurea regalo festa mamma regalo compleanno fidanzata regalo nozze anniversario matrimonio inaugurazione casa regalo natale capodanno pasqua san valentino festa papa regalo amica regalo coppia pensionamento
 
 REGOLE CRITICHE:
 - SOLO ITALIANO — ZERO parole in inglese (non wall art, non canvas, non art, non gift, non home decor)
-- NON includere: parole già nel titolo, parole già nei 5 bullet, il brand "sivigliart"
+- NON includere: il brand "sivigliart"
 - NON includere: parole inutili come emozione, tenerezza, sentimento, poetico, evocativo
 - Se ti mancano byte, aggiungi sinonimi, varianti di misura (centimetri grande piccolo medio), varianti tipologiche
 - VERIFICA FINALE: conta le parole — devono essere almeno 150. Se hai meno di 150 parole aggiungi sinonimi finché raggiungi il target.
