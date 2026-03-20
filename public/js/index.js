@@ -108,6 +108,17 @@ function updateStats(products) {
       downloadAllBtn.style.display = 'none';
     }
   }
+
+  // Mostra "Scarica XLSM Francia" se ci sono prodotti con listing compilato
+  const downloadAllFRBtn = document.getElementById('downloadAllFRBtn');
+  if (downloadAllFRBtn) {
+    if (conListing > 0) {
+      downloadAllFRBtn.style.display = 'inline-flex';
+      downloadAllFRBtn.textContent = `🇫🇷 Scarica XLSM Francia (${conListing})`;
+    } else {
+      downloadAllFRBtn.style.display = 'none';
+    }
+  }
 }
 
 function renderProducts(products) {
@@ -346,6 +357,95 @@ async function downloadSelectedForAmazon() {
     showToast(`❌ Download fallito: ${err.message}`, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '📥 Esporta selezionati'; }
+  }
+}
+
+// =============================================
+// DOWNLOAD XLSM FR — SOLO SELEZIONATI
+// =============================================
+async function downloadSelectedForAmazonFR() {
+  const ids = Array.from(selectedProductIds);
+  if (ids.length === 0) {
+    showToast('Seleziona almeno un prodotto prima di esportare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('exportSelectedFRBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/fr/selected', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: ids })
+    });
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export FR';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_FR_SELECTED.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || ids.length;
+    showToast(`🇫🇷 File Francia scaricato con ${count} prodotti selezionati!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download FR fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇫🇷 Esporta FR selezionati'; }
+  }
+}
+
+// =============================================
+// DOWNLOAD XLSM FR (tutti i prodotti)
+// =============================================
+async function downloadAllForAmazonFR() {
+  const btn = document.getElementById('downloadAllFRBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/fr/all');
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export FR';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_FR_ALL.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || '?';
+    showToast(`🇫🇷 File Francia scaricato con ${count} prodotti. Carica su Amazon.fr!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download FR fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇫🇷 Scarica XLSM Francia'; }
   }
 }
 
