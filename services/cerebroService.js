@@ -269,6 +269,79 @@ async function getCerebroPromptSection(clusterId) {
 }
 
 /**
+ * Recupera le keyword approvate di un cluster FR, divise per tier,
+ * e le formatta come sezione pronta per l'injection nel prompt Claude (versione francese).
+ *
+ * @param {number|null} clusterId - ID cluster Cerebro FR (null = no keyword Cerebro)
+ * @returns {string} Sezione del prompt con le keyword Cerebro (stringa vuota se nessun cluster)
+ */
+async function getCerebroPromptSectionFR(clusterId) {
+  if (!clusterId) return '';
+
+  const res = await query(`
+    SELECT
+      k.keyword, k.search_volume, k.cerebro_iq, k.title_density, k.tier,
+      c.name AS cluster_name
+    FROM cerebro_keywords k
+    JOIN cerebro_clusters c ON c.id = k.cluster_id
+    WHERE k.cluster_id = $1 AND k.status = 'approved'
+    ORDER BY k.search_volume DESC NULLS LAST
+    LIMIT 120
+  `, [clusterId]);
+
+  if (res.rows.length === 0) return '';
+
+  const clusterName = res.rows[0].cluster_name;
+  const titleKws   = res.rows.filter(r => r.tier === 'title');
+  const bulletKws  = res.rows.filter(r => r.tier === 'bullet');
+  const backendKws = res.rows.filter(r => r.tier === 'backend');
+
+  const fmtKw = r => {
+    const vol  = r.search_volume ? ` (vol: ${r.search_volume.toLocaleString('fr-FR')})` : '';
+    const iq   = r.cerebro_iq    ? `, IQ: ${r.cerebro_iq}` : '';
+    const dens = r.title_density !== null && r.title_density !== undefined
+      ? `, density: ${r.title_density}/5` : '';
+    return `- "${r.keyword}"${vol}${iq}${dens}`;
+  };
+
+  const lines = [
+    `MOTS-CLÉS RÉELS DE HELIUM 10 CEREBRO — MARCHÉ FRANÇAIS amazon.fr (cluster: "${clusterName}"):`,
+    `Ces mots-clés proviennent d'une analyse concurrentielle réelle des top vendeurs Amazon.fr dans la niche tableaux/impressions sur toile.`,
+    ``,
+  ];
+
+  if (titleKws.length > 0) {
+    lines.push(`🥇 MOTS-CLÉS POUR LE TITRE (priorité haute — volume élevé, title density haute):`);
+    titleKws.slice(0, 5).forEach(r => lines.push(fmtKw(r)));
+    lines.push('');
+  }
+
+  if (bulletKws.length > 0) {
+    lines.push(`🥈 MOTS-CLÉS POUR LES PUCES (priorité moyenne):`);
+    bulletKws.slice(0, 10).forEach(r => lines.push(fmtKw(r)));
+    lines.push('');
+  }
+
+  if (backendKws.length > 0) {
+    lines.push(`🧠 MOTS-CLÉS POUR LES TERMES DE RECHERCHE BACKEND (priorité de complétion):`);
+    backendKws.slice(0, 30).forEach(r => lines.push(fmtKw(r)));
+    lines.push('');
+  }
+
+  lines.push(`⚠️ RÈGLES D'UTILISATION DES MOTS-CLÉS CEREBRO (Amazon.fr):`);
+  lines.push(`IMPORTANT: Ces mots-clés proviennent de Helium 10 Cerebro — ce sont les mots-clés RÉELS avec lesquels les clients cherchent des tableaux et impressions sur amazon.fr. Ce sont des mots-clés DE CATÉGORIE (valables pour tous les tableaux), PAS seulement pour des sujets spécifiques.`);
+  lines.push(``);
+  lines.push(`1. UTILISATION OBLIGATOIRE EN BACKEND: Les mots-clés tier BACKEND doivent TOUS être inclus dans les termes de recherche. Volumes validés — insère-les même s'ils semblent génériques (ex. "tableau decoration murale", "impression sur toile", "decoration chambre"). C'est exactement comment les clients cherchent n'importe quel tableau sur Amazon.fr.`);
+  lines.push(`2. TITRE: Incorpore au moins 1-2 mots-clés Cerebro tier TITLE dans le titre de façon naturelle.`);
+  lines.push(`3. PUCES: Intègre les mots-clés Cerebro tier BULLET dans les puces où c'est naturel.`);
+  lines.push(`4. PAS DE MOTS-CLÉS HORS SUJET: La seule exception concerne les mots-clés qui impliquent un sujet NON présent dans l'œuvre.`);
+  lines.push(`5. NATUREL: Intègre les mots-clés de façon lisible. Le texte doit sembler écrit pour un vrai client.`);
+  lines.push(`6. BACKEND SANS DOUBLONS STRICTS: La règle "zéro doublons" du backend NE s'applique PAS aux mots-clés Cerebro — ils DOIVENT être insérés même si des mots similaires apparaissent dans le titre.`);
+
+  return lines.join('\n');
+}
+
+/**
  * Recupera le keyword AI generate in cache per un prodotto (per arricchirle con Cerebro).
  * Usata internamente dalla route keywords.
  */
@@ -287,5 +360,6 @@ module.exports = {
   parseCerebroCSV,
   importKeywordsToCluster,
   getCerebroPromptSection,
+  getCerebroPromptSectionFR,
   getCachedAIKeywords,
 };

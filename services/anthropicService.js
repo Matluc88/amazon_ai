@@ -156,86 +156,101 @@ ISTRUZIONI:
 - ⚠️ REGOLA CRITICA — AMAZON POLICY: VIETATO TASSATIVO in qualsiasi campo generato: "contenuti per adulti", "per adulti", "adult", "erotico", "sensuale", "intimo", "sexy", "piccante" o qualsiasi termine che Amazon potrebbe classificare come adult content. Opere con soggetti romantici (baci, coppie, abbracci, figure nude artistiche): usa ESCLUSIVAMENTE termini come "romantico", "coppia", "amore", "sentimentale", "passione artistica", "arte figurativa". Violare questa regola causa la sospensione del listing su Amazon.
 
 ### NOME DELL'ARTICOLO (Amazon - Titolo):
-Obiettivo: titolo CTR-first + SEO, leggibile su mobile, italiano naturale senza keyword stuffing.
-Range TARGET: 150–180 caratteri. MAI oltre 200. Mira ai 160–170.
+Obiettivo: keyword-first, leggibile, conversione immediata. ZERO frasi artistiche, ZERO filler.
+Range TARGET: 80–110 caratteri. Ideale: 85–105. MAI oltre 200.
 
-⚠️ REGOLA CRITICA — PRIMA PAROLA: Il titolo DEVE INIZIARE SEMPRE con "Quadro".
-VIETATO ASSOLUTO: iniziare con "Stampa", "Arte", "Sivigliart" o qualsiasi altra parola diversa da "Quadro".
+⚠️ CHECKLIST OBBLIGATORIA — ogni titolo DEVE rispettare TUTTI questi punti:
+✔ "Stampa su Tela" o "Stampa Tela" SEMPRE presente (keyword ad alto volume)
+✔ Un termine TIPO scelto tra quelli sotto — VARIA tra prodotti diversi
+✔ Una STANZA scelta tra quelle sotto — VARIA tra prodotti diversi
+✔ Soggetto breve (2-4 parole) e specifico dell'opera
+✔ 80–110 caratteri (ideale 85–105)
+✔ Leggibile da un cliente reale
+✗ ZERO "dai Colori X e Y" — vietato
+✗ ZERO frasi artistiche/evocative
+✗ ZERO brand, autore, "Sivigliart" nel titolo
 
-Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo).
-⚠️ I TIPI sono basati su volumi reali Cerebro Amazon.it — usa SOLO questi:
+TIPI DISPONIBILI — logica precisa (NON scegliere a caso):
+- "Quadro Moderno" → DEFAULT per la maggior parte delle opere: figurative, narrative, ritratti, animali, religiosi, scene di vita, simboliche. USA QUESTO SE IN DUBBIO.
+- "Quadro Romantico" → SOLO se il soggetto è ESPLICITAMENTE una coppia, scena d'amore, bacio, abbraccio sentimentale. Non usare per figure singole o scene generiche.
+- "Quadro Astratto" → SOLO se l'opera è davvero astratta: geometrie, forme non figurative, colori senza soggetto riconoscibile. NON usare per opere narrative o figurative "moderne".
+- "Quadro Mare" → SOLO per paesaggi marini, barche, oceano, spiagge, costiero.
+- "Quadro Paesaggio" → SOLO per paesaggi terrestri NON marini: campagna, montagna, boschi, città.
+- "Quadro su Tela" → variante neutra quando nessun altro tipo calza perfettamente.
+- "Stampa su Tela Moderna" → usa se il titolo inizia con "Stampa" (struttura B).
 
-- "Quadro Moderno" → opere moderne generiche, figurative, ritratti, soggetti contemporanei (vol: 2.067)
-- "Quadro Mare" → paesaggi marini, costieri, oceano, barche, spiagge, porti (vol: 947)
-- "Quadro Astratto" → opere astratte, geometriche, non figurative, minimal (vol: 723)
-- "Quadro Paesaggio" → paesaggi NON marini: campagna, montagna, boschi, città, fiumi (vol: 102)
-- "Quadro Amore" → scene d'amore, coppie, baci, abbracci, sentimenti romantici (vol: 100)
-- "Quadro Pop Art" → stile pop, street art, colori saturi e netti, warhol-style (vol: 58)
-- "Quadro Romantico" → scene sentimentali, coppie in contesti romantici (alternativa a Amore) (vol: 54)
-- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche (vol: 23)
-- ⚠️ TIPI ELIMINATI (volume 0 su Amazon.it — NON usarli): "Quadro Sacro", "Quadro Animali", "Quadro Naif", "Quadro Contemporaneo", "Quadro Figurativo Moderno", "Quadro Astratto Moderno"
-  → Per soggetti religiosi (Madonna, Santi, ecc.): usa "Quadro Moderno" o direttamente "Quadro" + soggetto (es. "Quadro Madonna con Bambino in Gloria")
-  → Per animali: usa "Quadro Moderno" + soggetto animale (es. "Quadro Moderno Leone in Savana al Tramonto")
-  → Per stile naif: usa "Quadro Moderno" + soggetto
+⚠️ REGOLA CRITICA TIPI: "Quadro Moderno" è il tipo default sicuro. Usa gli altri solo quando il soggetto è INEQUIVOCABILMENTE quello specifico. In caso di dubbio → "Quadro Moderno".
 
-⚠️ KEYWORD SEO — scegli la frase più coerente con il tipo dell'opera identificato sopra:
+STANZE DISPONIBILI — logica coerente con il soggetto:
+- "Soggiorno" → DEFAULT per la maggior parte. Sempre appropriato.
+- "Camera da Letto" → SOLO per soggetti romantici (coppie), floreali intimi, sensuali-artistici.
+- "Ufficio" → per paesaggi ispiranti, soggetti lavorativi/aziendali, astratti dinamici.
+- "Studio" → alternativa a Ufficio per soggetti artistici/culturali.
+⚠️ NON forzare "Camera da Letto" o "Ufficio" su soggetti dove stona (es. scene circensi, narrative popolari → Soggiorno).
 
-FRASI SEO DISPONIBILI — validate su Cerebro IT (inseriscine UNA, copiandola ESATTAMENTE):
-- "Quadri Moderni Soggiorno e Camera da Letto"  → per: Quadro Moderno, Quadro Mare, Quadro Famiglia (vol ~51K)
-- "Quadri Camera da Letto e Soggiorno"          → per: Quadro Amore, Quadro Romantico (vol ~11K)
-- "Quadri Moderni Soggiorno Grandi"             → per: Quadro Astratto, Quadro Moderno (alternativa per grandi formati) (vol ~934)
-- "Decorazioni Parete Soggiorno e Salotto"      → per: Quadro Paesaggio, Quadro Pop Art, Quadro + soggetto diretto (vol ~960)
-- "Quadri Salotto e Camera da Letto"            → per: Quadro Paesaggio (alt), Quadro Pop Art (alt), Quadro + soggetto (vol ~316)
-- "Decorazioni Parete Camera da Letto"          → per: Quadro Amore (alt), soggetti senza tipo con volume (religioso, animali, naif) (vol ~6.5K)
+STRUTTURA BASE (scegli la più naturale per l'opera):
+A) "{Tipo} {Stanza} {Soggetto 2-4 parole} – Stampa su Tela {keyword secondaria}"
+B) "Stampa su Tela {Soggetto 2-4 parole} – {Tipo} {Stanza} {keyword secondaria}"
 
-Scegli la frase più adatta al tipo dell'opera che hai identificato sopra. Copiala ESATTAMENTE, senza modifiche.
+KEYWORD SECONDARIE — VARIA lungo il catalogo (non sempre la stessa):
+- "Decorazione Parete" → uso frequente, ma non su TUTTI i prodotti
+- "Arredamento Moderno" → alternativa valida per soggetti contemporanei
+- "Quadro su Tela" → quando il tipo scelto non è già "su Tela"
+- "Pronto da Appendere" → per prodotti con dimensione singola
+- "Quadro Grande" → per soggetti monumentali o misure grandi
+⚠️ Non ripetere sempre la stessa keyword secondaria. Distribuisci.
 
-STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Quadro {tipo_scelto} {soggetto 2-5 parole}, {FRASE_SEO_SCELTA}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
+hasSizeVariants = ${hasSizeVariants}
+⚠️ Se hasSizeVariants = FALSE, aggiungi ", ${dimensioneSingle} cm" alla fine del titolo.
 
-Dove:
-- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra (o ometti il tipo e usa solo soggetto diretto se il tipo non ha volume)
-- {soggetto}: 2–5 parole specifiche e descrittive dell'opera
-- {FRASE_SEO_SCELTA}: la frase scelta dalla lista sopra — copiala ESATTAMENTE
-- {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
-- hasSizeVariants = ${hasSizeVariants}
-- {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
-
-⚠️ LUNGHEZZA: con questa struttura il titolo tende ad essere ~120-140 car. Aggiungi dettagli al soggetto per raggiungere 150-170 car. (es. "Coppia al Molo con Sassofono" invece di "Coppia al Molo").
+⚠️ REGOLA ANTI-DUPLICAZIONE: Varia tipo/stanza/keyword secondaria tra prodotti diversi. Amazon penalizza listing simili. NON usare sempre la stessa combinazione.
 
 VIETATO TASSATIVO:
-- Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
-- Autore, artista o "Arte di [Autore]" nel titolo — il nome dell'autore NON va mai nel titolo
-- Brand "Sivigliart" ovunque nel titolo
-- ⚠️ Se nel testo dell'opera compare autore o brand, IGNORALI completamente nel titolo
-- Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
+- "dai Colori X e Y" → sostituito da keyword reale
+- Autore, "Arte di", brand "Sivigliart" nel titolo
+- Frasi SEO lunghe tipo "Quadri Moderni Soggiorno e Camera da Letto" nel titolo → vanno nel backend
+- MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
-ESEMPI CORRETTI con nuova struttura Cerebro-validated:
-- "Quadro Moderno Madonna con Bambino in Gloria tra Angeli, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (154 car.)
-- "Quadro Mare Tramonto sul Golfo con Barche e Riflessi, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Arancio e Blu, Pronto da Appendere" (153 car.)
-- "Quadro Amore Coppia in Abbraccio sotto la Luna Piena, Quadri Camera da Letto e Soggiorno, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
-- "Quadro Paesaggio Campagna Toscana con Cipressi al Tramonto, Decorazioni Parete Soggiorno e Salotto, dai Colori Verde e Oro, Pronto da Appendere" (149 car.)
-- "Quadro Pop Art Ritratto Femminile con Colori Saturi, Decorazioni Parete Soggiorno e Salotto, dai Colori Giallo e Rosso, Pronto da Appendere" (144 car.)
+ESEMPI CORRETTI (keyword-first, leggibili, 80-110 car.):
+- "Quadro Moderno Soggiorno Circo Cavalli Blu – Stampa su Tela Decorazione Parete" (78 car.)
+- "Quadro Astratto Soggiorno Colorato Geometrico – Stampa su Tela Arredamento Moderno" (82 car.)  ← Astratto SOLO se davvero astratto
+- "Quadro Romantico Camera da Letto Coppia Bacio Tramonto – Stampa su Tela Decorazione Parete" (90 car.)  ← Romantico SOLO per coppie
+- "Quadro Moderno Soggiorno Mare Tramonto Barche – Stampa su Tela Quadro su Tela" (74 car.)
+- "Quadro Moderno Ufficio Paesaggio Toscana Verde – Stampa su Tela Arredamento Moderno" (83 car.)
+- "Quadro Mare Soggiorno Tramonto Barca Vela – Stampa su Tela Decorazione Parete" (75 car.)
+
+ESEMPI SBAGLIATI (da NON imitare):
+- Usare "Quadro Astratto" per opere figurative/narrative ← tipo sbagliato
+- Usare "Camera da Letto" per soggetti circensi, storici, lavorativi ← stanza che stona
+- "dai Colori Oro e Avorio, Pronto da Appendere" ← vietato, troppo descrittivo
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
 ### DESCRIZIONE DEL PRODOTTO (200-2000 caratteri):
-⚠️ FORMATO TESTO PURO: il campo accetta SOLO testo normale — VIETATO TASSATIVO qualsiasi tag HTML (<b>, <br>, <p>, <div> o qualsiasi altro). Amazon mostrerebbe i tag come testo letterale ai clienti.
+⚠️ FORMATO TESTO PURO: VIETATO qualsiasi tag HTML (<b>, <br>, <p>, ecc.). Amazon mostrerebbe i tag come testo letterale.
+Frasi corte. Leggibilità mobile. NO blocchi di testo lunghi (max 4 righe per parte).
 
-Struttura in 4 sezioni ben distinte, separate da " — " (spazio-trattino-spazio):
+STRUTTURA IN 3 PARTI, separate da " — " (spazio-trattino-spazio):
 
-SEZIONE 1 — INTRO OPERA: La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON modificarlo): "Quadro che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinto dall'artista"). Continua con una prima impressione evocativa dell'opera.
+PARTE 1 — INTRO SEO (2-3 frasi brevi — inizia dal prodotto, non dall'arte):
+La PRIMA FRASE deve essere SEMPRE: "Stampa su tela canvas dell'opera originale di ${autore}, pronta da appendere con telaio in legno incluso."
+Continua con 1-2 frasi brevi che descrivono soggetto e uso. Aggancia il cliente con benefici concreti.
+es. "Una decorazione moderna per soggiorno, camera da letto o ufficio. Colori vivaci e stampa ad alta risoluzione."
 
-SEZIONE 2 — STILE, COLORI ED EMOZIONI: Descrivi lo stile artistico, i colori predominanti e le emozioni che l'opera trasmette. Usa aggettivi vividi e specifici per evidenziare i colori chiave (es. "i toni caldi dell'oro e del bordeaux dominano la composizione").
+PARTE 2 — DESCRIZIONE OPERA (3-5 frasi brevi — evocativa ma sintetica):
+Racconta l'opera. Soggetto, colori, atmosfera. Frasi max 15-20 parole. NO blocchi lunghi.
+es. "Una scena vivace e colorata. I cavalli danzano sotto le luci del circo. Colori caldi e pennellate decise creano un'atmosfera unica."
 
-SEZIONE 3 — CONTESTI D'USO: Suggerisci i contesti abitativi ideali, il tipo di arredamento che si abbina e il destinatario ideale (es. "ideale per il soggiorno moderno o la camera da letto").
+PARTE 3 — USO E CONTESTI (2-3 frasi brevi — per chi, dove):
+Dove va questo quadro? Per chi è ideale? Chiudi con CTA o misure.
+es. "Ideale per soggiorno moderno, studio o camera da letto. Perfetto come regalo originale per chi ama l'arte."
+⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI nel prompt), aggiungi: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm."
 
-SEZIONE 4 — MISURE + CTA: ⚠️ Se il prodotto ha varianti di taglia (sezione VARIANTI DISPONIBILI presente nel prompt), DEVI iniziare questa sezione con la frase esatta: "Disponibile nelle misure: [misura_mini], [misura_media], [misura_max] cm." — usa i valori reali delle varianti. Chiudi con una frase che invita all'acquisto.
-
-REGOLE TECNICHE OBBLIGATORIE:
-- VIETATO: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto
-- VIETATO nel corpo: "dipinto da ${autore}", "quadro di ${autore}", "opera di ${autore}" — usa SEMPRE "quadro che riproduce l'opera originale di ${autore}"
-- Testo fluente e leggibile, senza simboli speciali o punteggiatura eccessiva
+REGOLE TECNICHE:
+- VIETATO: "dipinto", "tela dipinta", "quadro dipinto"
+- VIETATO: "dipinto da ${autore}", "opera di ${autore}" — usa "opera originale di ${autore}"
+- Ogni frase max 20 parole — no blocchi lunghi
+- Nessun paragone o metafora artistica elaborata
 
 ### CHIAVI DI RICERCA (campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali):
 ${formatoSection}
@@ -250,9 +265,11 @@ La regola "zero duplicati" si applica SOLO a parole inventate generiche, NON all
 
 STRUTTURA A 5 AREE COMPLEMENTARI — OGNUNA DEVE ESSERE AMPIA E DETTAGLIATA:
 
-AREA 0 — KEYWORD CEREBRO (OBBLIGATORIA — inserisci TUTTE le keyword Cerebro tier BACKEND e BULLET):
-Copia qui TUTTE le keyword Cerebro del tier backend e bullet ricevute nel prompt. Non saltarne nessuna.
-Esempio: quadri moderni soggiorno quadro moderno soggiorno quadri camera da letto stampa su tela quadretti da parete decorazione da parete decorazioni camera da letto...
+AREA 0 — KEYWORD UNIVERSALI OBBLIGATORIE (inserisci SEMPRE — validate su Cerebro Amazon.it 2026):
+Queste keyword DEVONO comparire in QUALSIASI chiave di ricerca, per tutti i quadri, indipendentemente dal soggetto:
+decorazioni casa arredamento casa regalo casa nuova arredamento soggiorno quadri grandi decorazioni per la casa quadri per soggiorno
+Se sono presenti keyword Cerebro nel prompt (sezione "KEYWORD REALI DA HELIUM 10 CEREBRO"), aggiungi ANCHE le keyword del tier BACKEND e BULLET ricevute nel prompt. Non saltarne nessuna.
+Esempio aggiuntivo: quadri moderni soggiorno quadro moderno soggiorno quadri camera da letto stampa su tela quadretti da parete decorazione da parete decorazioni camera da letto quadro grande soggiorno quadro moderno grande stampa tela grande...
 
 AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO (almeno 20 termini diversi):
 Tutti i modi in cui i clienti italiani cercano stampe/quadri su Amazon.it. Sii esaustivo.
@@ -281,21 +298,33 @@ REGOLE CRITICHE:
 - Se ti mancano byte, aggiungi sinonimi, varianti di misura (centimetri grande piccolo medio), varianti tipologiche
 - VERIFICA FINALE: conta le parole — devono essere almeno 150. Se hai meno di 150 parole aggiungi sinonimi finché raggiungi il target.
 
-### PUNTI ELENCO (Amazon li indicizza tutti — usa keyword secondarie qui):
-⚠️ REGOLA TECNICA per TUTTI i bullet: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano.
-VIETATO in qualsiasi bullet: "dipinto", "tela dipinta", "quadro dipinto" come attributo del prodotto.
-Max 220 caratteri per bullet (leggibilità mobile). NON fare keyword stuffing.
+### PUNTI ELENCO (5 bullet — ibrido SEO + conversione):
+⚠️ REGOLA TECNICA: questo prodotto è una STAMPA SU TELA — NON un dipinto a mano. VIETATO: "dipinto", "tela dipinta", "quadro dipinto".
+Max 220 caratteri per bullet. "Stampa su Tela" deve comparire in almeno 2 bullet. Frasi naturali, niente keyword stuffing.
 
-Segui ESATTAMENTE questo schema a 5 punti ottimizzati per conversione:
+SCHEMA A 5 PUNTI:
 
-- Punto elenco 1 — MATERIALE: usa QUESTA formulazione ESATTA (il nome è già inserito — NON cambiarlo con il titolo dell'opera):
-  "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista ${autore}, montata su telaio in legno e pronta da appendere."
-  ("${autore}" è il NOME DELL'ARTISTA — non confonderlo con il titolo dell'opera)
-- ⚠️ La formulazione "Riproduzione su tela dell'opera originale dell'artista ${autore}" deve comparire SOLO nel Punto elenco 1 — NON nei bullet 2-5
-- Punto elenco 2 — STILE/ARTE: inizia con "ARTE [STILE] –" e descrivi l'opera, i colori dominanti, l'impatto visivo
-- Punto elenco 3 — AMBIENTI: inizia con "DECORAZIONE PARETE –" e indica i contesti ideali (soggiorno, camera da letto, ufficio, studio, corridoio...)
-- Punto elenco 4 — INSTALLAZIONE: inizia con "PRONTO DA APPENDERE –" e descrivi telaio in legno, ganci inclusi, misure disponibili. ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.
-- Punto elenco 5 — REGALO/GARANZIA: inizia con "IDEA REGALO –" menziona occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo; chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."
+- Punto elenco 1 — PRODOTTO + AMBIENTE (SEO + prodotto):
+  Struttura: "Quadro moderno per {stanza 1} e {stanza 2}, ideale come decorazione parete in ambienti {aggettivo}. Con telaio in legno incluso, senza cornice, pronto da appendere."
+  es. "Quadro moderno per soggiorno e camera da letto, ideale come decorazione parete in ambienti contemporanei. Con telaio in legno incluso, senza cornice, pronto da appendere."
+
+- Punto elenco 2 — MATERIALE + QUALITÀ (SEO + benefici):
+  Struttura: "Stampa su tela canvas con {qualità colori/dettagli}, perfetta per {uso/arredamento}. Riproduzione ad alta risoluzione dell'opera originale di ${autore}."
+  es. "Stampa su tela canvas con colori intensi e dettagli definiti, perfetta per arredamento moderno. Riproduzione ad alta risoluzione dell'opera originale di ${autore}."
+  ⚠️ Il riferimento a ${autore} va SOLO qui — NON ripetere nei bullet 3-5.
+
+- Punto elenco 3 — INSTALLAZIONE (benefici pratici):
+  Struttura: "Quadro su tela pronto da appendere con telaio in legno resistente e fissativo laccato. Ganci inclusi, montaggio semplice in pochi minuti."
+  ⚠️ Scrivi SEMPRE "fissativo laccato" — VIETATO "fissativo lucido", "lucidato" o alternative.
+
+- Punto elenco 4 — REGALO + CONTESTI (conversione):
+  Struttura: "Perfetto come idea regalo per casa nuova, {contesto 1}, {contesto 2} o {contesto 3}. Adatto a qualsiasi stile d'arredo."
+  es. "Perfetto come idea regalo per casa nuova, ufficio, studio professionale o ambiente creativo. Adatto a qualsiasi stile d'arredo."
+
+- Punto elenco 5 — DIMENSIONI + GARANZIA (chiusura acquisto):
+  Se hasSizeVariants = ${hasSizeVariants} è TRUE: "Disponibile nelle misure: ${product.misura_mini || '[dim mini]'}, ${product.misura_media || '[dim media]'}, ${product.misura_max || '[dim max]'} cm, per adattarsi a qualsiasi spazio."
+  Se hasSizeVariants = FALSE: "Disponibile in diverse dimensioni per adattarsi a qualsiasi spazio."
+  Chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."
 
 ### ALTRI CAMPI:
 - "Personaggio rappresentato": analizza il soggetto dell'opera. Se è presente una figura umana o un personaggio riconoscibile, indicalo con 1-3 parole (es. "Coppia", "Musicista", "Bambino", "Famiglia", "Donna", "Ballerina", "Trombettista"). Se l'opera è paesaggistica, astratta o non ha figure umane/personaggi, scrivi "N/D"
@@ -355,7 +384,7 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
   }
   // ─── Validazione byte Chiavi di ricerca post-generazione ────────────────
   if (result["Chiavi di ricerca"]) {
-    result["Chiavi di ricerca"] = smartTruncateChiavi(result["Chiavi di ricerca"], stableKey);
+    result["Chiavi di ricerca"] = ensureArea0AndBytes(result["Chiavi di ricerca"], stableKey);
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -399,96 +428,117 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
     : '';
 
   const guideMap = {
-    "Nome dell'articolo": `Titolo Amazon CTR-first + SEO. Range TARGET: 150–180 caratteri, MAI oltre 200.
+    "Nome dell'articolo": `Titolo Amazon keyword-first, leggibile, conversione immediata. ZERO frasi artistiche, ZERO filler.
+Range TARGET: 80–110 caratteri. Ideale: 85–105. MAI oltre 200.
 
-⚠️ REGOLA CRITICA — PRIMA PAROLA: Il titolo DEVE INIZIARE SEMPRE con "Quadro".
-VIETATO ASSOLUTO: iniziare con "Stampa", "Arte", "Sivigliart" o qualsiasi altra parola diversa da "Quadro".
+⚠️ CHECKLIST OBBLIGATORIA — ogni titolo DEVE rispettare TUTTI questi punti:
+✔ "Stampa su Tela" o "Stampa Tela" SEMPRE presente (keyword ad alto volume)
+✔ Un termine TIPO scelto tra quelli sotto — VARIA tra prodotti diversi
+✔ Una STANZA scelta tra quelle sotto — VARIA tra prodotti diversi
+✔ Soggetto breve (2-4 parole) e specifico dell'opera
+✔ 80–110 caratteri (ideale 85–105)
+✔ Leggibile da un cliente reale
+✗ ZERO "dai Colori X e Y" — vietato
+✗ ZERO frasi artistiche/evocative
+✗ ZERO brand, autore, "Sivigliart" nel titolo
 
-Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo).
-⚠️ I TIPI sono basati su volumi reali Cerebro Amazon.it — usa SOLO questi:
+TIPI DISPONIBILI (analizza l'opera e scegli — VARIA tra prodotti):
+- "Quadro Moderno" → opere figurative, ritratti, soggetti contemporanei, animali, religiosi
+- "Quadro Astratto" → opere astratte, geometriche, non figurative, minimal, colorato
+- "Quadro su Tela" → variante generica per qualsiasi soggetto
+- "Stampa su Tela Moderna" → usa quando il titolo inizia con "Stampa"
+- "Quadro Mare" → paesaggi marini, costieri, barche, spiagge, oceano
+- "Quadro Paesaggio" → campagna, montagna, boschi, città, fiumi (NON mare)
+- "Quadro Amore" / "Quadro Romantico" → coppie, baci, abbracci, scene romantiche
 
-- "Quadro Moderno" → opere moderne generiche, figurative, ritratti, soggetti contemporanei (vol: 2.067)
-- "Quadro Mare" → paesaggi marini, costieri, oceano, barche, spiagge, porti (vol: 947)
-- "Quadro Astratto" → opere astratte, geometriche, non figurative, minimal (vol: 723)
-- "Quadro Paesaggio" → paesaggi NON marini: campagna, montagna, boschi, città, fiumi (vol: 102)
-- "Quadro Amore" → scene d'amore, coppie, baci, abbracci, sentimenti romantici (vol: 100)
-- "Quadro Pop Art" → stile pop, street art, colori saturi e netti, warhol-style (vol: 58)
-- "Quadro Romantico" → scene sentimentali, coppie in contesti romantici (alternativa a Amore) (vol: 54)
-- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche (vol: 23)
-- ⚠️ TIPI ELIMINATI (volume 0 su Amazon.it — NON usarli): "Quadro Sacro", "Quadro Animali", "Quadro Naif", "Quadro Contemporaneo", "Quadro Figurativo Moderno", "Quadro Astratto Moderno"
-  → Per soggetti religiosi (Madonna, Santi, ecc.): usa "Quadro Moderno" o direttamente "Quadro" + soggetto (es. "Quadro Madonna con Bambino in Gloria")
-  → Per animali: usa "Quadro Moderno" + soggetto animale (es. "Quadro Moderno Leone in Savana al Tramonto")
-  → Per stile naif: usa "Quadro Moderno" + soggetto
+STANZE DISPONIBILI (VARIA tra prodotti — non sempre Soggiorno):
+- "Soggiorno" (priorità alta — vol più alto)
+- "Camera da Letto" (per soggetti romantici, floreali, personali)
+- "Ufficio" (per paesaggi, astratti, ispiranti)
+- "Studio" (alternativa ufficio)
 
-⚠️ KEYWORD SEO — scegli la frase più coerente con il tipo dell'opera identificato sopra:
+STRUTTURA BASE (scegli la più naturale per l'opera):
+A) "{Tipo} {Stanza} {Soggetto 2-4 parole} – Stampa su Tela {keyword secondaria}"
+B) "Stampa su Tela {Soggetto 2-4 parole} – {Tipo} {Stanza} {keyword secondaria}"
 
-FRASI SEO DISPONIBILI — validate su Cerebro IT (inseriscine UNA, copiandola ESATTAMENTE):
-- "Quadri Moderni Soggiorno e Camera da Letto"  → per: Quadro Moderno, Quadro Mare, Quadro Famiglia (vol ~51K)
-- "Quadri Camera da Letto e Soggiorno"          → per: Quadro Amore, Quadro Romantico (vol ~11K)
-- "Quadri Moderni Soggiorno Grandi"             → per: Quadro Astratto, Quadro Moderno (grandi formati) (vol ~934)
-- "Decorazioni Parete Soggiorno e Salotto"      → per: Quadro Paesaggio, Quadro Pop Art, Quadro + soggetto diretto (vol ~960)
-- "Quadri Salotto e Camera da Letto"            → per: Quadro Paesaggio (alt), Quadro Pop Art (alt) (vol ~316)
-- "Decorazioni Parete Camera da Letto"          → per: Quadro Amore (alt), soggetti religiosi/animali/naif (vol ~6.5K)
+KEYWORD SECONDARIE (scegli la più coerente — VARIA tra prodotti):
+- "Decorazione Parete" (vol ~4.1K)
+- "Arredamento Moderno"
+- "Pronto da Appendere"
+- "Decorazioni Parete"
+- "Quadro Grande"
 
-Scegli la frase più adatta al tipo dell'opera che hai identificato sopra. Copiala ESATTAMENTE, senza modifiche.
-
-STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Quadro {tipo_scelto} {soggetto 2-5 parole}, {FRASE_SEO_SCELTA}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
-
-Dove:
-- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra (o ometti il tipo per soggetti senza volume)
-- {soggetto}: 2–5 parole specifiche e descrittive dell'opera
-- {FRASE_SEO_SCELTA}: la frase scelta dalla lista sopra — copiala ESATTAMENTE
-- {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
-- hasSizeVariants = ${hasSizeVariantsRegen}
-- {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingleRegen} cm"
-
-⚠️ LUNGHEZZA: con questa struttura il titolo tende ad essere ~120-140 car. Aggiungi dettagli al soggetto per raggiungere 150-170 car.
+hasSizeVariants = ${hasSizeVariantsRegen}
+⚠️ Se hasSizeVariants = FALSE, aggiungi ", ${dimensioneSingleRegen} cm" alla fine del titolo.
 
 VIETATO TASSATIVO:
-- Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
-- Autore, "Arte di [Autore]" o nome dell'artista nel titolo
-- Brand "Sivigliart" ovunque nel titolo
-- Se nel testo compare autore o brand, IGNORALI completamente
-- Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
+- "dai Colori X e Y" → sostituito da keyword reale
+- Autore, "Arte di", brand "Sivigliart" nel titolo
+- Frasi SEO lunghe tipo "Quadri Moderni Soggiorno e Camera da Letto" nel titolo → vanno nel backend
+- MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
-ESEMPI CORRETTI con struttura Cerebro-validated:
-- "Quadro Moderno Madonna con Bambino in Gloria tra Angeli, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (154 car.)
-- "Quadro Mare Tramonto sul Golfo con Barche e Riflessi, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Arancio e Blu, Pronto da Appendere" (153 car.)
-- "Quadro Amore Coppia in Abbraccio sotto la Luna Piena, Quadri Camera da Letto e Soggiorno, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
-- "Quadro Paesaggio Campagna Toscana con Cipressi al Tramonto, Decorazioni Parete Soggiorno e Salotto, dai Colori Verde e Oro, Pronto da Appendere" (149 car.)
+ESEMPI CORRETTI (keyword-first, leggibili, 80-110 car.):
+- "Quadro Moderno Soggiorno Circo Cavalli Blu – Stampa su Tela Decorazione Parete" (78 car.)
+- "Quadro Astratto Camera da Letto Colorato Rosso – Stampa su Tela Arredamento Moderno" (84 car.)
+- "Quadro Moderno Soggiorno Mare Tramonto Barche – Stampa su Tela Pronto da Appendere" (83 car.)
+- "Stampa su Tela Moderna Coppia Romantica Bacio – Quadro Camera da Letto Decorazione Parete" (88 car.)
+- "Quadro su Tela Ufficio Paesaggio Toscana Verde – Stampa Moderna Arredamento" (74 car.)
+
+ESEMPI SBAGLIATI (da NON imitare):
+- "Quadro Moderno Madonna con Bambino in Gloria..., dai Colori Oro e Avorio, Pronto da Appendere" ← troppo lungo, "dai Colori" vietato
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
     "Descrizione del prodotto": `200-2000 caratteri.
 
-⚠️ FORMATO TESTO PURO: il campo accetta SOLO testo normale — VIETATO TASSATIVO qualsiasi tag HTML (<b>, <br>, <p>, <div> o qualsiasi altro). Amazon mostrerebbe i tag come testo letterale ai clienti.
+⚠️ FORMATO TESTO PURO: VIETATO qualsiasi tag HTML (<b>, <br>, <p>, ecc.). Frasi corte. Leggibilità mobile. NO blocchi lunghi.
 
-Struttura in 4 sezioni ben distinte, separate da " — " (spazio-trattino-spazio):
+STRUTTURA IN 3 PARTI, separate da " — " (spazio-trattino-spazio):
 
-SEZIONE 1 — INTRO OPERA: La PRIMA FRASE deve essere SEMPRE (nome già inserito — NON cambiarlo): "Quadro che riproduce un'opera originale dell'artista ${autore}." (usa "dell'artista", NON "dipinto dall'artista"). Continua con una prima impressione evocativa dell'opera.
+PARTE 1 — INTRO SEO (2-3 frasi brevi — inizia dal prodotto, non dall'arte):
+PRIMA FRASE OBBLIGATORIA: "Stampa su tela canvas dell'opera originale di ${autore}, pronta da appendere con telaio in legno incluso."
+Continua con 1-2 frasi brevi su soggetto e uso. Aggancia il cliente con benefici concreti.
+es. "Una decorazione moderna per soggiorno, camera da letto o ufficio."
 
-SEZIONE 2 — STILE, COLORI ED EMOZIONI: Descrivi lo stile artistico, i colori predominanti e le emozioni che l'opera trasmette. Usa aggettivi vividi e specifici per evidenziare i colori chiave.
+PARTE 2 — DESCRIZIONE OPERA (3-5 frasi brevi — evocativa ma sintetica):
+Racconta l'opera. Soggetto, colori, atmosfera. Frasi max 15-20 parole. NO blocchi lunghi.
 
-SEZIONE 3 — CONTESTI D'USO: Suggerisci i contesti abitativi ideali, il tipo di arredamento che si abbina e il destinatario ideale (es. "ideale per il soggiorno moderno o la camera da letto").
+PARTE 3 — USO E CONTESTI (2-3 frasi brevi — dove, per chi, CTA):
+⚠️ Se il prodotto ha varianti di taglia, indica: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}."
+Chiudi con una frase che invita all'acquisto.
 
-SEZIONE 4 — MISURE + CTA: ⚠️ Se il prodotto ha varianti di taglia, DEVI iniziare con: "Disponibile nelle misure: ${misureVarianti || '[misura piccola], [misura media], [misura grande] cm'}." Chiudi con una frase che invita all'acquisto.
-
-REGOLE: VIETATO "dipinto", "tela dipinta". VIETATO "dipinto da ${autore}", "opera di ${autore}" — usa SEMPRE "quadro che riproduce l'opera originale di ${autore}". Testo fluente senza simboli speciali o tag.`,
-    "Punto elenco 1": `MATERIALE — usa QUESTA formulazione ESATTA (il nome è già inserito — NON cambiarlo con il titolo dell'opera): "STAMPA SU TELA CANVAS – Riproduzione su tela dell'opera originale dell'artista ${autore}, montata su telaio in legno e pronta da appendere." ("${autore}" è il NOME DELL'ARTISTA). VIETATO: "dipinto", "tela dipinta". ⚠️ NON usare questa formulazione negli altri bullet (2-5).`,
-    "Punto elenco 2": 'STILE/ARTE — inizia con "ARTE [STILE] –" e descrivi l\'opera, i colori principali, l\'impatto visivo ed emotivo',
-    "Punto elenco 3": 'AMBIENTI — inizia con "DECORAZIONE PARETE –" e indica tutti i contesti ideali: soggiorno, camera da letto, ufficio, studio, corridoio, cameretta...',
-    "Punto elenco 4": 'INSTALLAZIONE — inizia con "PRONTO DA APPENDERE –" e descrivi: telaio in legno, ganci inclusi, misure disponibili (le 3 taglie). ⚠️ FINITURA: scrivi SEMPRE "fissativo laccato" — VIETATO scrivere "fissativo lucido", "lucidato" o qualsiasi altro termine alternativo.',
-    "Punto elenco 5": 'REGALO/GARANZIA — inizia con "IDEA REGALO –" menziona: occasioni regalo (nascita, battesimo, anniversario, inaugurazione casa), imballaggio protettivo per spedizione sicura; chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."',
+REGOLE: VIETATO "dipinto", "tela dipinta". VIETATO "dipinto da ${autore}", "opera di ${autore}" — usa "opera originale di ${autore}". Ogni frase max 20 parole.`,
+    "Punto elenco 1": `PRODOTTO + AMBIENTE (SEO + prodotto, max 220 car.):
+Struttura: "Quadro moderno per {stanza 1} e {stanza 2}, ideale come decorazione parete in ambienti {aggettivo}. Con telaio in legno incluso, senza cornice, pronto da appendere."
+es. "Quadro moderno per soggiorno e camera da letto, ideale come decorazione parete in ambienti contemporanei. Con telaio in legno incluso, senza cornice, pronto da appendere."
+VIETATO: "dipinto", "tela dipinta", prefissi MAIUSCOLO tipo "STAMPA SU TELA CANVAS –".`,
+    "Punto elenco 2": `MATERIALE + QUALITÀ (SEO + benefici, max 220 car.):
+Struttura: "Stampa su tela canvas con {qualità/colori}, perfetta per {uso/arredamento}. Riproduzione ad alta risoluzione dell'opera originale di ${autore}."
+⚠️ Il riferimento a ${autore} va SOLO qui — NON nei bullet 3-5. VIETATO: "dipinto", "tela dipinta".`,
+    "Punto elenco 3": `INSTALLAZIONE (benefici pratici, max 220 car.):
+Struttura: "Quadro su tela pronto da appendere con telaio in legno resistente e fissativo laccato. Ganci inclusi, montaggio semplice in pochi minuti."
+⚠️ Scrivi SEMPRE "fissativo laccato" — VIETATO "fissativo lucido", "lucidato" o qualsiasi alternativa.`,
+    "Punto elenco 4": `REGALO + CONTESTI (conversione, max 220 car.):
+Struttura: "Perfetto come idea regalo per casa nuova, {contesto 1}, {contesto 2} o {contesto 3}. Adatto a qualsiasi stile d'arredo."
+es. "Perfetto come idea regalo per casa nuova, ufficio, studio professionale o ambiente creativo. Adatto a qualsiasi stile d'arredo."`,
+    "Punto elenco 5": `DIMENSIONI + GARANZIA (chiusura acquisto, max 220 car.):
+Se prodotto con varianti: "Disponibile nelle misure: ${misureVarianti || '[dim mini], [dim media], [dim max] cm'}, per adattarsi a qualsiasi spazio."
+Se prodotto singolo: "Disponibile in diverse dimensioni per adattarsi a qualsiasi spazio."
+Chiudi SEMPRE con: "Reso entro 14 giorni secondo le condizioni Amazon."`,
     "Chiavi di ricerca": `Campo backend Search Terms — 5 slot da 250 byte UTF-8 ciascuno = 1250 byte totali.
 ${formatoInfoRegen}
 Formato OBBLIGATORIO: SOLO SPAZI tra i termini — ZERO virgole, ZERO punteggiatura, ZERO trattini. Tutto minuscolo. SOLO ITALIANO — zero parole in inglese o altra lingua.
 ⚠️ TARGET LUNGHEZZA OBBLIGATORIO: genera ESATTAMENTE 1100–1200 byte UTF-8. Questo corrisponde a circa 160–190 parole italiane. Se non raggiungi 1100 byte il campo NON è compilato correttamente.
 
-⚠️ REGOLA FONDAMENTALE — ZERO DUPLICATI:
-Amazon indicizza titolo, bullet e search terms come UN UNICO INSIEME. Ripetere nelle chiavi parole già presenti nel titolo o nei bullet è uno spreco di byte e NON migliora il ranking (Amazon ignora i duplicati). Usa SOLO parole che NON compaiono già nel Nome dell'articolo e nei Punti elenco.
+⚠️ REGOLA DUPLICATI (applicazione limitata):
+La regola "zero duplicati" si applica SOLO a parole inventate generiche. Le keyword universali validate su Cerebro (AREA 0) devono essere inserite SEMPRE, anche se simili a parole nel titolo.
 
-STRUTTURA A 5 AREE COMPLEMENTARI — OGNUNA DEVE ESSERE AMPIA E DETTAGLIATA (tutte parole NUOVE, non già nel titolo/bullet):
+STRUTTURA A 6 AREE COMPLEMENTARI (AREA 0 obbligatoria + AREE 1-5 complementari):
+
+AREA 0 — KEYWORD UNIVERSALI OBBLIGATORIE (inserisci SEMPRE — validate su Cerebro Amazon.it 2026):
+Queste keyword DEVONO comparire in QUALSIASI chiave di ricerca, per tutti i quadri, indipendentemente dal soggetto:
+decorazioni casa arredamento casa regalo casa nuova arredamento soggiorno quadri grandi decorazioni per la casa quadri per soggiorno
+Se sono presenti keyword Cerebro nel prompt (sezione cerebroSection), aggiungi ANCHE quelle. Non saltarne nessuna.
 
 AREA 1 — SINONIMI E VARIANTI DEL PRODOTTO (almeno 25 termini diversi):
 Tutti i modi in cui i clienti italiani cercano stampe/quadri su Amazon.it. Sii esaustivo.
@@ -584,7 +634,7 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
   }
   // ─── Validazione byte Chiavi di ricerca (solo per la rigenerazione chiavi) ─
   if (nomeAttributo === 'Chiavi di ricerca' && regenResult[nomeAttributo]) {
-    regenResult[nomeAttributo] = smartTruncateChiavi(regenResult[nomeAttributo], stableKeyRegen);
+    regenResult[nomeAttributo] = ensureArea0AndBytes(regenResult[nomeAttributo], stableKeyRegen);
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -654,6 +704,247 @@ Rispondi SOLO con un JSON array di stringhe:
   }
 }
 
+// ─── POOL SEO PIÈCES FR — combinazioni validate su Cerebro Amazon.fr 2026 ──
+// Volumi: "tableau decoration murale" (32K), "decoration chambre" (20K),
+//         "decoration murale" (17K), "tableau salon" (1.4K)
+const ROOM_POOL_FR = [
+  'Salon et Chambre à Coucher',    // tableau salon + decoration chambre
+  'Chambre à Coucher et Salon',    // anti-cannibalization
+  'Salon et Bureau',
+  'Salon et Entrée',
+  'Bureau et Chambre à Coucher',
+  'Salon et Cuisine',
+];
+
+// ─── AREA 0 universali FR — keyword validate su Cerebro Amazon.fr 2026 ─────
+// Volumi: tableau decoration murale (32,047), decoration chambre (20,086),
+//         panneau mural decoratif (20,611), decoration murale (17,411),
+//         tableau salon (1,415), impression sur toile (836)
+const AREA0_PHRASES_FR = [
+  'tableau decoration murale',   // vol 32,047 — TOP keyword!
+  'decoration murale',           // vol 17,411
+  'decoration chambre',          // vol 20,086
+  'impression sur toile',        // vol 836 — specifica del prodotto
+  'tableau salon',               // vol 1,415
+  'idee cadeau maison',          // regali casa
+  'deco maison',                 // decorazione casa
+];
+const AREA0_TEXT_FR = 'tableau decoration murale decoration murale decoration chambre impression sur toile tableau salon idee cadeau maison deco maison';
+
+/**
+ * Garantisce che le 7 frasi AREA 0 FR siano presenti nelle chiavi.
+ * Se mancano, le prepende. Poi tronca a max 1200 byte.
+ *
+ * @param {string} chiavi    - Termes de recherche generati da Claude
+ * @param {string} stableKey - SKU o ID del prodotto (per il log)
+ * @returns {string}         - Chiavi con AREA 0 FR garantita + max 1200 byte
+ */
+function ensureArea0AndBytesFR(chiavi, stableKey) {
+  if (!chiavi) return chiavi;
+  const MIN_BYTES = 1100;
+
+  const lower = chiavi.toLowerCase();
+  const missingPhrases = AREA0_PHRASES_FR.filter(p => !lower.includes(p));
+
+  let result = chiavi;
+  if (missingPhrases.length > 0) {
+    result = missingPhrases.join(' ') + ' ' + result;
+    console.warn(`[AI-FR] ⚠️ AREA 0 FR mancanti [${stableKey}]: ${missingPhrases.join(', ')} — aggiunte in testa`);
+  }
+
+  const byteCount = Buffer.byteLength(result, 'utf8');
+  if (byteCount < MIN_BYTES) {
+    console.warn(`[AI-FR] ⚠️ Chiavi FR sotto target [${stableKey}]: ${byteCount}/${MIN_BYTES} byte`);
+  }
+
+  return smartTruncateChiavi(result, stableKey);
+}
+
+/**
+ * Genera TUTTI gli attributi AI per il mercato FRANCESE (amazon.fr).
+ * Output: stessi campi JSON dell'IT (chiavi DB in italiano), contenuto in FRANCESE.
+ *
+ * @param {object} product - dati del prodotto
+ * @param {string[]} keywords - keyword minate (opzionale)
+ * @param {string} cerebroSection - sezione Cerebro FR (da getCerebroPromptSectionFR)
+ * @returns {object} - { "Nome dell'articolo": "...(FR)...", ... }
+ */
+async function generateAllAiAttributesFR(product, keywords = [], cerebroSection = '') {
+  const imageUrl = getProductImageUrl(product);
+  const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
+  const stableKey = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
+
+  const keywordsSection = keywords.length > 0
+    ? `\nMOTS-CLÉS RÉELS AMAZON.FR — utilise-les là où c'est naturel:\n${keywords.slice(0, 20).join(', ')}\n`
+    : '';
+  const cerebroSectionText = cerebroSection ? `\n${cerebroSection}\n` : '';
+
+  const variantiSection = (product.misura_max || product.sku_max)
+    ? `\nVARIANTES DISPONIBLES (3 tailles):\n- Grande: ${product.misura_max || '—'} cm — €${product.prezzo_max || '—'} (SKU: ${product.sku_max || '—'})\n- Moyenne: ${product.misura_media || '—'} cm — €${product.prezzo_media || '—'} (SKU: ${product.sku_media || '—'})\n- Petite: ${product.misura_mini || '—'} cm — €${product.prezzo_mini || '—'} (SKU: ${product.sku_mini || '—'})\n`
+    : '';
+
+  const hasSizeVariants = typeof product.misura_max === 'string'
+    ? product.misura_max.trim().length > 0 && product.misura_max.trim() !== '—'
+    : Boolean(product.misura_max);
+  const dimensioneSingle = product.dimensioni || product.misura_max || '';
+
+  const oriCalc = calcOrientamento(product.misura_max || product.dimensioni || '');
+  const formatoFR = oriCalc
+    ? (() => {
+        const fr = oriCalc.orientamento === 'Orizzontale' ? 'PAYSAGE' : oriCalc.orientamento === 'Verticale' ? 'PORTRAIT' : 'CARRÉ';
+        return `\n⚠️ FORMAT DE L'ŒUVRE: ${fr} — dimensions LARGEUR×HAUTEUR (ex. "${oriCalc.display}"). Dans les termes de recherche, utilise TOUJOURS cet ordre.`;
+      })()
+    : '';
+
+  const visionNote = imageUrl
+    ? '\n🖼️ ANALYSE VISUELLE: Une image de l\'œuvre est fournie. Utilise-la comme source principale pour les champs visuels (personnages, couleurs, style, composition).\n'
+    : '';
+
+  const prompt = `Sei un esperto di listing Amazon per il mercato FRANCESE (amazon.fr), specializzato in arte e decorazione.
+
+Genera TUTTI gli attributi per un listing Amazon ottimizzato — impressions sur toile (stampe su tela) su amazon.fr.
+${visionNote}
+TESTO DELL'OPERA (in italiano — interpretare il soggetto, NON tradurre letteralmente):
+"""
+${product.descrizione_raw || 'Nessuna descrizione fornita'}
+"""
+${product.dimensioni ? `\nDIMENSIONS (grande): ${product.dimensioni} cm` : ''}
+
+ARTISTE: ${autore}
+⚠️ "${autore}" est le NOM DE L'ARTISTE — ne pas confondre avec le titre de l'œuvre.
+${variantiSection}${keywordsSection}${cerebroSectionText}
+
+⚠️ RÈGLE ABSOLUE: TOUS les champs textuels (titre, description, puces, termes de recherche) DOIVENT être en FRANÇAIS. Seuls les champs meta (Stile, Tema, Tipo di stanza, Famiglia di colori, Stagioni, Edizione, Funzioni speciali, Personaggio rappresentato, Tema animali, Colore, Usi consigliati) restano in ITALIANO (sono chiavi del DB).
+⚠️ POLITIQUE AMAZON: INTERDIT dans tout champ: "érotique", "sensuel", "sexy" ou tout terme adult. Pour œuvres romantiques: utiliser UNIQUEMENT "romantique", "couple", "amour", "passion artistique".
+
+### NOM DE L'ARTICLE (Titre — 80-110 car., idéal 85-105, JAMAIS +200):
+✔ "Impression sur Toile" TOUJOURS présent ✔ TYPE + PIÈCE + Sujet 2-4 mots ✔ Tout en FRANÇAIS
+TYPES: "Tableau Moderne" (DEFAULT), "Tableau Romantique" (SEULEMENT couple/baiser), "Tableau Abstrait" (SEULEMENT abstrait), "Tableau Mer" (SEULEMENT marin), "Tableau Paysage" (SEULEMENT terrestre), "Tableau sur Toile" (neutre)
+PIÈCES: "Salon" (DEFAULT), "Chambre" (romantique/floral), "Bureau" (paysage/abstrait)
+STRUCTURE: A) "{Type} {Pièce} {Sujet 2-4 mots} – Impression sur Toile {mot-clé 2}" B) "Impression sur Toile {Sujet} – {Type} {Pièce} {mot-clé 2}"
+MOTS-CLÉS 2: "Décoration Murale", "Décoration Intérieure", "Idée Cadeau", "Prêt à Accrocher"
+hasSizeVariants=${hasSizeVariants} — si FALSE ajouter ", ${dimensioneSingle} cm" à la fin.
+EXEMPLES: "Tableau Moderne Salon Chevaux Cirque – Impression sur Toile Décoration Murale" (79) | "Tableau Romantique Chambre Couple Baiser – Impression sur Toile Décoration Intérieure" (83)
+Output: UNE ligne FRANÇAISE, sans guillemets.
+
+### DESCRIPTION DU PRODUIT (200-2000 car., TEXTE PUR — INTERDIT HTML, tout en FRANÇAIS):
+3 PARTIES séparées par " — ":
+PARTIE 1: PREMIÈRE PHRASE OBLIGATOIRE: "Impression sur toile de l'œuvre originale de ${autore}, prête à accrocher avec cadre en bois inclus." + 1-2 phrases sur sujet/usage.
+PARTIE 2: 3-5 phrases courtes sur l'œuvre (sujet, couleurs, atmosphère). Max 20 mots/phrase.
+PARTIE 3: Où/pour qui + CTA. Si variantes: "Disponible en plusieurs formats: [mini], [media], [max] cm."
+INTERDIT: "peint", "toile peinte".
+
+### TERMES DE RECHERCHE (backend — 5 slots × 250 bytes = 1250 bytes, UNIQUEMENT FRANÇAIS):
+${formatoFR}
+Format: ESPACES uniquement, pas de virgules. Tout minuscule. Target: 1100-1200 bytes UTF-8.
+
+ZONE 0 — OBLIGATOIRES (tous les tableaux Amazon.fr — validés Cerebro 2026):
+tableau decoration murale decoration murale decoration chambre impression sur toile tableau salon idee cadeau maison deco maison
++ TOUS les mots-clés Cerebro tier BACKEND et BULLET du prompt (si présents). N'en manquer aucun.
+
+ZONE 1 — SYNONYMES PRODUIT (min 20 termes): affiche poster peinture dessin art toile murale cadre decoration art mural encadrement maison cadeau anniversaire tableau toile...
+ZONE 2 — SUJET SPÉCIFIQUE (min 25 mots en français): variantes du sujet de l'œuvre...
+ZONE 3 — STYLE ET TECHNIQUE (min 15 mots): figuratif abstrait contemporain moderne impressionniste expressionniste...
+ZONE 4 — ENVIRONNEMENTS (min 20 mots): entree couloir cuisine salle de bain terrasse balcon hotel restaurant bar cabinet medical...
+ZONE 5 — CADEAUX ET LONG-TAIL (min 30 mots): cadeau fete des meres cadeau anniversaire copine cadeau mariage inauguration maison cadeau noel saint-valentin fete des peres cadeau ami...
+RÈGLES: ZÉRO anglais (pas wall art, pas canvas, pas gift), pas "sivigliart", min 150 mots.
+
+### POINTS DE LISTE (5 puces en FRANÇAIS — max 220 car. chacune):
+INTERDIT: "peint", "toile peinte". "Impression sur Toile" dans au moins 2 puces.
+Puce 1: "Tableau moderne pour {pièce 1} et {pièce 2}, idéal comme décoration murale dans des espaces {adj}. Avec cadre en bois inclus, sans cadre vitré, prêt à accrocher."
+Puce 2: "Impression sur toile canvas avec {qualité}, parfaite pour {usage}. Reproduction haute résolution de l'œuvre originale de ${autore}." [seul puce avec l'artiste]
+Puce 3: "Tableau sur toile prêt à accrocher avec cadre en bois résistant et finition laquée. Crochets inclus, montage simple en quelques minutes." [TOUJOURS "finition laquée"]
+Puce 4: "Parfait comme idée cadeau pour emménagement, {contexte 1}, {contexte 2} ou {contexte 3}. Adapté à tous les styles de décoration."
+Puce 5: ${hasSizeVariants ? `"Disponible en plusieurs formats: ${product.misura_mini || '[mini]'}, ${product.misura_media || '[med]'}, ${product.misura_max || '[max]'} cm, pour s'adapter à tous les espaces. Retour accepté sous 14 jours selon les conditions Amazon."` : '"Disponible en plusieurs tailles pour s\'adapter à tous les espaces. Retour accepté sous 14 jours selon les conditions Amazon."'}
+
+### CHAMPS META (en ITALIANO — chiavi DB):
+- "Personaggio rappresentato": figura umana → 1-3 parole IT (es. "Coppia", "Donna", "Musicista"); nessuna → "N/D"
+- "Colore": 1-2 dominanti IT (es. "Blu, Oro"); 3+ → "Multicolore"
+- "Stile": stile artistico IT (es. "Arte Moderna", "Impressionista", "Astratto")
+- "Tema": temi IT virgola-separati (es. "Coppia romantica, Amore")
+- "Tipo di stanza": 3-4 stanze IT, inizia "Soggiorno" (es. "Soggiorno, Camera da letto, Ufficio")
+- "Famiglia di colori": UNO tra: "Bianco"|"Bianco e nero"|"Caldi"|"Freddi"|"Luminosi"|"Neutro"|"Pastelli"|"Scala di grigi"|"Tonalità della terra"|"Toni gioiello"
+- "Usi consigliati per il prodotto": IT virgola-separati (es. "Decorazione parete, Regalo")
+- "Tema animali": animale principale IT (es. "Cavallo", "Leone"); assenza → "N/D"
+- "Funzioni speciali": SEMPRE "Pronto da appendere, Con telaio in legno" (IT)
+- "Stagioni": UNO tra: "Tutte le stagioni"|"Primavera"|"Estate"|"Autunno"|"Inverno"
+- "Edizione": IT (es. "Stampa Artistica Moderna")
+
+Rispondi SOLO con JSON valido:
+{"Nome dell'articolo":"...","Nome del modello":"...","Descrizione del prodotto":"...","Punto elenco 1":"...","Punto elenco 2":"...","Punto elenco 3":"...","Punto elenco 4":"...","Punto elenco 5":"...","Chiavi di ricerca":"...","Funzioni speciali":"...","Personaggio rappresentato":"...","Stile":"...","Tema":"...","Usi consigliati per il prodotto":"...","Tipo di stanza":"...","Famiglia di colori":"...","Motivo":"...","Colore":"...","Supporti di stampa":"Impression sur toile canvas","Edizione":"...","Stagioni":"...","Tema animali":"..."}`;
+
+  if (imageUrl) {
+    console.log(`[AI-FR] Vision AI attiva per prodotto ${product.id || '?'} — immagine: ${imageUrl.slice(0, 60)}...`);
+  }
+
+  const message = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 3000,
+    messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
+  });
+
+  const result = parseJsonResponse(message.content[0].text);
+
+  if (result["Nome dell'articolo"]) {
+    result["Nome dell'articolo"] = smartTruncateTitle(result["Nome dell'articolo"], stableKey);
+  }
+  if (result["Chiavi di ricerca"]) {
+    result["Chiavi di ricerca"] = ensureArea0AndBytesFR(result["Chiavi di ricerca"], stableKey);
+  }
+
+  return result;
+}
+
+// ─── AREA 0 universali — 7 keyword validate su Cerebro Amazon.it 2026 ─────
+// Queste frasi devono essere SEMPRE presenti nelle chiavi di ricerca.
+// Volumi: decorazioni casa (9.711), arredamento casa (6.960),
+//         regalo casa nuova (2.680), arredamento soggiorno (571),
+//         quadri grandi (368), decorazioni per la casa (233), quadri per soggiorno (143)
+const AREA0_PHRASES = [
+  'decorazioni casa',
+  'arredamento casa',
+  'regalo casa nuova',
+  'arredamento soggiorno',
+  'quadri grandi',
+  'decorazioni per la casa',
+  'quadri per soggiorno'
+];
+const AREA0_TEXT = 'decorazioni casa arredamento casa regalo casa nuova arredamento soggiorno quadri grandi decorazioni per la casa quadri per soggiorno';
+
+/**
+ * Garantisce che le 7 frasi AREA 0 siano presenti nelle chiavi.
+ * Se mancano, le prepende. Poi tronca a max 1200 byte.
+ * Safety net contro la compressione AI dell'AREA 0.
+ *
+ * @param {string} chiavi    - Chiavi di ricerca generate da Claude
+ * @param {string} stableKey - SKU o ID del prodotto (per il log)
+ * @returns {string}         - Chiavi con AREA 0 garantita + max 1200 byte
+ */
+function ensureArea0AndBytes(chiavi, stableKey) {
+  if (!chiavi) return chiavi;
+  const MIN_BYTES = 1100;
+
+  // Verifica quali frasi AREA 0 mancano nell'output AI
+  const lower = chiavi.toLowerCase();
+  const missingPhrases = AREA0_PHRASES.filter(p => !lower.includes(p));
+
+  let result = chiavi;
+  if (missingPhrases.length > 0) {
+    // Prepend delle frasi mancanti in testa
+    result = missingPhrases.join(' ') + ' ' + result;
+    console.warn(`[AI] ⚠️ AREA 0 mancanti [${stableKey}]: ${missingPhrases.join(', ')} — aggiunte in testa`);
+  }
+
+  // Log se sotto il target minimo di byte
+  const byteCount = Buffer.byteLength(result, 'utf8');
+  if (byteCount < MIN_BYTES) {
+    console.warn(`[AI] ⚠️ Chiavi sotto target [${stableKey}]: ${byteCount}/${MIN_BYTES} byte — prompt AI troppo corto`);
+  }
+
+  // Tronca se sopra il massimo
+  return smartTruncateChiavi(result, stableKey);
+}
+
 /**
  * Smart truncation delle Chiavi di ricerca Amazon.
  * Amazon accetta max 1250 byte UTF-8 totali (5 slot × 250 byte).
@@ -710,8 +1001,8 @@ function smartTruncateTitle(title, stableKey) {
     return truncated;
   }
 
-  if (len > 180) {
-    console.info(`[AI] ℹ️ Titolo zona gialla [${stableKey}]: ${len} car. (target 150-180, max 200)`);
+  if (len > 110) {
+    console.info(`[AI] ℹ️ Titolo zona gialla [${stableKey}]: ${len} car. (target 80-110, ideale 85-105)`);
   }
 
   return title;
@@ -771,4 +1062,4 @@ function parseJsonResponse(text) {
   }
 }
 
-module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI };
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR };
