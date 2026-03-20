@@ -2,18 +2,17 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ─── POOL ANTI-CANNIBALIZZAZIONE STANZE ────────────────────────────────────
-// Rotazione deterministica: ogni ASIN riceve una coppia di stanze univoca,
-// evitando che tutti i listing convergano sulle stesse stanze target.
-// Il TIPO di quadro (Moderno/Sacro/Paesaggio/etc.) è ora scelto da Claude
-// in base all'analisi dell'opera — non più da un pool fisso.
+// ─── POOL SEO + ANTI-CANNIBALIZZAZIONE STANZE ─────────────────────────────
+// Rotazione deterministica: ogni ASIN riceve una frase SEO univoca con
+// keyword Cerebro tier TITLE incorporate direttamente nel titolo Amazon.
+// Ogni voce è una frase SEO pronta da inserire nel titolo come frase contigua.
 const ROOM_POOL = [
-  'Soggiorno e Camera da Letto',
-  'Soggiorno e Ufficio',
-  'Camera da Letto e Studio',
-  'Salotto Moderno e Ingresso',
-  'Ufficio e Studio Medico',
-  'Sala da Pranzo e Corridoio'
+  'Quadri Moderni Soggiorno e Camera da Letto',    // kw: "quadri moderni soggiorno", "camera da letto"
+  'Quadri Moderni Soggiorno e Ufficio',             // kw: "quadri moderni soggiorno"
+  'Quadri Moderni Camera da Letto e Studio',        // kw: "quadri moderni", "camera da letto"
+  'Decorazioni Parete Salotto e Ingresso',          // kw: "decorazioni parete"
+  'Quadri Moderni Ufficio e Studio',                // kw: "quadri moderni"
+  'Decorazioni Parete Sala da Pranzo e Corridoio'   // kw: "decorazioni parete"
 ];
 
 /**
@@ -197,18 +196,21 @@ Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + t
 - "Quadro Contemporaneo" → arte contemporanea, mixed media
 - "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
 
-⚠️ ANTI-CANNIBALIZZAZIONE stanze PRE-ASSEGNATE (rotazione deterministica):
-- Stanze OBBLIGATORIE nel titolo: "${selectedRooms}" — NON sostituirle con altre stanze.
+⚠️ ANTI-CANNIBALIZZAZIONE + KEYWORD SEO PRE-ASSEGNATE (rotazione deterministica):
+- Frase SEO OBBLIGATORIA nel titolo: "${selectedRooms}" — inseriscila ESATTAMENTE come scritta, senza modifiche.
 
 STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Quadro {tipo_scelto} {soggetto 2-5 parole} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRooms}, Pronto da Appendere{DIMENSIONE}"
+"Quadro {tipo_scelto} {soggetto 2-5 parole}, ${selectedRooms}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
 - {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
 - {soggetto}: 2–5 parole specifiche e descrittive dell'opera
+- "${selectedRooms}": frase SEO già pronta — copiala ESATTAMENTE (es. "Quadri Moderni Soggiorno e Camera da Letto")
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
 - hasSizeVariants = ${hasSizeVariants}
 - {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
+
+⚠️ LUNGHEZZA: con questa struttura il titolo tende ad essere ~120-140 car. Aggiugi dettagli al soggetto per raggiungere 150-170 car. (es. "Coppia al Molo con Sassofono" invece di "Coppia al Molo").
 
 VIETATO TASSATIVO:
 - Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
@@ -217,11 +219,11 @@ VIETATO TASSATIVO:
 - ⚠️ Se nel testo dell'opera compare autore o brand, IGNORALI completamente nel titolo
 - Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
-ESEMPI CORRETTI:
-- "Quadro Sacro Madonna con Bambino dai Colori Oro e Avorio, Decorazione Parete per Soggiorno e Camera da Letto, Pronto da Appendere" (141 car.)
-- "Quadro Paesaggio Tramonto sul Mare dai Colori Arancio e Blu, Decorazione Parete per Soggiorno e Ufficio, Pronto da Appendere" (136 car.)
-- "Quadro Romantico Coppia in Abbraccio dai Colori Bordeaux e Oro, Decorazione Parete per Camera da Letto e Studio, Pronto da Appendere" (142 car.)
-- "Quadro Astratto Moderno Composizione Geometrica dai Colori Nero e Oro, Decorazione Parete per Ufficio e Studio Medico, Pronto da Appendere" (147 car.)
+ESEMPI CORRETTI con nuova struttura:
+- "Quadro Sacro Madonna con Bambino in Gloria, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (135 car.)
+- "Quadro Paesaggio Tramonto sul Mare con Barche, Quadri Moderni Soggiorno e Ufficio, dai Colori Arancio e Blu, Pronto da Appendere" (133 car.)
+- "Quadro Romantico Coppia in Abbraccio sotto la Luna, Quadri Moderni Camera da Letto e Studio, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
+- "Quadro Naif Scena di Mercato con Personaggi Colorati, Decorazioni Parete Salotto e Ingresso, dai Colori Giallo e Rosso, Pronto da Appendere" (143 car.)
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
@@ -422,18 +424,21 @@ Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + t
 - "Quadro Contemporaneo" → arte contemporanea, mixed media
 - "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
 
-⚠️ ANTI-CANNIBALIZZAZIONE stanze PRE-ASSEGNATE (rotazione deterministica):
-- Stanze OBBLIGATORIE nel titolo: "${selectedRoomsRegen}" — NON sostituirle con altre stanze.
+⚠️ ANTI-CANNIBALIZZAZIONE + KEYWORD SEO PRE-ASSEGNATE (rotazione deterministica):
+- Frase SEO OBBLIGATORIA nel titolo: "${selectedRoomsRegen}" — inseriscila ESATTAMENTE come scritta, senza modifiche.
 
 STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
-"Quadro {tipo_scelto} {soggetto 2-5 parole} dai Colori {colore1} e {colore2}, Decorazione Parete per ${selectedRoomsRegen}, Pronto da Appendere{DIMENSIONE}"
+"Quadro {tipo_scelto} {soggetto 2-5 parole}, ${selectedRoomsRegen}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
 - {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
 - {soggetto}: 2–5 parole specifiche e descrittive dell'opera
+- "${selectedRoomsRegen}": frase SEO già pronta — copiala ESATTAMENTE (es. "Quadri Moderni Soggiorno e Camera da Letto")
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
 - hasSizeVariants = ${hasSizeVariantsRegen}
 - {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingleRegen} cm"
+
+⚠️ LUNGHEZZA: con questa struttura il titolo tende ad essere ~120-140 car. Aggiungi dettagli al soggetto per raggiungere 150-170 car.
 
 VIETATO TASSATIVO:
 - Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
@@ -442,10 +447,10 @@ VIETATO TASSATIVO:
 - Se nel testo compare autore o brand, IGNORALI completamente
 - Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
-ESEMPI CORRETTI:
-- "Quadro Sacro Madonna con Bambino dai Colori Oro e Avorio, Decorazione Parete per Soggiorno e Camera da Letto, Pronto da Appendere" (141 car.)
-- "Quadro Paesaggio Tramonto sul Mare dai Colori Arancio e Blu, Decorazione Parete per Soggiorno e Ufficio, Pronto da Appendere" (136 car.)
-- "Quadro Romantico Coppia in Abbraccio dai Colori Bordeaux e Oro, Decorazione Parete per Camera da Letto e Studio, Pronto da Appendere" (142 car.)
+ESEMPI CORRETTI con nuova struttura:
+- "Quadro Sacro Madonna con Bambino in Gloria, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (135 car.)
+- "Quadro Paesaggio Tramonto sul Mare con Barche, Quadri Moderni Soggiorno e Ufficio, dai Colori Arancio e Blu, Pronto da Appendere" (133 car.)
+- "Quadro Romantico Coppia in Abbraccio sotto la Luna, Quadri Moderni Camera da Letto e Studio, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
