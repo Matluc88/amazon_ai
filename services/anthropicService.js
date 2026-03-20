@@ -3,16 +3,16 @@ const Anthropic = require('@anthropic-ai/sdk');
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─── POOL SEO STANZE ──────────────────────────────────────────────────────
-// 6 frasi SEO con keyword Cerebro tier TITLE incorporate direttamente nel
-// titolo Amazon. Claude sceglie la più coerente con il tipo/soggetto dell'opera.
-// Ogni voce è una frase SEO pronta da inserire nel titolo come frase contigua.
+// 6 frasi SEO validate su Cerebro IT — solo keyword con volume reale.
+// Ufficio/Studio/Ingresso/Corridoio ELIMINATI (volume = 0 su Amazon.it).
+// Volumi da Cerebro 2026-03-20.
 const ROOM_POOL = [
-  'Quadri Moderni Soggiorno e Camera da Letto',    // kw: "quadri moderni soggiorno", "camera da letto"
-  'Quadri Moderni Soggiorno e Ufficio',             // kw: "quadri moderni soggiorno"
-  'Quadri Moderni Camera da Letto e Studio',        // kw: "quadri moderni", "camera da letto"
-  'Decorazioni Parete Salotto e Ingresso',          // kw: "decorazioni parete"
-  'Quadri Moderni Ufficio e Studio',                // kw: "quadri moderni"
-  'Decorazioni Parete Sala da Pranzo e Corridoio'   // kw: "decorazioni parete"
+  'Quadri Moderni Soggiorno e Camera da Letto',  // vol ~51K — quadri moderni soggiorno (40K) + camera da letto (10.9K)
+  'Quadri Camera da Letto e Soggiorno',           // vol ~11K — quadri camera da letto (anti-cannibalizzazione)
+  'Quadri Moderni Soggiorno Grandi',              // vol ~934  — quadri moderni soggiorno grandi
+  'Decorazioni Parete Soggiorno e Salotto',       // vol ~960  — decorazioni parete soggiorno (643) + quadri salotto (316)
+  'Quadri Salotto e Camera da Letto',             // vol ~316  — quadri salotto
+  'Decorazioni Parete Camera da Letto'            // vol ~6.5K — decorazioni parete (4.1K) + decorazioni camera da letto (2.4K)
 ];
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -162,28 +162,31 @@ Range TARGET: 150–180 caratteri. MAI oltre 200. Mira ai 160–170.
 ⚠️ REGOLA CRITICA — PRIMA PAROLA: Il titolo DEVE INIZIARE SEMPRE con "Quadro".
 VIETATO ASSOLUTO: iniziare con "Stampa", "Arte", "Sivigliart" o qualsiasi altra parola diversa da "Quadro".
 
-Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo):
-- "Quadro Sacro" → soggetti religiosi (Madonne, Santi, Angeli, Natività, Cristo, preghiera)
-- "Quadro Paesaggio" → paesaggi (mare, campagna, montagna, tramonti, città, boschi)
-- "Quadro Astratto Moderno" → opere astratte, geometriche, non figurative
-- "Quadro Figurativo Moderno" → figure umane realistiche, ritratti, corpi
-- "Quadro Romantico" → scene d'amore, coppie romantiche, sentimenti
-- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche
-- "Quadro Animali" → animali come soggetto principale
-- "Quadro Pop Art" → stile pop, street art, colori saturi e netti
-- "Quadro Naif" → stile naif, primitivo, pittoresco
-- "Quadro Contemporaneo" → arte contemporanea, mixed media
-- "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
+Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo).
+⚠️ I TIPI sono basati su volumi reali Cerebro Amazon.it — usa SOLO questi:
+
+- "Quadro Moderno" → opere moderne generiche, figurative, ritratti, soggetti contemporanei (vol: 2.067)
+- "Quadro Mare" → paesaggi marini, costieri, oceano, barche, spiagge, porti (vol: 947)
+- "Quadro Astratto" → opere astratte, geometriche, non figurative, minimal (vol: 723)
+- "Quadro Paesaggio" → paesaggi NON marini: campagna, montagna, boschi, città, fiumi (vol: 102)
+- "Quadro Amore" → scene d'amore, coppie, baci, abbracci, sentimenti romantici (vol: 100)
+- "Quadro Pop Art" → stile pop, street art, colori saturi e netti, warhol-style (vol: 58)
+- "Quadro Romantico" → scene sentimentali, coppie in contesti romantici (alternativa a Amore) (vol: 54)
+- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche (vol: 23)
+- ⚠️ TIPI ELIMINATI (volume 0 su Amazon.it — NON usarli): "Quadro Sacro", "Quadro Animali", "Quadro Naif", "Quadro Contemporaneo", "Quadro Figurativo Moderno", "Quadro Astratto Moderno"
+  → Per soggetti religiosi (Madonna, Santi, ecc.): usa "Quadro Moderno" o direttamente "Quadro" + soggetto (es. "Quadro Madonna con Bambino in Gloria")
+  → Per animali: usa "Quadro Moderno" + soggetto animale (es. "Quadro Moderno Leone in Savana al Tramonto")
+  → Per stile naif: usa "Quadro Moderno" + soggetto
 
 ⚠️ KEYWORD SEO — scegli la frase più coerente con il tipo dell'opera identificato sopra:
 
-FRASI SEO DISPONIBILI (inseriscine UNA, copiandola ESATTAMENTE come scritta):
-- "Quadri Moderni Soggiorno e Camera da Letto"    → per: Quadro Romantico, Quadro Famiglia
-- "Quadri Moderni Soggiorno e Ufficio"            → per: Quadro Figurativo Moderno, Quadro Contemporaneo
-- "Quadri Moderni Camera da Letto e Studio"       → per: Quadro Romantico (alternativa), Quadro Famiglia (alternativa)
-- "Decorazioni Parete Salotto e Ingresso"         → per: Quadro Sacro, Quadro Naif, Quadro Animali, Quadro Paesaggio
-- "Quadri Moderni Ufficio e Studio"               → per: Quadro Astratto Moderno, Quadro Moderno
-- "Decorazioni Parete Sala da Pranzo e Corridoio" → per: Quadro Pop Art, Quadro Paesaggio (alternativa), Quadro Naif (alternativa)
+FRASI SEO DISPONIBILI — validate su Cerebro IT (inseriscine UNA, copiandola ESATTAMENTE):
+- "Quadri Moderni Soggiorno e Camera da Letto"  → per: Quadro Moderno, Quadro Mare, Quadro Famiglia (vol ~51K)
+- "Quadri Camera da Letto e Soggiorno"          → per: Quadro Amore, Quadro Romantico (vol ~11K)
+- "Quadri Moderni Soggiorno Grandi"             → per: Quadro Astratto, Quadro Moderno (alternativa per grandi formati) (vol ~934)
+- "Decorazioni Parete Soggiorno e Salotto"      → per: Quadro Paesaggio, Quadro Pop Art, Quadro + soggetto diretto (vol ~960)
+- "Quadri Salotto e Camera da Letto"            → per: Quadro Paesaggio (alt), Quadro Pop Art (alt), Quadro + soggetto (vol ~316)
+- "Decorazioni Parete Camera da Letto"          → per: Quadro Amore (alt), soggetti senza tipo con volume (religioso, animali, naif) (vol ~6.5K)
 
 Scegli la frase più adatta al tipo dell'opera che hai identificato sopra. Copiala ESATTAMENTE, senza modifiche.
 
@@ -191,14 +194,14 @@ STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
 "Quadro {tipo_scelto} {soggetto 2-5 parole}, {FRASE_SEO_SCELTA}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
-- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
+- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra (o ometti il tipo e usa solo soggetto diretto se il tipo non ha volume)
 - {soggetto}: 2–5 parole specifiche e descrittive dell'opera
 - {FRASE_SEO_SCELTA}: la frase scelta dalla lista sopra — copiala ESATTAMENTE
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata (es. "Turchese e Verde Petrolio", "Blu Notte e Oro")
 - hasSizeVariants = ${hasSizeVariants}
 - {DIMENSIONE}: se hasSizeVariants TRUE → niente; se FALSE → ", ${dimensioneSingle} cm" subito dopo "Pronto da Appendere"
 
-⚠️ LUNGHEZZA: con questa struttura il titolo tende ad essere ~120-140 car. Aggiugi dettagli al soggetto per raggiungere 150-170 car. (es. "Coppia al Molo con Sassofono" invece di "Coppia al Molo").
+⚠️ LUNGHEZZA: con questa struttura il titolo tende ad essere ~120-140 car. Aggiungi dettagli al soggetto per raggiungere 150-170 car. (es. "Coppia al Molo con Sassofono" invece di "Coppia al Molo").
 
 VIETATO TASSATIVO:
 - Iniziare con qualsiasi parola diversa da "Quadro" (vietato "Stampa", "Arte di", "Sivigliart", ecc.)
@@ -207,11 +210,12 @@ VIETATO TASSATIVO:
 - ⚠️ Se nel testo dell'opera compare autore o brand, IGNORALI completamente nel titolo
 - Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
-ESEMPI CORRETTI con nuova struttura:
-- "Quadro Sacro Madonna con Bambino in Gloria, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (135 car.)
-- "Quadro Paesaggio Tramonto sul Mare con Barche, Quadri Moderni Soggiorno e Ufficio, dai Colori Arancio e Blu, Pronto da Appendere" (133 car.)
-- "Quadro Romantico Coppia in Abbraccio sotto la Luna, Quadri Moderni Camera da Letto e Studio, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
-- "Quadro Naif Scena di Mercato con Personaggi Colorati, Decorazioni Parete Salotto e Ingresso, dai Colori Giallo e Rosso, Pronto da Appendere" (143 car.)
+ESEMPI CORRETTI con nuova struttura Cerebro-validated:
+- "Quadro Moderno Madonna con Bambino in Gloria tra Angeli, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (154 car.)
+- "Quadro Mare Tramonto sul Golfo con Barche e Riflessi, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Arancio e Blu, Pronto da Appendere" (153 car.)
+- "Quadro Amore Coppia in Abbraccio sotto la Luna Piena, Quadri Camera da Letto e Soggiorno, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
+- "Quadro Paesaggio Campagna Toscana con Cipressi al Tramonto, Decorazioni Parete Soggiorno e Salotto, dai Colori Verde e Oro, Pronto da Appendere" (149 car.)
+- "Quadro Pop Art Ritratto Femminile con Colori Saturi, Decorazioni Parete Soggiorno e Salotto, dai Colori Giallo e Rosso, Pronto da Appendere" (144 car.)
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.
 
@@ -400,28 +404,31 @@ async function regenerateSingleAttribute(product, nomeAttributo, currentValue, k
 ⚠️ REGOLA CRITICA — PRIMA PAROLA: Il titolo DEVE INIZIARE SEMPRE con "Quadro".
 VIETATO ASSOLUTO: iniziare con "Stampa", "Arte", "Sivigliart" o qualsiasi altra parola diversa da "Quadro".
 
-Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo):
-- "Quadro Sacro" → soggetti religiosi (Madonne, Santi, Angeli, Natività, Cristo, preghiera)
-- "Quadro Paesaggio" → paesaggi (mare, campagna, montagna, tramonti, città, boschi)
-- "Quadro Astratto Moderno" → opere astratte, geometriche, non figurative
-- "Quadro Figurativo Moderno" → figure umane realistiche, ritratti, corpi
-- "Quadro Romantico" → scene d'amore, coppie romantiche, sentimenti
-- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche
-- "Quadro Animali" → animali come soggetto principale
-- "Quadro Pop Art" → stile pop, street art, colori saturi e netti
-- "Quadro Naif" → stile naif, primitivo, pittoresco
-- "Quadro Contemporaneo" → arte contemporanea, mixed media
-- "Quadro Moderno" → fallback per opere moderne generiche non classificabili sopra
+Dopo "Quadro", scegli il TIPO più appropriato analizzando l'opera (immagine + testo).
+⚠️ I TIPI sono basati su volumi reali Cerebro Amazon.it — usa SOLO questi:
+
+- "Quadro Moderno" → opere moderne generiche, figurative, ritratti, soggetti contemporanei (vol: 2.067)
+- "Quadro Mare" → paesaggi marini, costieri, oceano, barche, spiagge, porti (vol: 947)
+- "Quadro Astratto" → opere astratte, geometriche, non figurative, minimal (vol: 723)
+- "Quadro Paesaggio" → paesaggi NON marini: campagna, montagna, boschi, città, fiumi (vol: 102)
+- "Quadro Amore" → scene d'amore, coppie, baci, abbracci, sentimenti romantici (vol: 100)
+- "Quadro Pop Art" → stile pop, street art, colori saturi e netti, warhol-style (vol: 58)
+- "Quadro Romantico" → scene sentimentali, coppie in contesti romantici (alternativa a Amore) (vol: 54)
+- "Quadro Famiglia" → soggetti familiari, bambini con genitori, scene domestiche (vol: 23)
+- ⚠️ TIPI ELIMINATI (volume 0 su Amazon.it — NON usarli): "Quadro Sacro", "Quadro Animali", "Quadro Naif", "Quadro Contemporaneo", "Quadro Figurativo Moderno", "Quadro Astratto Moderno"
+  → Per soggetti religiosi (Madonna, Santi, ecc.): usa "Quadro Moderno" o direttamente "Quadro" + soggetto (es. "Quadro Madonna con Bambino in Gloria")
+  → Per animali: usa "Quadro Moderno" + soggetto animale (es. "Quadro Moderno Leone in Savana al Tramonto")
+  → Per stile naif: usa "Quadro Moderno" + soggetto
 
 ⚠️ KEYWORD SEO — scegli la frase più coerente con il tipo dell'opera identificato sopra:
 
-FRASI SEO DISPONIBILI (inseriscine UNA, copiandola ESATTAMENTE come scritta):
-- "Quadri Moderni Soggiorno e Camera da Letto"    → per: Quadro Romantico, Quadro Famiglia
-- "Quadri Moderni Soggiorno e Ufficio"            → per: Quadro Figurativo Moderno, Quadro Contemporaneo
-- "Quadri Moderni Camera da Letto e Studio"       → per: Quadro Romantico (alternativa), Quadro Famiglia (alternativa)
-- "Decorazioni Parete Salotto e Ingresso"         → per: Quadro Sacro, Quadro Naif, Quadro Animali, Quadro Paesaggio
-- "Quadri Moderni Ufficio e Studio"               → per: Quadro Astratto Moderno, Quadro Moderno
-- "Decorazioni Parete Sala da Pranzo e Corridoio" → per: Quadro Pop Art, Quadro Paesaggio (alternativa), Quadro Naif (alternativa)
+FRASI SEO DISPONIBILI — validate su Cerebro IT (inseriscine UNA, copiandola ESATTAMENTE):
+- "Quadri Moderni Soggiorno e Camera da Letto"  → per: Quadro Moderno, Quadro Mare, Quadro Famiglia (vol ~51K)
+- "Quadri Camera da Letto e Soggiorno"          → per: Quadro Amore, Quadro Romantico (vol ~11K)
+- "Quadri Moderni Soggiorno Grandi"             → per: Quadro Astratto, Quadro Moderno (grandi formati) (vol ~934)
+- "Decorazioni Parete Soggiorno e Salotto"      → per: Quadro Paesaggio, Quadro Pop Art, Quadro + soggetto diretto (vol ~960)
+- "Quadri Salotto e Camera da Letto"            → per: Quadro Paesaggio (alt), Quadro Pop Art (alt) (vol ~316)
+- "Decorazioni Parete Camera da Letto"          → per: Quadro Amore (alt), soggetti religiosi/animali/naif (vol ~6.5K)
 
 Scegli la frase più adatta al tipo dell'opera che hai identificato sopra. Copiala ESATTAMENTE, senza modifiche.
 
@@ -429,7 +436,7 @@ STRUTTURA OBBLIGATORIA (massimo 3 virgole interne):
 "Quadro {tipo_scelto} {soggetto 2-5 parole}, {FRASE_SEO_SCELTA}, dai Colori {colore1} e {colore2}, Pronto da Appendere{DIMENSIONE}"
 
 Dove:
-- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra
+- {tipo_scelto}: scegli DALL'ANALISI dell'opera tra i tipi elencati sopra (o ometti il tipo per soggetti senza volume)
 - {soggetto}: 2–5 parole specifiche e descrittive dell'opera
 - {FRASE_SEO_SCELTA}: la frase scelta dalla lista sopra — copiala ESATTAMENTE
 - {colore1} e {colore2}: i 2 colori principali, ogni parola Capitalizzata
@@ -445,10 +452,11 @@ VIETATO TASSATIVO:
 - Se nel testo compare autore o brand, IGNORALI completamente
 - Keyword stuffing, MAIUSCOLO totale, parole vietate (migliore, premium, esclusivo, gratis)
 
-ESEMPI CORRETTI con nuova struttura:
-- "Quadro Sacro Madonna con Bambino in Gloria, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (135 car.)
-- "Quadro Paesaggio Tramonto sul Mare con Barche, Quadri Moderni Soggiorno e Ufficio, dai Colori Arancio e Blu, Pronto da Appendere" (133 car.)
-- "Quadro Romantico Coppia in Abbraccio sotto la Luna, Quadri Moderni Camera da Letto e Studio, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
+ESEMPI CORRETTI con struttura Cerebro-validated:
+- "Quadro Moderno Madonna con Bambino in Gloria tra Angeli, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Oro e Avorio, Pronto da Appendere" (154 car.)
+- "Quadro Mare Tramonto sul Golfo con Barche e Riflessi, Quadri Moderni Soggiorno e Camera da Letto, dai Colori Arancio e Blu, Pronto da Appendere" (153 car.)
+- "Quadro Amore Coppia in Abbraccio sotto la Luna Piena, Quadri Camera da Letto e Soggiorno, dai Colori Bordeaux e Oro, Pronto da Appendere" (144 car.)
+- "Quadro Paesaggio Campagna Toscana con Cipressi al Tramonto, Decorazioni Parete Soggiorno e Salotto, dai Colori Verde e Oro, Pronto da Appendere" (149 car.)
 
 Output: UNA sola riga di testo, senza virgolette esterne, senza spiegazioni.`,
     "Nome del modello": 'breve nome identificativo dell\'opera (es. "La Notte Stellata - Van Gogh")',
