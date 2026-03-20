@@ -349,6 +349,10 @@ Rispondi SOLO con un oggetto JSON valido (nessun testo prima o dopo), con esatta
   if (result["Nome dell'articolo"]) {
     result["Nome dell'articolo"] = smartTruncateTitle(result["Nome dell'articolo"], stableKey);
   }
+  // ─── Validazione byte Chiavi di ricerca post-generazione ────────────────
+  if (result["Chiavi di ricerca"]) {
+    result["Chiavi di ricerca"] = smartTruncateChiavi(result["Chiavi di ricerca"], stableKey);
+  }
   // ────────────────────────────────────────────────────────────────────────
 
   return result;
@@ -570,6 +574,10 @@ Rispondi SOLO con un JSON: {"${nomeAttributo}": "il nuovo valore"}`;
   if (nomeAttributo === "Nome dell'articolo" && regenResult[nomeAttributo]) {
     regenResult[nomeAttributo] = smartTruncateTitle(regenResult[nomeAttributo], stableKeyRegen);
   }
+  // ─── Validazione byte Chiavi di ricerca (solo per la rigenerazione chiavi) ─
+  if (nomeAttributo === 'Chiavi di ricerca' && regenResult[nomeAttributo]) {
+    regenResult[nomeAttributo] = smartTruncateChiavi(regenResult[nomeAttributo], stableKeyRegen);
+  }
   // ────────────────────────────────────────────────────────────────────────
 
   return regenResult;
@@ -636,6 +644,35 @@ Rispondi SOLO con un JSON array di stringhe:
   } catch {
     return [];
   }
+}
+
+/**
+ * Smart truncation delle Chiavi di ricerca Amazon.
+ * Amazon accetta max 1250 byte UTF-8 totali (5 slot × 250 byte).
+ * Tronca all'ultimo spazio prima di 1200 byte (margine di sicurezza).
+ *
+ * @param {string} chiavi     - Chiavi di ricerca generate da Claude
+ * @param {string} stableKey  - SKU o ID del prodotto (per il log)
+ * @returns {string}          - Chiavi entro 1200 byte UTF-8
+ */
+function smartTruncateChiavi(chiavi, stableKey) {
+  if (!chiavi) return chiavi;
+  const MAX_BYTES = 1200;
+  const currentBytes = Buffer.byteLength(chiavi, 'utf8');
+  if (currentBytes <= MAX_BYTES) return chiavi;
+
+  // Tronca al byte limit, poi cerca l'ultimo spazio
+  let truncated = Buffer.from(chiavi, 'utf8').slice(0, MAX_BYTES).toString('utf8');
+  truncated = truncated.replace(/\uFFFD/g, ''); // rimuove caratteri UTF-8 spezzati
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > MAX_BYTES * 0.7) {
+    truncated = truncated.slice(0, lastSpace).trim();
+  } else {
+    truncated = truncated.trim();
+  }
+
+  console.warn(`[AI] ⚠️ Chiavi TRONCATE [${stableKey}]: ${currentBytes} → ${Buffer.byteLength(truncated, 'utf8')} byte`);
+  return truncated;
 }
 
 /**
