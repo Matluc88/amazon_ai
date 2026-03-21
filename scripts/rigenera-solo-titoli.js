@@ -130,10 +130,12 @@ async function main() {
         continue;
       }
 
-      // Verifica presenza frase SEO nel titolo
+      // Verifica nuovo formato keyword-first (80-110 car, Stampa su Tela presente)
       const titleLower = newTitle.toLowerCase();
-      const hasSEO = titleLower.includes('quadri moderni') || titleLower.includes('decorazioni parete');
-      const seoCheck = hasSEO ? '✅ SEO ok' : '⚠️  no kw SEO';
+      const hasStampa  = titleLower.includes('stampa su tela') || titleLower.includes('stampa tela');
+      const hasStanza  = titleLower.includes('soggiorno') || titleLower.includes('camera') || titleLower.includes('ufficio') || titleLower.includes('studio');
+      const inRange    = newTitle.length >= 75 && newTitle.length <= 115;
+      const seoCheck   = (hasStampa && hasStanza && inRange) ? '✅ ok' : '⚠️  check';
 
       console.log(`   ${seoCheck} — "${newTitle.slice(0, 90)}..." (${newTitle.length} car.)`);
 
