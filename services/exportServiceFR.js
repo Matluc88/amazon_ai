@@ -333,12 +333,25 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
 
 // ─── Helper: carica attributi FR con fallback a IT ────────────────────────────
 async function loadAttrsFR(productId, product) {
-  // 1. Prova a caricare il listing in francese
+  // 1. Carica listing francese (testo AI: titolo, bullets, keywords, ecc.)
   const attrsFR = await getProductListingFR(productId);
   const hasFR = Object.keys(attrsFR).some(k => attrsFR[k] && attrsFR[k].length > 0);
-  if (hasFR) return attrsFR;
 
-  // 2. Fallback: usa il listing italiano (per prodotti non ancora tradotti)
+  if (hasFR) {
+    // 2. Inietta le immagini dalla tabella IT (sono identiche per tutti i mercati)
+    //    La tabella FR contiene solo contenuto testuale AI, non le immagini.
+    const sections = await getProductListing(productId, product);
+    for (const items of Object.values(sections)) {
+      for (const item of items) {
+        if (item.nome && item.nome.startsWith('Immagine') && item.value) {
+          attrsFR[item.nome] = item.value; // es. "Immagine principale" → cura_principale.jpg
+        }
+      }
+    }
+    return attrsFR;
+  }
+
+  // 3. Fallback: usa il listing italiano completo (prodotti non ancora tradotti)
   console.warn(`[exportFR] Prodotto #${productId} — nessun listing FR trovato, uso fallback IT`);
   const sections = await getProductListing(productId, product);
   const attrsIT = {};
