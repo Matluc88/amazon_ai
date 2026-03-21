@@ -20,7 +20,7 @@
 const xlsx = require('xlsx');
 const path = require('path');
 const { query } = require('../database/db');
-const { getProductListing, extractDimensions } = require('./attributeService');
+const { getProductListing, getProductListingFR, extractDimensions } = require('./attributeService');
 
 const TEMPLATE_PATH = path.join(__dirname, '../WALL_ART_FR.xlsm');
 const DATA_START_ROW = 6; // indice 0-based — il template FR ha 6 righe header (vs 7 del template IT)
@@ -321,21 +321,34 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
   }
 }
 
+// ─── Helper: carica attributi FR con fallback a IT ────────────────────────────
+async function loadAttrsFR(productId, product) {
+  // 1. Prova a caricare il listing in francese
+  const attrsFR = await getProductListingFR(productId);
+  const hasFR = Object.keys(attrsFR).some(k => attrsFR[k] && attrsFR[k].length > 0);
+  if (hasFR) return attrsFR;
+
+  // 2. Fallback: usa il listing italiano (per prodotti non ancora tradotti)
+  console.warn(`[exportFR] Prodotto #${productId} — nessun listing FR trovato, uso fallback IT`);
+  const sections = await getProductListing(productId, product);
+  const attrsIT = {};
+  for (const items of Object.values(sections)) {
+    for (const item of items) {
+      if (item.value !== undefined && item.value !== '') {
+        attrsIT[item.nome] = item.value;
+      }
+    }
+  }
+  return attrsIT;
+}
+
 // ─── Funzione: export singolo prodotto → FR ───────────────────────────────────
 async function exportProductToXlsmFR(productId) {
   const productResult = await query('SELECT * FROM products WHERE id = $1', [productId]);
   const product = productResult.rows[0];
   if (!product) throw new Error(`Prodotto #${productId} non trovato`);
 
-  const sections = await getProductListing(productId, product);
-  const attrs = {};
-  for (const items of Object.values(sections)) {
-    for (const item of items) {
-      if (item.value !== undefined && item.value !== '') {
-        attrs[item.nome] = item.value;
-      }
-    }
-  }
+  const attrs = await loadAttrsFR(productId, product);
 
   let wb;
   try {
@@ -433,15 +446,7 @@ async function exportAllProductsToXlsmFR(productIds = null) {
   let currentRow = DATA_START_ROW;
 
   for (const product of products) {
-    const sections = await getProductListing(product.id, product);
-    const attrs = {};
-    for (const items of Object.values(sections)) {
-      for (const item of items) {
-        if (item.value !== undefined && item.value !== '') {
-          attrs[item.nome] = item.value;
-        }
-      }
-    }
+    const attrs = await loadAttrsFR(product.id, product);
 
     const rows = [];
     const hasVariants = !!(product.sku_max || product.sku_padre);

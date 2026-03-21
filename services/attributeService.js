@@ -392,6 +392,42 @@ async function getProductListing(productId, product = null) {
 }
 
 /**
+ * Salva tutti i valori AI in francese (tabella product_attribute_values_fr).
+ * aiValues: { nomeAttributo: valore, ... }
+ */
+async function saveAiValuesFR(productId, aiValues) {
+  for (const [nome, value] of Object.entries(aiValues)) {
+    if (value !== undefined && value !== null && value !== '') {
+      await query(`
+        INSERT INTO product_attribute_values_fr (product_id, nome_attributo, value, compiled_by, updated_at)
+        VALUES ($1, $2, $3, 'AI', NOW())
+        ON CONFLICT (product_id, nome_attributo)
+        DO UPDATE SET value = EXCLUDED.value, compiled_by = 'AI', updated_at = NOW()
+      `, [productId, nome, String(value)]);
+    }
+  }
+}
+
+/**
+ * Carica il listing FR di un prodotto dalla tabella product_attribute_values_fr.
+ * Ritorna un oggetto piatto { nome_attributo: value }.
+ * Ritorna {} se non esiste ancora contenuto FR per il prodotto.
+ */
+async function getProductListingFR(productId) {
+  const result = await query(`
+    SELECT nome_attributo, value
+    FROM product_attribute_values_fr
+    WHERE product_id = $1
+  `, [productId]);
+
+  const attrs = {};
+  for (const row of result.rows) {
+    attrs[row.nome_attributo] = row.value;
+  }
+  return attrs;
+}
+
+/**
  * Aggiorna un singolo attributo manualmente
  */
 async function updateAttributeManually(productId, attributeId, value) {
@@ -431,7 +467,9 @@ module.exports = {
   compileFixedAndAuto,
   upsertAttributeValue,
   saveAiValues,
+  saveAiValuesFR,
   getProductListing,
+  getProductListingFR,
   updateAttributeManually,
   getCachedKeywords,
   extractDimensions

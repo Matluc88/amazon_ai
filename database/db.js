@@ -260,6 +260,23 @@ async function initDatabase() {
       ALTER TABLE products ADD COLUMN IF NOT EXISTS cerebro_cluster_id INTEGER REFERENCES cerebro_clusters(id) ON DELETE SET NULL
     `);
 
+    // Tabella valori attributi FR (Amazon.fr) — contenuto in francese generato da AI
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS product_attribute_values_fr (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+        nome_attributo VARCHAR(255) NOT NULL,
+        value TEXT,
+        compiled_by VARCHAR(50) DEFAULT 'AI',
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(product_id, nome_attributo)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_pav_fr_product
+      ON product_attribute_values_fr (product_id)
+    `);
+
     // Tabella chat interna
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (
