@@ -245,6 +245,16 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
   // ── Defaults fissi Amazon.fr — obbligatori per "Impressions sur toile" ────
   // Valori validati dal foglio "Valeurs valides" del template WALL_ART_FR.xlsm.
   // Sovrascrivono eventuali valori italiani dal DB. Fissi per parent + child.
+  // ── Brand & Manufacturer — fissi per tutti i prodotti ────────────────────
+  setCellValue(sheet, 7,   rowIdx, 'SivigliArt');               // Marque (Brand) — col H
+  setCellValue(sheet, 20,  rowIdx, 'SivigliArt');               // Fabricant (Manufacturer) — col U
+
+  // ── Orientation — calcolata dalle dimensioni (Portrait / Paysage) ─────────
+  if (dims && dims.lunghezza && dims.larghezza) {
+    const orient = Number(dims.lunghezza) > Number(dims.larghezza) ? 'Paysage' : 'Portrait';
+    setCellValue(sheet, 123, rowIdx, orient);                   // Orientation — col DT
+  }
+
   setCellValue(sheet, 87,  rowIdx, 'Tissu');                    // Document papier — "Tissu" = tessuto/canvas (valori: Tissu, Papier cartonné, Papier photo brillant, Papier (ordinaire)...)
   setCellValue(sheet, 105, rowIdx, 'Non');                      // Personnalisable ? (Oui / Non)
   setCellValue(sheet, 147, rowIdx, 'Non');                      // Article fragile ? (Oui / Non)
