@@ -216,7 +216,7 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 5, rowIdx, 'SIZE/ORIENTATION');
     setCellValue(sheet, 66, rowIdx, taglia || '');
     // Condizione articolo
-    setCellValue(sheet, 192, rowIdx, 'Neuf');              // IT: 190
+    setCellValue(sheet, 192, rowIdx, 'Nouveau');           // IT: 190 — valore corretto FR: "Nouveau" (non "Neuf")
     // Offerta
     setCellValue(sheet, 217, rowIdx, 'DEFAULT');           // canale gestione FBM (FR: col 217 vs IT: 215)
     setCellValue(sheet, 218, rowIdx, 100);                 // quantità (FR: 218 vs IT: 216)
@@ -242,23 +242,23 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
   });
 
   // ── Defaults fissi Amazon.fr — obbligatori per "Impressions sur toile" ────
-  // Questi valori sovrascrivono eventuali valori italiani dal DB.
-  // Sono fissi per tutte le righe (parent + child).
-  setCellValue(sheet, 87,  rowIdx, 'Toile');                    // Document papier (print_media_type)
-  setCellValue(sheet, 105, rowIdx, 'Non');                      // Personnalisable ?
-  setCellValue(sheet, 147, rowIdx, 'Non');                      // Article fragile ?
-  setCellValue(sheet, 161, rowIdx, 'Non');                      // Est encadré (canvas su telaio, non incorniciato)
-  setCellValue(sheet, 177, rowIdx, 'Intérieur');                // Utilisation extérieure ou intérieure
-  setCellValue(sheet, 184, rowIdx, 'Impression sur toile');     // Forme d'art mural
-  setCellValue(sheet, 192, rowIdx, 'Neuf');                     // État de l'article (parent + child)
-  setCellValue(sheet, 198, rowIdx, 'FAUX');                     // Message cadeau disponible
-  setCellValue(sheet, 199, rowIdx, 'FAUX');                     // Emballage cadeau disponible ?
-  setCellValue(sheet, 276, rowIdx, 'IT');                       // Pays d'origine (ISO code Italia)
-  setCellValue(sheet, 300, rowIdx, 'Non');                      // Restrictions d'âge acheteurs
+  // Valori validati dal foglio "Valeurs valides" del template WALL_ART_FR.xlsm.
+  // Sovrascrivono eventuali valori italiani dal DB. Fissi per parent + child.
+  setCellValue(sheet, 87,  rowIdx, 'Tissu');                    // Document papier — "Tissu" = tessuto/canvas (valori: Tissu, Papier cartonné, Papier photo brillant, Papier (ordinaire)...)
+  setCellValue(sheet, 105, rowIdx, 'Non');                      // Personnalisable ? (Oui / Non)
+  setCellValue(sheet, 147, rowIdx, 'Non');                      // Article fragile ? (Oui / Non)
+  setCellValue(sheet, 161, rowIdx, 'Non');                      // Est encadré — canvas su telaio, non cornice (Oui / Non)
+  setCellValue(sheet, 177, rowIdx, 'Intérieur');                // Utilisation extérieure ou intérieure (Extérieure / Intérieur)
+  setCellValue(sheet, 184, rowIdx, 'Reproduction d\'art');      // Forme d'art mural (Affiche, Décoration murale, Peinture, Reproduction d'art, Tapisserie...)
+  setCellValue(sheet, 192, rowIdx, 'Nouveau');                  // État de l'article — "Nouveau" è il valore corretto FR (non "Neuf")
+  setCellValue(sheet, 198, rowIdx, 'Non');                      // Message cadeau disponible (Oui / Non)
+  setCellValue(sheet, 199, rowIdx, 'Non');                      // Emballage cadeau disponible ? (Oui / Non)
+  setCellValue(sheet, 276, rowIdx, 'Italie');                   // Pays d'origine — nome completo in francese (non "IT")
+  setCellValue(sheet, 300, rowIdx, 'Non');                      // Restrictions d'âge acheteurs (Oui / Non)
   setCellValue(sheet, 301, rowIdx, 'sivigliart@outlook.it');    // Adresse personne responsable (GPSR)
-  setCellValue(sheet, 321, rowIdx, 'Oui');                      // Attestation sécurité GPSR
+  setCellValue(sheet, 321, rowIdx, 'Oui');                      // Attestation sécurité GPSR (Oui / Non)
   setCellValue(sheet, 322, rowIdx, 'sivigliart@outlook.it');    // E-mail produttore (GPSR)
-  setCellValue(sheet, 334, rowIdx, 'Non');                      // Est un produit d'origine équipementier
+  setCellValue(sheet, 334, rowIdx, 'Non');                      // Est un produit d'origine équipementier (Oui / Non)
   // ─────────────────────────────────────────────────────────────────────────
 
   // ── Dimensioni variante ──────────────────────────────────────────────────
