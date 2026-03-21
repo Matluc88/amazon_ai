@@ -221,7 +221,8 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 217, rowIdx, 'DEFAULT');           // canale gestione FBM (FR: col 217 vs IT: 215)
     setCellValue(sheet, 218, rowIdx, 100);                 // quantità (FR: 218 vs IT: 216)
     setCellValue(sheet, 219, rowIdx, 7);                   // tempo di gestione 7 giorni (FR: 219 vs IT: 217)
-    if (prezzo) setCellValue(sheet, 222, rowIdx, Number(prezzo) + 20); // prezzo FR = DB + €20 (FR: 222 vs IT: 220)
+    if (prezzo) setCellValue(sheet, 222, rowIdx, Number(prezzo) + 20); // prezzo vendita FR = prezzo DB + €20
+    if (prezzo) setCellValue(sheet, 194, rowIdx, Number(prezzo) + 60); // Prix catalogue TTC = prezzo vendita + €40 (= prezzo DB + €60)
     setCellValue(sheet, 231, rowIdx, 'studio');            // gruppo spedizione (FR: 231 vs IT: 229)
   }
 
