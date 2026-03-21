@@ -241,6 +241,26 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 43 + i, rowIdx, slot);
   });
 
+  // ── Defaults fissi Amazon.fr — obbligatori per "Impressions sur toile" ────
+  // Questi valori sovrascrivono eventuali valori italiani dal DB.
+  // Sono fissi per tutte le righe (parent + child).
+  setCellValue(sheet, 87,  rowIdx, 'Toile');                    // Document papier (print_media_type)
+  setCellValue(sheet, 105, rowIdx, 'Non');                      // Personnalisable ?
+  setCellValue(sheet, 147, rowIdx, 'Non');                      // Article fragile ?
+  setCellValue(sheet, 161, rowIdx, 'Non');                      // Est encadré (canvas su telaio, non incorniciato)
+  setCellValue(sheet, 177, rowIdx, 'Intérieur');                // Utilisation extérieure ou intérieure
+  setCellValue(sheet, 184, rowIdx, 'Impression sur toile');     // Forme d'art mural
+  setCellValue(sheet, 192, rowIdx, 'Neuf');                     // État de l'article (parent + child)
+  setCellValue(sheet, 198, rowIdx, 'FAUX');                     // Message cadeau disponible
+  setCellValue(sheet, 199, rowIdx, 'FAUX');                     // Emballage cadeau disponible ?
+  setCellValue(sheet, 276, rowIdx, 'IT');                       // Pays d'origine (ISO code Italia)
+  setCellValue(sheet, 300, rowIdx, 'Non');                      // Restrictions d'âge acheteurs
+  setCellValue(sheet, 301, rowIdx, 'sivigliart@outlook.it');    // Adresse personne responsable (GPSR)
+  setCellValue(sheet, 321, rowIdx, 'Oui');                      // Attestation sécurité GPSR
+  setCellValue(sheet, 322, rowIdx, 'sivigliart@outlook.it');    // E-mail produttore (GPSR)
+  setCellValue(sheet, 334, rowIdx, 'Non');                      // Est un produit d'origine équipementier
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ── Dimensioni variante ──────────────────────────────────────────────────
   if (dims) {
     // Dimensioni articolo (stesse posizioni del template IT)
