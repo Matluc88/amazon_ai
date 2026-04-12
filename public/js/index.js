@@ -120,7 +120,16 @@ function updateStats(products) {
     }
   }
 
-  // Mostra "Scarica XLSM Germania" se ci sono prodotti con listing compilato
+  // Mostra bottoni Germania se ci sono prodotti con listing compilato
+  const generateAllDEBtn = document.getElementById('generateAllDEBtn');
+  if (generateAllDEBtn) {
+    if (conListing > 0) {
+      generateAllDEBtn.style.display = 'inline-flex';
+      generateAllDEBtn.textContent = `🇩🇪 Genera tutti DE (${conListing})`;
+    } else {
+      generateAllDEBtn.style.display = 'none';
+    }
+  }
   const downloadAllDEBtn = document.getElementById('downloadAllDEBtn');
   if (downloadAllDEBtn) {
     if (conListing > 0) {
@@ -458,6 +467,43 @@ async function downloadAllForAmazonFR() {
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇫🇷 Scarica XLSM Francia'; }
   }
+}
+
+// =============================================
+// GENERA LISTING DE — TUTTI I PRODOTTI (bulk)
+// =============================================
+async function generateAllDE() {
+  const btn = document.getElementById('generateAllDEBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; }
+
+  // Usa tutti i prodotti con listing compilato
+  const toGenerate = allProducts.filter(p => parseInt(p.attributi_compilati) > 0);
+  if (toGenerate.length === 0) {
+    showToast('Nessun prodotto con listing compilato', 'warning');
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+    return;
+  }
+
+  showLoading(
+    `🇩🇪 Generazione listing DE per ${toGenerate.length} prodotti...`,
+    'Claude sta creando gli attributi Amazon in tedesco. Potrebbe richiedere qualche minuto.'
+  );
+
+  let success = 0, errors = 0;
+  for (let i = 0; i < toGenerate.length; i++) {
+    try {
+      const res = await fetch(`/api/listings/generate-de/${toGenerate[i].id}`, { method: 'POST' });
+      if (res.ok) success++; else errors++;
+    } catch { errors++; }
+    document.getElementById('loadingSubtitle').textContent =
+      `Completati: ${success + errors} / ${toGenerate.length} (✅ ${success} | ❌ ${errors})`;
+  }
+
+  hideLoading();
+  if (errors === 0) showToast(`🇩🇪 Tutti i ${success} listing DE generati! Ora puoi esportare.`, 'success');
+  else showToast(`⚠️ ${success} generati DE, ${errors} errori.`, 'warning');
+  if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Genera tutti DE'; }
 }
 
 // =============================================
