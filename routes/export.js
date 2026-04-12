@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const { exportProductToXlsm, exportAllProductsToXlsm } = require('../services/exportService');
 const { exportProductToXlsmFR, exportAllProductsToXlsmFR } = require('../services/exportServiceFR');
+const { exportProductToXlsmDE, exportAllProductsToXlsmDE } = require('../services/exportServiceDE');
 
 /**
  * POST /api/export/selected
@@ -114,6 +115,74 @@ router.get('/fr/:productId', async (req, res) => {
   } catch (err) {
     console.error('❌ Export FR error:', err.message);
     res.status(500).json({ error: err.message || 'Errore durante l\'export FR' });
+  }
+});
+
+// ─── ENDPOINTS GERMANIA (DE) ──────────────────────────────────────────────────
+
+/**
+ * POST /api/export/de/selected
+ * Genera e scarica un WALL_ART_DE.xlsm con i soli prodotti selezionati.
+ * Body: { productIds: [1, 5, 12, ...] }
+ */
+router.post('/de/selected', async (req, res) => {
+  try {
+    const { productIds } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ error: 'Lista productIds mancante o vuota' });
+    }
+    const ids = productIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+    const { buffer, filename, count } = await exportAllProductsToXlsmDE(ids);
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('X-Product-Count', count);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export DE SELECTED error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export DE' });
+  }
+});
+
+/**
+ * GET /api/export/de/all
+ * Genera e scarica un WALL_ART_DE_ALL.xlsm con TUTTI i prodotti compilati.
+ */
+router.get('/de/all', async (req, res) => {
+  try {
+    const { buffer, filename, count } = await exportAllProductsToXlsmDE();
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('X-Product-Count', count);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export DE ALL error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export DE' });
+  }
+});
+
+/**
+ * GET /api/export/de/:productId
+ * Genera e scarica il file WALL_ART_DE.xlsm per il singolo prodotto.
+ */
+router.get('/de/:productId', async (req, res) => {
+  const productId = parseInt(req.params.productId);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'ID prodotto non valido' });
+  }
+  try {
+    const { buffer, filename } = await exportProductToXlsmDE(productId);
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.end(buffer);
+  } catch (err) {
+    console.error('❌ Export DE error:', err.message);
+    res.status(500).json({ error: err.message || 'Errore durante l\'export DE' });
   }
 });
 

@@ -2199,6 +2199,68 @@ async function downloadForAmazonFR() {
 }
 
 // =============================================
+// GENERA LISTING DE (tedesco) con AI
+// =============================================
+async function generateListingDE() {
+  const btn = document.getElementById('generateDEBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione DE...'; }
+  showLoading('Generazione listing DE...', 'Claude sta creando gli attributi Amazon in tedesco');
+
+  try {
+    const res = await fetch(`/api/listings/generate-de/${productId}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Errore sconosciuto');
+    hideLoading();
+    showToast('🇩🇪 Listing tedesco generato! Ora puoi esportare il file DE.', 'success');
+  } catch (err) {
+    hideLoading();
+    showToast(`❌ Generazione DE fallita: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Genera DE'; }
+  }
+}
+
+// =============================================
+// DOWNLOAD PER AMAZON GERMANY (WALL_ART_DE.xlsm) — DE
+// =============================================
+async function downloadForAmazonDE() {
+  const btn = document.getElementById('downloadAmazonDEBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Download DE...'; }
+
+  try {
+    const res = await fetch(`/api/export/de/${productId}`);
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export DE';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_DE_${productId}.xlsm`;
+
+    const a = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showToast('✅ File Germania scaricato! Carica su Amazon Seller Central (DE).', 'success');
+  } catch (err) {
+    showToast(`❌ Download DE fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Esporta DE'; }
+  }
+}
+
+// =============================================
 // UI HELPERS
 // =============================================
 function showLoading(title, subtitle) {

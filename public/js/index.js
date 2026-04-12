@@ -119,6 +119,17 @@ function updateStats(products) {
       downloadAllFRBtn.style.display = 'none';
     }
   }
+
+  // Mostra "Scarica XLSM Germania" se ci sono prodotti con listing compilato
+  const downloadAllDEBtn = document.getElementById('downloadAllDEBtn');
+  if (downloadAllDEBtn) {
+    if (conListing > 0) {
+      downloadAllDEBtn.style.display = 'inline-flex';
+      downloadAllDEBtn.textContent = `🇩🇪 Scarica XLSM Germania (${conListing})`;
+    } else {
+      downloadAllDEBtn.style.display = 'none';
+    }
+  }
 }
 
 function renderProducts(products) {
@@ -446,6 +457,130 @@ async function downloadAllForAmazonFR() {
     showToast(`❌ Download FR fallito: ${err.message}`, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇫🇷 Scarica XLSM Francia'; }
+  }
+}
+
+// =============================================
+// GENERA LISTING DE — SELEZIONATI (bulk)
+// =============================================
+async function generateSelectedDE() {
+  const ids = Array.from(selectedProductIds);
+  if (ids.length === 0) {
+    showToast('Seleziona almeno un prodotto prima di generare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('generateSelectedDEBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; }
+
+  showLoading(
+    `🇩🇪 Generazione listing DE per ${ids.length} prodotti...`,
+    'Claude sta creando gli attributi Amazon in tedesco.'
+  );
+
+  let success = 0, errors = 0;
+  for (let i = 0; i < ids.length; i++) {
+    try {
+      const res = await fetch(`/api/listings/generate-de/${ids[i]}`, { method: 'POST' });
+      if (res.ok) success++; else errors++;
+    } catch { errors++; }
+    document.getElementById('loadingSubtitle').textContent =
+      `Completati: ${success + errors} / ${ids.length}`;
+  }
+
+  hideLoading();
+  if (errors === 0) showToast(`🇩🇪 Tutti i ${success} listing DE generati!`, 'success');
+  else showToast(`⚠️ ${success} generati DE, ${errors} errori.`, 'warning');
+  if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Genera DE selezionati'; }
+}
+
+// =============================================
+// DOWNLOAD XLSM DE — SOLO SELEZIONATI
+// =============================================
+async function downloadSelectedForAmazonDE() {
+  const ids = Array.from(selectedProductIds);
+  if (ids.length === 0) {
+    showToast('Seleziona almeno un prodotto prima di esportare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('exportSelectedDEBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/de/selected', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: ids })
+    });
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export DE';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_DE_SELECTED.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || ids.length;
+    showToast(`🇩🇪 File Germania scaricato con ${count} prodotti selezionati!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download DE fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Esporta DE selezionati'; }
+  }
+}
+
+// =============================================
+// DOWNLOAD XLSM DE (tutti i prodotti)
+// =============================================
+async function downloadAllForAmazonDE() {
+  const btn = document.getElementById('downloadAllDEBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/de/all');
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export DE';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_DE_ALL.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || '?';
+    showToast(`🇩🇪 File Germania scaricato con ${count} prodotti. Carica su Amazon.de!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download DE fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Scarica XLSM Germania'; }
   }
 }
 

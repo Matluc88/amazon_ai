@@ -1062,4 +1062,178 @@ function parseJsonResponse(text) {
   }
 }
 
-module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR };
+// ─── AREA 0 universali DE — keyword validate su Amazon.de 2026 ─────────────
+// Volumi stimati per il mercato tedesco (Poster & Kunstdrucke):
+// wandbilder wohnzimmer, leinwandbilder, bilder wohnzimmer, kunstdruck,
+// wanddeko, poster wohnzimmer, leinwand, geschenk
+const AREA0_PHRASES_DE = [
+  'wandbilder wohnzimmer',        // top keyword DE
+  'leinwandbilder',               // canvas prints
+  'bilder wohnzimmer',            // pictures living room
+  'kunstdruck',                   // art print
+  'wanddeko',                     // wall decoration
+  'poster wohnzimmer',            // poster living room
+  'leinwand',                     // canvas
+];
+
+/**
+ * Garantisce che le frasi AREA 0 DE siano presenti nelle chiavi.
+ * Se mancano, le prepende. Poi tronca a max 1200 byte.
+ */
+function ensureArea0AndBytesDE(chiavi, stableKey) {
+  if (!chiavi) return chiavi;
+  const MIN_BYTES = 1100;
+
+  const lower = chiavi.toLowerCase();
+  const missingPhrases = AREA0_PHRASES_DE.filter(p => !lower.includes(p));
+
+  let result = chiavi;
+  if (missingPhrases.length > 0) {
+    result = missingPhrases.join(' ') + ' ' + result;
+    console.warn(`[AI-DE] ⚠️ AREA 0 DE mancanti [${stableKey}]: ${missingPhrases.join(', ')} — aggiunte in testa`);
+  }
+
+  const byteCount = Buffer.byteLength(result, 'utf8');
+  if (byteCount < MIN_BYTES) {
+    console.warn(`[AI-DE] ⚠️ Chiavi DE sotto target [${stableKey}]: ${byteCount}/${MIN_BYTES} byte`);
+  }
+
+  return smartTruncateChiavi(result, stableKey);
+}
+
+/**
+ * Genera TUTTI gli attributi AI per il mercato TEDESCO (amazon.de).
+ * Output: stessi campi JSON dell'IT (chiavi DB in italiano), contenuto in TEDESCO.
+ *
+ * @param {object} product - dati del prodotto
+ * @param {string[]} keywords - keyword minate (opzionale)
+ * @param {string} cerebroSection - sezione Cerebro DE (opzionale)
+ * @returns {object} - { "Nome dell'articolo": "...(DE)...", ... }
+ */
+async function generateAllAiAttributesDE(product, keywords = [], cerebroSection = '') {
+  const imageUrl = getProductImageUrl(product);
+  const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
+  const stableKey = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
+
+  const keywordsSection = keywords.length > 0
+    ? `\nECHTE AMAZON.DE-SUCHBEGRIFFE — verwende sie wo natürlich passend:\n${keywords.slice(0, 20).join(', ')}\n`
+    : '';
+  const cerebroSectionText = cerebroSection ? `\n${cerebroSection}\n` : '';
+
+  const variantiSection = (product.misura_max || product.sku_max)
+    ? `\nVERFÜGBARE VARIANTEN (3 Größen):\n- Groß: ${product.misura_max || '—'} cm — €${product.prezzo_max || '—'} (SKU: ${product.sku_max || '—'})\n- Mittel: ${product.misura_media || '—'} cm — €${product.prezzo_media || '—'} (SKU: ${product.sku_media || '—'})\n- Klein: ${product.misura_mini || '—'} cm — €${product.prezzo_mini || '—'} (SKU: ${product.sku_mini || '—'})\n`
+    : '';
+
+  const hasSizeVariants = typeof product.misura_max === 'string'
+    ? product.misura_max.trim().length > 0 && product.misura_max.trim() !== '—'
+    : Boolean(product.misura_max);
+  const dimensioneSingle = product.dimensioni || product.misura_max || '';
+
+  const oriCalc = calcOrientamento(product.misura_max || product.dimensioni || '');
+  const formatoDE = oriCalc
+    ? (() => {
+        const de = oriCalc.orientamento === 'Orizzontale' ? 'QUERFORMAT' : oriCalc.orientamento === 'Verticale' ? 'HOCHFORMAT' : 'QUADRATISCH';
+        return `\n⚠️ FORMAT DES WERKS: ${de} — Maße BREITE×HÖHE (z.B. "${oriCalc.display}"). In den Suchbegriffen IMMER diese Reihenfolge verwenden.`;
+      })()
+    : '';
+
+  const visionNote = imageUrl
+    ? '\n🖼️ VISUELLE ANALYSE: Ein Bild des Werks ist beigefügt. Verwende es als Hauptquelle für visuelle Felder (Figuren, Farben, Stil, Komposition).\n'
+    : '';
+
+  const prompt = `Sei un esperto di listing Amazon per il mercato TEDESCO (amazon.de), specializzato in arte e decorazione.
+
+Genera TUTTI gli attributi per un listing Amazon ottimizzato — Leinwanddruck (stampe su tela) su amazon.de.
+${visionNote}
+TESTO DELL'OPERA (in italiano — interpretare il soggetto, NON tradurre letteralmente):
+"""
+${product.descrizione_raw || 'Nessuna descrizione fornita'}
+"""
+${product.dimensioni ? `\nMASSE (groß): ${product.dimensioni} cm` : ''}
+
+KÜNSTLER: ${autore}
+⚠️ "${autore}" ist der NAME DES KÜNSTLERS — nicht mit dem Titel des Werks verwechseln.
+${variantiSection}${keywordsSection}${cerebroSectionText}
+
+⚠️ ABSOLUTE REGEL: ALLE Textfelder (Titel, Beschreibung, Aufzählungspunkte, Suchbegriffe) MÜSSEN auf DEUTSCH sein. Nur die Meta-Felder (Stile, Tema, Tipo di stanza, Famiglia di colori, Stagioni, Edizione, Funzioni speciali, Personaggio rappresentato, Tema animali, Colore, Usi consigliati) bleiben auf ITALIENISCH (DB-Schlüssel).
+⚠️ AMAZON-RICHTLINIE: VERBOTEN in allen Feldern: "erotisch", "sinnlich", "sexy" oder ähnliche Begriffe. Für romantische Werke: NUR "romantisch", "Paar", "Liebe", "künstlerische Leidenschaft" verwenden.
+
+### ARTIKELNAME (Titel — 80-110 Zeichen, ideal 85-105, NIE über 200):
+✔ "Leinwandbild" IMMER enthalten ✔ TYP + RAUM + Motiv 2-4 Wörter ✔ Alles auf DEUTSCH
+TYPEN: "Modernes Wandbild" (DEFAULT), "Romantisches Wandbild" (NUR Paar/Kuss), "Abstraktes Wandbild" (NUR abstrakt), "Meerbild" (NUR maritim), "Landschaftsbild" (NUR Landschaft), "Leinwandbild" (neutral)
+RÄUME: "Wohnzimmer" (DEFAULT), "Schlafzimmer" (romantisch/floral), "Büro" (Landschaft/abstrakt)
+STRUKTUR: A) "{Typ} {Raum} {Motiv 2-4 Wörter} – Leinwandbild {Schlüsselwort 2}" B) "Leinwandbild {Motiv} – {Typ} {Raum} {Schlüsselwort 2}"
+SCHLÜSSELWÖRTER 2: "Wanddekoration", "Wohnzimmerdeko", "Geschenkidee", "Fertig zum Aufhängen"
+hasSizeVariants=${hasSizeVariants} — wenn FALSE, ", ${dimensioneSingle} cm" am Ende hinzufügen.
+BEISPIELE: "Modernes Wandbild Wohnzimmer Pferde Zirkus – Leinwandbild Wanddekoration" (72) | "Romantisches Wandbild Schlafzimmer Paar Kuss – Leinwandbild Wohnzimmerdeko" (78)
+Ausgabe: EINE Zeile auf DEUTSCH, ohne Anführungszeichen.
+
+### PRODUKTBESCHREIBUNG (200-2000 Zeichen, REINER TEXT — KEIN HTML, alles auf DEUTSCH):
+3 TEILE getrennt durch " — ":
+TEIL 1: ERSTER PFLICHT-SATZ: "Leinwanddruck des Originalwerks von ${autore}, fertig zum Aufhängen mit Holzrahmen inklusive." + 1-2 Sätze über Motiv/Verwendung.
+TEIL 2: 3-5 kurze Sätze über das Werk (Motiv, Farben, Atmosphäre). Max 20 Wörter/Satz.
+TEIL 3: Wo/für wen + CTA. Bei Varianten: "Erhältlich in mehreren Formaten: [klein], [mittel], [groß] cm."
+VERBOTEN: "gemalt", "handgemalt".
+
+### SUCHBEGRIFFE (Backend — 5 Slots × 250 Bytes = 1250 Bytes, NUR DEUTSCH):
+${formatoDE}
+Format: NUR Leerzeichen, keine Kommas. Alles kleingeschrieben. Ziel: 1100-1200 Bytes UTF-8.
+
+ZONE 0 — PFLICHT (alle Leinwandbilder Amazon.de):
+wandbilder wohnzimmer leinwandbilder bilder wohnzimmer kunstdruck wanddeko poster wohnzimmer leinwand geschenkidee wohnung
++ ALLE Cerebro-Schlüsselwörter der Tiers BACKEND und BULLET aus dem Prompt (falls vorhanden).
+
+ZONE 1 — PRODUKT-SYNONYME (min 20 Begriffe): bild poster druck gemälde kunst wandbild rahmen dekoration kunstwerk wanddekoration leinwanddruck bilderwand wandschmuck wohndeko inneneinrichtung...
+ZONE 2 — SPEZIFISCHES MOTIV (min 25 Wörter auf Deutsch): Varianten des Motivs des Werks...
+ZONE 3 — STIL UND TECHNIK (min 15 Wörter): figurativ abstrakt zeitgenössisch modern impressionistisch expressionistisch...
+ZONE 4 — RÄUME (min 20 Wörter): flur küche bad terrasse balkon hotel restaurant bar arztpraxis wartezimmer empfang...
+ZONE 5 — GESCHENKE UND LONG-TAIL (min 30 Wörter): geschenk muttertag geschenk geburtstag freundin geschenk hochzeit einweihung geschenk weihnachten valentinstag vatertag geschenk freund...
+REGELN: KEIN Englisch (kein wall art, kein canvas, kein gift), kein "sivigliart", min 150 Wörter.
+
+### AUFZÄHLUNGSPUNKTE (5 Punkte auf DEUTSCH — max 220 Zeichen je):
+VERBOTEN: "gemalt", "handgemalt". "Leinwandbild" in mindestens 2 Punkten.
+Punkt 1: "Modernes Wandbild für {Raum 1} und {Raum 2}, ideal als Wanddekoration in {Adj.} Räumen. Mit Holzrahmen inklusive, ohne Glasrahmen, fertig zum Aufhängen."
+Punkt 2: "Leinwandbild mit {Qualität}, perfekt für {Verwendung}. Hochauflösende Reproduktion des Originalwerks von ${autore}." [einziger Punkt mit Künstlername]
+Punkt 3: "Wandbild auf Leinwand, fertig zum Aufhängen mit stabilem Holzrahmen und lackierter Oberfläche. Aufhänger inklusive, einfache Montage in wenigen Minuten." [IMMER "lackierter Oberfläche"]
+Punkt 4: "Perfekt als Geschenkidee zum Einzug, {Anlass 1}, {Anlass 2} oder {Anlass 3}. Passt zu jedem Einrichtungsstil."
+Punkt 5: ${hasSizeVariants ? `"Erhältlich in mehreren Formaten: ${product.misura_mini || '[klein]'}, ${product.misura_media || '[mittel]'}, ${product.misura_max || '[groß]'} cm, passend für jeden Raum. Rückgabe innerhalb von 14 Tagen gemäß Amazon-Bedingungen."` : '"Erhältlich in mehreren Größen für jeden Raum. Rückgabe innerhalb von 14 Tagen gemäß Amazon-Bedingungen."'}
+
+### META-FELDER (in ITALIANO — chiavi DB):
+- "Personaggio rappresentato": figura umana → 1-3 parole IT (es. "Coppia", "Donna", "Musicista"); nessuna → "N/D"
+- "Colore": 1-2 dominanti IT (es. "Blu, Oro"); 3+ → "Multicolore"
+- "Stile": stile artistico IT (es. "Arte Moderna", "Impressionista", "Astratto")
+- "Tema": temi IT virgola-separati (es. "Coppia romantica, Amore")
+- "Tipo di stanza": 3-4 stanze IT, inizia "Soggiorno" (es. "Soggiorno, Camera da letto, Ufficio")
+- "Famiglia di colori": UNO tra: "Bianco"|"Bianco e nero"|"Caldi"|"Freddi"|"Luminosi"|"Neutro"|"Pastelli"|"Scala di grigi"|"Tonalità della terra"|"Toni gioiello"
+- "Usi consigliati per il prodotto": IT virgola-separati (es. "Decorazione parete, Regalo")
+- "Tema animali": animale principale IT (es. "Cavallo", "Leone"); assenza → "N/D"
+- "Funzioni speciali": SEMPRE "Pronto da appendere, Con telaio in legno" (IT)
+- "Stagioni": UNO tra: "Tutte le stagioni"|"Primavera"|"Estate"|"Autunno"|"Inverno"
+- "Edizione": IT (es. "Stampa Artistica Moderna")
+
+Rispondi SOLO con JSON valido:
+{"Nome dell'articolo":"...","Nome del modello":"...","Descrizione del prodotto":"...","Punto elenco 1":"...","Punto elenco 2":"...","Punto elenco 3":"...","Punto elenco 4":"...","Punto elenco 5":"...","Chiavi di ricerca":"...","Funzioni speciali":"...","Personaggio rappresentato":"...","Stile":"...","Tema":"...","Usi consigliati per il prodotto":"...","Tipo di stanza":"...","Famiglia di colori":"...","Motivo":"...","Colore":"...","Supporti di stampa":"Leinwanddruck","Edizione":"...","Stagioni":"...","Tema animali":"..."}`;
+
+  if (imageUrl) {
+    console.log(`[AI-DE] Vision AI attiva per prodotto ${product.id || '?'} — immagine: ${imageUrl.slice(0, 60)}...`);
+  }
+
+  const message = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 3000,
+    messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
+  });
+
+  const result = parseJsonResponse(message.content[0].text);
+
+  if (result["Nome dell'articolo"]) {
+    result["Nome dell'articolo"] = smartTruncateTitle(result["Nome dell'articolo"], stableKey);
+  }
+  if (result["Chiavi di ricerca"]) {
+    result["Chiavi di ricerca"] = ensureArea0AndBytesDE(result["Chiavi di ricerca"], stableKey);
+  }
+
+  return result;
+}
+
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR, generateAllAiAttributesDE };

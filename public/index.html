@@ -251,6 +251,11 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
                   onclick="downloadAllForAmazonFR()">
             🇫🇷 Scarica XLSM Francia
           </button>
+          <button class="btn btn-sm" id="downloadAllDEBtn"
+                  style="background:linear-gradient(135deg,#d32f2f,#b71c1c);color:#fff;border:none;font-weight:600;display:none;"
+                  onclick="downloadAllForAmazonDE()">
+            🇩🇪 Scarica XLSM Germania
+          </button>
         </div>
       </div>
       <!-- BARRA SELEZIONE (visibile solo quando almeno 1 prodotto è selezionato) -->
@@ -263,6 +268,14 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
         <button id="exportSelectedFRBtn" onclick="downloadSelectedForAmazonFR()"
           style="padding:6px 14px;background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
           🇫🇷 Esporta FR selezionati
+        </button>
+        <button id="generateSelectedDEBtn" onclick="generateSelectedDE()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#ff6f00,#e65100);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇩🇪 Genera DE selezionati
+        </button>
+        <button id="exportSelectedDEBtn" onclick="downloadSelectedForAmazonDE()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#d32f2f,#b71c1c);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇩🇪 Esporta DE selezionati
         </button>
         <button onclick="deselectAll()"
           style="padding:6px 12px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">

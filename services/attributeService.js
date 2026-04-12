@@ -428,6 +428,42 @@ async function getProductListingFR(productId) {
 }
 
 /**
+ * Salva tutti i valori AI in tedesco (tabella product_attribute_values_de).
+ * aiValues: { nomeAttributo: valore, ... }
+ */
+async function saveAiValuesDE(productId, aiValues) {
+  for (const [nome, value] of Object.entries(aiValues)) {
+    if (value !== undefined && value !== null && value !== '') {
+      await query(`
+        INSERT INTO product_attribute_values_de (product_id, nome_attributo, value, compiled_by, updated_at)
+        VALUES ($1, $2, $3, 'AI', NOW())
+        ON CONFLICT (product_id, nome_attributo)
+        DO UPDATE SET value = EXCLUDED.value, compiled_by = 'AI', updated_at = NOW()
+      `, [productId, nome, String(value)]);
+    }
+  }
+}
+
+/**
+ * Carica il listing DE di un prodotto dalla tabella product_attribute_values_de.
+ * Ritorna un oggetto piatto { nome_attributo: value }.
+ * Ritorna {} se non esiste ancora contenuto DE per il prodotto.
+ */
+async function getProductListingDE(productId) {
+  const result = await query(`
+    SELECT nome_attributo, value
+    FROM product_attribute_values_de
+    WHERE product_id = $1
+  `, [productId]);
+
+  const attrs = {};
+  for (const row of result.rows) {
+    attrs[row.nome_attributo] = row.value;
+  }
+  return attrs;
+}
+
+/**
  * Aggiorna un singolo attributo manualmente
  */
 async function updateAttributeManually(productId, attributeId, value) {
@@ -468,8 +504,10 @@ module.exports = {
   upsertAttributeValue,
   saveAiValues,
   saveAiValuesFR,
+  saveAiValuesDE,
   getProductListing,
   getProductListingFR,
+  getProductListingDE,
   updateAttributeManually,
   getCachedKeywords,
   extractDimensions
