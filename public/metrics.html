@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metriche — Amazon AI Tool</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    .metrics-wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-500);
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 4px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .controls select, .controls input, .controls button {
+      padding: 8px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      background: var(--white);
+    }
+    .controls button.primary {
+      background: #6366f1;
+      color: white;
+      border-color: #6366f1;
+      cursor: pointer;
+    }
+    .controls button.primary:hover { background: #4f46e5; }
+
+    .chart-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+      height: 340px;
+    }
+
+    .table-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      overflow-x: auto;
+    }
+    table.metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    table.metrics-table th, table.metrics-table td {
+      padding: 10px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    table.metrics-table th:first-child,
+    table.metrics-table td:first-child,
+    table.metrics-table th:nth-child(2),
+    table.metrics-table td:nth-child(2) {
+      text-align: left;
+    }
+    table.metrics-table th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-700);
+      cursor: pointer;
+      user-select: none;
+      position: sticky;
+      top: 0;
+    }
+    table.metrics-table th:hover { background: var(--gray-100); }
+    table.metrics-table tbody tr:hover { background: var(--gray-50); }
+
+    .platform-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .platform-badge.meta   { background: #dbeafe; color: #1d4ed8; }
+    .platform-badge.google { background: #fef3c7; color: #92400e; }
+    .platform-badge.ga4    { background: #d1fae5; color: #065f46; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--gray-500);
+    }
+    .sync-info {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <span>🎨 Amazon AI</span>
+    </a>
+    <nav class="navbar-nav">
+      <a href="/" class="nav-link">📋 Dashboard</a>
+      <a href="/international.html" class="nav-link">🌍 Offerte EU</a>
+      <a href="/cerebro" class="nav-link">🔬 Cerebro</a>
+      <a href="/metrics" class="nav-link active">📊 Metriche</a>
+      <a href="/config.html" class="nav-link">⚙️ Config</a>
+      <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
+    </nav>
+  </nav>
+
+  <div class="metrics-wrap">
+    <h1 style="margin-bottom: 20px;">📊 Metriche campagne</h1>
+
+    <div class="controls">
+      <label>Periodo:
+        <select id="rangeSel">
+          <option value="today">Oggi</option>
+          <option value="yesterday">Ieri</option>
+          <option value="7d">Ultimi 7 giorni</option>
+          <option value="30d" selected>Ultimi 30 giorni</option>
+          <option value="90d">Ultimi 90 giorni</option>
+        </select>
+      </label>
+      <label>Piattaforma:
+        <select id="platformSel">
+          <option value="">Tutte</option>
+          <option value="meta">Meta</option>
+          <option value="google">Google Ads</option>
+        </select>
+      </label>
+      <input type="search" id="searchInput" placeholder="Cerca campagna..." />
+      <button class="primary" id="syncBtn">🔄 Sync Meta ora</button>
+      <span class="sync-info" id="syncInfo"></span>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="chart-card">
+      <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="table-card">
+      <table class="metrics-table" id="campaignsTable">
+        <thead>
+          <tr>
+            <th data-sort="platform">Piattaforma</th>
+            <th data-sort="campaign_name">Campagna</th>
+            <th data-sort="spend">Spesa</th>
+            <th data-sort="impressions">Impression</th>
+            <th data-sort="clicks">Click</th>
+            <th data-sort="ctr">CTR</th>
+            <th data-sort="cpc">CPC</th>
+            <th data-sort="conversions">Conv.</th>
+            <th data-sort="cpa">CPA</th>
+            <th data-sort="revenue">Revenue</th>
+            <th data-sort="roas">ROAS</th>
+          </tr>
+        </thead>
+        <tbody id="campaignsBody">
+          <tr><td colspan="11" class="empty-state">Caricamento...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      range: '30d',
+      platform: '',
+      search: '',
+      campaigns: [],
+      sortKey: 'spend',
+      sortDir: 'desc',
+      chart: null,
+    };
+
+    const fmtEur = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(Number(n || 0));
+    const fmtInt = (n) => new Intl.NumberFormat('it-IT').format(Number(n || 0));
+    const fmtPct = (n) => (Number(n || 0) * 100).toFixed(2) + '%';
+    const fmtNum = (n, d = 2) => Number(n || 0).toFixed(d);
+
+    function computeDerived(row) {
+      const spend = Number(row.spend || 0);
+      const clicks = Number(row.clicks || 0);
+      const impressions = Number(row.impressions || 0);
+      const conv = Number(row.conversions || 0);
+      const revenue = Number(row.revenue || 0);
+      return {
+        ...row,
+        spend, clicks, impressions, conversions: conv, revenue,
+        ctr: impressions > 0 ? clicks / impressions : 0,
+        cpc: clicks > 0 ? spend / clicks : 0,
+        cpa: conv > 0 ? spend / conv : 0,
+        roas: spend > 0 ? revenue / spend : 0,
+      };
+    }
+
+    async function loadAll() {
+      const qs = `?range=${state.range}${state.platform ? '&platform=' + state.platform : ''}`;
+      const [sumRes, dailyRes, campRes] = await Promise.all([
+        fetch('/api/metrics/summary' + qs).then(r => r.json()),
+        fetch('/api/metrics/daily' + qs).then(r => r.json()),
+        fetch('/api/metrics/campaigns' + qs).then(r => r.json()),
+      ]);
+      renderKpis(sumRes.platforms || []);
+      renderChart(dailyRes.rows || []);
+      state.campaigns = (campRes.campaigns || []).map(computeDerived);
+      renderTable();
+    }
+
+    function renderKpis(platforms) {
+      const totals = platforms.reduce((acc, p) => {
+        acc.spend       += Number(p.spend || 0);
+        acc.impressions += Number(p.impressions || 0);
+        acc.clicks      += Number(p.clicks || 0);
+        acc.conversions += Number(p.conversions || 0);
+        acc.revenue     += Number(p.revenue || 0);
+        return acc;
+      }, { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 });
+
+      const ctr = totals.impressions > 0 ? (totals.clicks / totals.impressions) : 0;
+      const roas = totals.spend > 0 ? (totals.revenue / totals.spend) : 0;
+
+      const el = document.getElementById('kpiGrid');
+      el.innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Spesa totale</div><div class="kpi-value">${fmtEur(totals.spend)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Impression</div><div class="kpi-value">${fmtInt(totals.impressions)}</div><div class="kpi-sub">CTR ${fmtPct(ctr)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Click</div><div class="kpi-value">${fmtInt(totals.clicks)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Conversioni</div><div class="kpi-value">${fmtInt(totals.conversions)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Revenue</div><div class="kpi-value">${fmtEur(totals.revenue)}</div><div class="kpi-sub">ROAS ${fmtNum(roas)}</div></div>
+      `;
+    }
+
+    function renderChart(rows) {
+      const byDate = {};
+      for (const r of rows) {
+        byDate[r.date] = byDate[r.date] || { spend: 0, clicks: 0 };
+        byDate[r.date].spend  += Number(r.spend || 0);
+        byDate[r.date].clicks += Number(r.clicks || 0);
+      }
+      const labels = Object.keys(byDate).sort();
+      const spendData  = labels.map(d => byDate[d].spend);
+      const clicksData = labels.map(d => byDate[d].clicks);
+
+      const ctx = document.getElementById('trendChart');
+      if (state.chart) state.chart.destroy();
+      state.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Spesa (€)', data: spendData,  borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.3, yAxisID: 'y' },
+            { label: 'Click',     data: clicksData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, yAxisID: 'y1' },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y:  { type: 'linear', position: 'left',  title: { display: true, text: 'Spesa (€)' } },
+            y1: { type: 'linear', position: 'right', title: { display: true, text: 'Click' }, grid: { drawOnChartArea: false } },
+          },
+        },
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('campaignsBody');
+      let rows = state.campaigns;
+      if (state.search) {
+        const s = state.search.toLowerCase();
+        rows = rows.filter(r => (r.campaign_name || '').toLowerCase().includes(s));
+      }
+      rows = [...rows].sort((a, b) => {
+        const k = state.sortKey;
+        const av = a[k]; const bv = b[k];
+        if (typeof av === 'string') {
+          return state.sortDir === 'asc' ? av.localeCompare(bv || '') : (bv || '').localeCompare(av || '');
+        }
+        return state.sortDir === 'asc' ? (av - bv) : (bv - av);
+      });
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Nessun dato per il periodo selezionato. Premi "Sync Meta ora" per importare.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td><span class="platform-badge ${r.platform}">${r.platform}</span></td>
+          <td>${escapeHtml(r.campaign_name || r.campaign_id)}</td>
+          <td>${fmtEur(r.spend)}</td>
+          <td>${fmtInt(r.impressions)}</td>
+          <td>${fmtInt(r.clicks)}</td>
+          <td>${fmtPct(r.ctr)}</td>
+          <td>${fmtEur(r.cpc)}</td>
+          <td>${fmtInt(r.conversions)}</td>
+          <td>${r.cpa > 0 ? fmtEur(r.cpa) : '—'}</td>
+          <td>${fmtEur(r.revenue)}</td>
+          <td>${r.roas > 0 ? fmtNum(r.roas) : '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function loadSyncInfo() {
+      try {
+        const r = await fetch('/api/metrics/sync-log').then(r => r.json());
+        const last = (r.logs || []).find(l => l.platform === 'meta');
+        if (last) {
+          const when = new Date(last.finished_at || last.started_at).toLocaleString('it-IT');
+          document.getElementById('syncInfo').textContent =
+            `Ultimo sync Meta: ${when} — ${last.status}${last.rows_synced ? ' (' + last.rows_synced + ' righe)' : ''}`;
+        }
+      } catch (_) {}
+    }
+
+    document.getElementById('rangeSel').addEventListener('change', (e) => { state.range = e.target.value; loadAll(); });
+    document.getElementById('platformSel').addEventListener('change', (e) => { state.platform = e.target.value; loadAll(); });
+    document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderTable(); });
+
+    document.querySelectorAll('#campaignsTable th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+        else { state.sortKey = key; state.sortDir = 'desc'; }
+        renderTable();
+      });
+    });
+
+    document.getElementById('syncBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('syncBtn');
+      btn.disabled = true; btn.textContent = '⏳ Sync in corso...';
+      try {
+        const r = await fetch('/api/metrics/sync/meta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: 7 }),
+        }).then(r => r.json());
+        if (r.error) throw new Error(r.error);
+        alert(`Sync OK: ${r.saved} righe importate`);
+        await loadAll();
+        await loadSyncInfo();
+      } catch (err) {
+        alert('Errore sync: ' + err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = '🔄 Sync Meta ora';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/login.html';
+    });
+
+    loadAll();
+    loadSyncInfo();
+  </script>
+</body>
+</html>

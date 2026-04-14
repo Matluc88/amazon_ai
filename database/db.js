@@ -309,6 +309,74 @@ async function initDatabase() {
       ON chat_messages (created_at ASC)
     `);
 
+    // Tabella metriche ads (Meta + Google Ads + eventuali altre ad-platform)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_ads_daily (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        platform VARCHAR(20) NOT NULL,
+        account_id VARCHAR(100),
+        campaign_id VARCHAR(100) NOT NULL,
+        campaign_name VARCHAR(500),
+        spend DECIMAL(12,2) DEFAULT 0,
+        impressions BIGINT DEFAULT 0,
+        clicks BIGINT DEFAULT 0,
+        conversions DECIMAL(12,2) DEFAULT 0,
+        revenue DECIMAL(12,2) DEFAULT 0,
+        currency VARCHAR(3) DEFAULT 'EUR',
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(date, platform, campaign_id)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_ads_date
+      ON metrics_ads_daily (date DESC)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_ads_platform_date
+      ON metrics_ads_daily (platform, date DESC)
+    `);
+
+    // Tabella metriche Google Analytics 4
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_ga4_daily (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        property_id VARCHAR(50) NOT NULL,
+        source VARCHAR(200) DEFAULT '(all)',
+        sessions BIGINT DEFAULT 0,
+        users BIGINT DEFAULT 0,
+        page_views BIGINT DEFAULT 0,
+        conversions DECIMAL(12,2) DEFAULT 0,
+        ecommerce_revenue DECIMAL(12,2) DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(date, property_id, source)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_ga4_date
+      ON metrics_ga4_daily (date DESC)
+    `);
+
+    // Tabella log sincronizzazioni metriche
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_sync_log (
+        id SERIAL PRIMARY KEY,
+        platform VARCHAR(20) NOT NULL,
+        started_at TIMESTAMP DEFAULT NOW(),
+        finished_at TIMESTAMP,
+        date_from DATE,
+        date_to DATE,
+        rows_synced INTEGER DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'running',
+        error_message TEXT
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_sync_log_started
+      ON metrics_sync_log (platform, started_at DESC)
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database inizializzato correttamente');
   } catch (err) {

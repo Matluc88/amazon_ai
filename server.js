@@ -84,6 +84,11 @@ app.get('/cerebro', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'cerebro.html'));
 });
 
+app.get('/metrics', (req, res) => {
+  if (!req.session.userId) return res.redirect('/login.html');
+  res.sendFile(path.join(__dirname, 'public', 'metrics.html'));
+});
+
 // ─── File statici (protetti) ─────────────────────────────────
 app.use((req, res, next) => {
   // Lascia passare login.html, css, js (pubblici)
@@ -108,6 +113,7 @@ app.use('/api/images',   requireAuth, require('./routes/images'));
 app.use('/api/chat',     requireAuth, require('./routes/chat'));
 app.use('/api/international', requireAuth, require('./routes/international'));
 app.use('/api/cerebro',       requireAuth, require('./routes/cerebro'));
+app.use('/api/metrics',       requireAuth, require('./routes/metrics'));
 
 // ─── Avvio ───────────────────────────────────────────────────
 async function start() {
