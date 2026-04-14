@@ -381,6 +381,53 @@ async function initDatabase() {
       ON metrics_matomo_daily (date DESC)
     `);
 
+    // Tabella snapshot catalogo Google Merchant Center (uno snapshot al giorno)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_merchant_snapshot (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        merchant_id VARCHAR(50) NOT NULL,
+        total_products INTEGER DEFAULT 0,
+        approved INTEGER DEFAULT 0,
+        limited INTEGER DEFAULT 0,
+        disapproved INTEGER DEFAULT 0,
+        pending INTEGER DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(date, merchant_id)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_merchant_snapshot_date
+      ON metrics_merchant_snapshot (date DESC)
+    `);
+
+    // Tabella problemi correnti sul catalogo Merchant (riscritta ad ogni sync, stato attuale)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_merchant_issues (
+        id SERIAL PRIMARY KEY,
+        merchant_id VARCHAR(50) NOT NULL,
+        product_id VARCHAR(200) NOT NULL,
+        title TEXT,
+        link TEXT,
+        image_link TEXT,
+        status VARCHAR(30) NOT NULL,
+        country VARCHAR(10),
+        issue_code VARCHAR(100),
+        issue_severity VARCHAR(30),
+        issue_description TEXT,
+        issue_detail TEXT,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_merchant_issues_status
+      ON metrics_merchant_issues (merchant_id, status)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_merchant_issues_code
+      ON metrics_merchant_issues (issue_code)
+    `);
+
     // Tabella log sincronizzazioni metriche
     await client.query(`
       CREATE TABLE IF NOT EXISTS metrics_sync_log (

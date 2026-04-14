@@ -4,6 +4,7 @@ const { fetchLastDays } = require('../services/metaAdsService');
 const { fetchLastDays: fetchGoogleLastDays } = require('../services/googleAdsService');
 const { fetchLastDays: fetchGa4LastDays } = require('../services/ga4Service');
 const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
+const { fetchCatalogSnapshot } = require('../services/merchantService');
 
 const router = express.Router();
 
@@ -348,6 +349,78 @@ router.get('/matomo/sources', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/metrics/sync/merchant
+ * Scarica snapshot Merchant Center e lo salva in DB.
+ */
+router.post('/sync/merchant', async (_req, res) => {
+  try {
+    const snap = await fetchCatalogSnapshot();
+    const saved = await saveMerchantSnapshot(snap);
+    res.json({ ok: true, counts: snap.counts, issues: snap.issues.length, saved });
+  } catch (err) {
+    console.error('metrics/sync/merchant error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/merchant/summary
+ * Ultimo snapshot + trend ultimi 30 giorni.
+ */
+router.get('/merchant/summary', async (_req, res) => {
+  try {
+    const latest = await query(
+      `SELECT * FROM metrics_merchant_snapshot ORDER BY date DESC LIMIT 1`
+    );
+    const trend = await query(
+      `SELECT date, total_products, approved, limited, disapproved, pending
+         FROM metrics_merchant_snapshot
+        WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+     ORDER BY date ASC`
+    );
+    res.json({ latest: latest.rows[0] || null, trend: trend.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/merchant/issues
+ * Problemi correnti sul catalogo, aggregati per codice issue.
+ */
+router.get('/merchant/issues', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 100;
+    // Top issues aggregate
+    const byCode = await query(
+      `SELECT issue_code,
+              issue_description,
+              issue_severity,
+              COUNT(DISTINCT product_id) AS products_affected
+         FROM metrics_merchant_issues
+        WHERE issue_code IS NOT NULL
+     GROUP BY issue_code, issue_description, issue_severity
+     ORDER BY products_affected DESC
+        LIMIT 20`
+    );
+    // Dettaglio singoli prodotti problematici
+    const details = await query(
+      `SELECT product_id, title, link, status, country, issue_code, issue_severity, issue_description
+         FROM metrics_merchant_issues
+        WHERE issue_code IS NOT NULL
+     ORDER BY
+       CASE issue_severity WHEN 'disapproved' THEN 1 WHEN 'demoted' THEN 2 ELSE 3 END,
+       product_id
+        LIMIT $1`,
+      [limit]
+    );
+    res.json({ by_code: byCode.rows, details: details.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 async function upsertAdsRows(rows) {
   let count = 0;
   for (const r of rows) {
@@ -420,7 +493,48 @@ async function upsertGa4Rows(rows) {
   return count;
 }
 
+async function saveMerchantSnapshot(snap) {
+  const merchantId = process.env.MERCHANT_ACCOUNT_ID || 'unknown';
+  const { counts, issues } = snap;
+
+  // 1. Snapshot giornaliero (UPSERT sul giorno corrente)
+  await query(
+    `INSERT INTO metrics_merchant_snapshot
+       (date, merchant_id, total_products, approved, limited, disapproved, pending, updated_at)
+     VALUES (CURRENT_DATE, $1, $2, $3, $4, $5, $6, NOW())
+     ON CONFLICT (date, merchant_id) DO UPDATE SET
+       total_products = EXCLUDED.total_products,
+       approved       = EXCLUDED.approved,
+       limited        = EXCLUDED.limited,
+       disapproved    = EXCLUDED.disapproved,
+       pending        = EXCLUDED.pending,
+       updated_at     = NOW()`,
+    [merchantId, counts.total, counts.approved, counts.limited, counts.disapproved, counts.pending]
+  );
+
+  // 2. Issue correnti: DELETE + INSERT (sempre stato attuale)
+  await query(`DELETE FROM metrics_merchant_issues WHERE merchant_id = $1`, [merchantId]);
+
+  let inserted = 0;
+  for (const i of issues) {
+    await query(
+      `INSERT INTO metrics_merchant_issues
+         (merchant_id, product_id, title, link, image_link, status, country,
+          issue_code, issue_severity, issue_description, issue_detail, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())`,
+      [
+        merchantId, i.product_id, i.title, i.link, i.image_link,
+        i.status, i.country, i.issue_code, i.issue_severity,
+        i.issue_description, i.issue_detail,
+      ]
+    );
+    inserted++;
+  }
+  return inserted;
+}
+
 module.exports = router;
 module.exports.upsertAdsRows = upsertAdsRows;
 module.exports.upsertGa4Rows = upsertGa4Rows;
 module.exports.upsertMatomoRows = upsertMatomoRows;
+module.exports.saveMerchantSnapshot = saveMerchantSnapshot;
