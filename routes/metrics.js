@@ -2,6 +2,8 @@ const express = require('express');
 const { query } = require('../database/db');
 const { fetchLastDays } = require('../services/metaAdsService');
 const { fetchLastDays: fetchGoogleLastDays } = require('../services/googleAdsService');
+const { fetchLastDays: fetchGa4LastDays } = require('../services/ga4Service');
+const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
 
 const router = express.Router();
 
@@ -178,6 +180,174 @@ router.post('/sync/google', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/metrics/sync/ga4
+ * Trigger manuale sync Google Analytics 4.
+ */
+router.post('/sync/ga4', async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 7;
+    const rows = await fetchGa4LastDays(days);
+    const saved = await upsertGa4Rows(rows);
+    res.json({ ok: true, fetched: rows.length, saved });
+  } catch (err) {
+    console.error('metrics/sync/ga4 error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/summary
+ * Totali GA4 del periodo (sessioni / utenti / pageviews / conversioni / revenue).
+ */
+router.get('/ga4/summary', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT SUM(sessions)          AS sessions,
+              SUM(users)             AS users,
+              SUM(page_views)        AS page_views,
+              SUM(conversions)       AS conversions,
+              SUM(ecommerce_revenue) AS revenue
+         FROM metrics_ga4_daily
+        WHERE date BETWEEN $1 AND $2`,
+      [from, to]
+    );
+    res.json({ from, to, totals: (r.rows[0] || {}) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/daily
+ * Serie temporale giornaliera GA4.
+ */
+router.get('/ga4/daily', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT date,
+              SUM(sessions)          AS sessions,
+              SUM(users)             AS users,
+              SUM(page_views)        AS page_views,
+              SUM(conversions)       AS conversions,
+              SUM(ecommerce_revenue) AS revenue
+         FROM metrics_ga4_daily
+        WHERE date BETWEEN $1 AND $2
+     GROUP BY date
+     ORDER BY date ASC`,
+      [from, to]
+    );
+    res.json({ from, to, rows: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/sources
+ * Top sorgenti di traffico per il periodo.
+ */
+router.get('/ga4/sources', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT source,
+              SUM(sessions)          AS sessions,
+              SUM(users)             AS users,
+              SUM(page_views)        AS page_views,
+              SUM(conversions)       AS conversions,
+              SUM(ecommerce_revenue) AS revenue
+         FROM metrics_ga4_daily
+        WHERE date BETWEEN $1 AND $2
+     GROUP BY source
+     ORDER BY sessions DESC
+     LIMIT 50`,
+      [from, to]
+    );
+    res.json({ from, to, sources: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/metrics/sync/matomo
+ */
+router.post('/sync/matomo', async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 7;
+    const rows = await fetchMatomoLastDays(days);
+    const saved = await upsertMatomoRows(rows);
+    res.json({ ok: true, fetched: rows.length, saved });
+  } catch (err) {
+    console.error('metrics/sync/matomo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/matomo/summary
+ */
+router.get('/matomo/summary', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT SUM(sessions)          AS sessions,
+              SUM(users)             AS users,
+              SUM(page_views)        AS page_views,
+              SUM(conversions)       AS conversions,
+              SUM(ecommerce_revenue) AS revenue,
+              AVG(NULLIF(bounce_rate,0))      AS bounce_rate,
+              AVG(NULLIF(avg_time_on_site,0)) AS avg_time
+         FROM metrics_matomo_daily
+        WHERE date BETWEEN $1 AND $2`,
+      [from, to]
+    );
+    res.json({ from, to, totals: (r.rows[0] || {}) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/matomo/daily
+ */
+router.get('/matomo/daily', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT date,
+              SUM(sessions)   AS sessions,
+              SUM(users)      AS users,
+              SUM(page_views) AS page_views
+         FROM metrics_matomo_daily
+        WHERE date BETWEEN $1 AND $2
+     GROUP BY date
+     ORDER BY date ASC`,
+      [from, to]
+    );
+    res.json({ from, to, rows: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/matomo/sources
+ * Top sorgenti dirette dalla Matomo API (range aggregato).
+ */
+router.get('/matomo/sources', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const sources = await fetchMatomoSources({ dateFrom: from, dateTo: to });
+    res.json({ from, to, sources });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 async function upsertAdsRows(rows) {
   let count = 0;
   for (const r of rows) {
@@ -206,5 +376,51 @@ async function upsertAdsRows(rows) {
   return count;
 }
 
+async function upsertMatomoRows(rows) {
+  let count = 0;
+  for (const r of rows) {
+    await query(
+      `INSERT INTO metrics_matomo_daily
+         (date, site_id, source, sessions, users, page_views, conversions, ecommerce_revenue, bounce_rate, avg_time_on_site, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, NOW())
+       ON CONFLICT (date, site_id, source) DO UPDATE SET
+         sessions          = EXCLUDED.sessions,
+         users             = EXCLUDED.users,
+         page_views        = EXCLUDED.page_views,
+         conversions       = EXCLUDED.conversions,
+         ecommerce_revenue = EXCLUDED.ecommerce_revenue,
+         bounce_rate       = EXCLUDED.bounce_rate,
+         avg_time_on_site  = EXCLUDED.avg_time_on_site,
+         updated_at        = NOW()`,
+      [r.date, r.site_id, r.source || '(all)', r.sessions, r.users, r.page_views, r.conversions, r.ecommerce_revenue, r.bounce_rate || 0, r.avg_time_on_site || 0]
+    );
+    count++;
+  }
+  return count;
+}
+
+async function upsertGa4Rows(rows) {
+  let count = 0;
+  for (const r of rows) {
+    await query(
+      `INSERT INTO metrics_ga4_daily
+         (date, property_id, source, sessions, users, page_views, conversions, ecommerce_revenue, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW())
+       ON CONFLICT (date, property_id, source) DO UPDATE SET
+         sessions          = EXCLUDED.sessions,
+         users             = EXCLUDED.users,
+         page_views        = EXCLUDED.page_views,
+         conversions       = EXCLUDED.conversions,
+         ecommerce_revenue = EXCLUDED.ecommerce_revenue,
+         updated_at        = NOW()`,
+      [r.date, r.property_id, r.source, r.sessions, r.users, r.page_views, r.conversions, r.ecommerce_revenue]
+    );
+    count++;
+  }
+  return count;
+}
+
 module.exports = router;
 module.exports.upsertAdsRows = upsertAdsRows;
+module.exports.upsertGa4Rows = upsertGa4Rows;
+module.exports.upsertMatomoRows = upsertMatomoRows;

@@ -40,6 +40,18 @@ services:
         sync: false
       - key: GOOGLE_ADS_CUSTOMER_ID
         sync: false
+      - key: GA4_PROPERTY_ID
+        sync: false
+      - key: GA4_SERVICE_ACCOUNT_KEY_B64
+        sync: false
+      - key: GA4_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: MATOMO_URL
+        sync: false
+      - key: MATOMO_AUTH_TOKEN
+        sync: false
+      - key: MATOMO_SITE_ID
+        sync: false
 
   - type: cron
     name: amazon-ai-metrics-sync
@@ -66,4 +78,16 @@ services:
       - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
         sync: false
       - key: GOOGLE_ADS_CUSTOMER_ID
+        sync: false
+      - key: GA4_PROPERTY_ID
+        sync: false
+      - key: GA4_SERVICE_ACCOUNT_KEY_B64
+        sync: false
+      - key: GA4_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: MATOMO_URL
+        sync: false
+      - key: MATOMO_AUTH_TOKEN
+        sync: false
+      - key: MATOMO_SITE_ID
         sync: false

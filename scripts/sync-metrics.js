@@ -10,9 +10,11 @@ require('dotenv').config();
 const { pool, query, initDatabase } = require('../database/db');
 const { fetchLastDays: fetchMeta } = require('../services/metaAdsService');
 const { fetchLastDays: fetchGoogle } = require('../services/googleAdsService');
-const { upsertAdsRows } = require('../routes/metrics');
+const { fetchLastDays: fetchGA4 } = require('../services/ga4Service');
+const { fetchLastDays: fetchMatomo } = require('../services/matomoService');
+const { upsertAdsRows, upsertGa4Rows, upsertMatomoRows } = require('../routes/metrics');
 
-async function runPlatform(name, fetcher, days) {
+async function runPlatform(name, fetcher, days, upsertFn = upsertAdsRows) {
   const log = await query(
     `INSERT INTO metrics_sync_log (platform, date_from, date_to, status)
      VALUES ($1, (NOW() - ($2 || ' days')::interval)::date, NOW()::date, 'running')
@@ -22,7 +24,7 @@ async function runPlatform(name, fetcher, days) {
   const logId = log.rows[0].id;
   try {
     const rows = await fetcher(days);
-    const saved = await upsertAdsRows(rows);
+    const saved = await upsertFn(rows);
     await query(
       `UPDATE metrics_sync_log
           SET finished_at = NOW(), rows_synced = $1, status = 'ok'
@@ -63,7 +65,17 @@ async function main() {
     console.log('⏭️  Google Ads: skip (credenziali mancanti — manca refresh token?)');
   }
 
-  // GA4 verrà aggiunto qui nelle prossime fasi.
+  if (process.env.GA4_PROPERTY_ID && process.env.GA4_SERVICE_ACCOUNT_KEY_B64) {
+    results.push(await runPlatform('ga4', fetchGA4, days, upsertGa4Rows));
+  } else {
+    console.log('⏭️  GA4: skip (credenziali mancanti)');
+  }
+
+  if (process.env.MATOMO_URL && process.env.MATOMO_AUTH_TOKEN) {
+    results.push(await runPlatform('matomo', fetchMatomo, days, upsertMatomoRows));
+  } else {
+    console.log('⏭️  Matomo: skip (credenziali mancanti)');
+  }
 
   console.log('📊 Risultati:', JSON.stringify(results, null, 2));
   await pool.end();
