@@ -28,6 +28,18 @@ services:
         sync: false
       - key: META_AD_ACCOUNT_ID
         sync: false
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_ID
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
+        sync: false
+      - key: GOOGLE_ADS_CUSTOMER_ID
+        sync: false
 
   - type: cron
     name: amazon-ai-metrics-sync
@@ -42,4 +54,16 @@ services:
       - key: META_ACCESS_TOKEN
         sync: false
       - key: META_AD_ACCOUNT_ID
+        sync: false
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_ID
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
+        sync: false
+      - key: GOOGLE_ADS_CUSTOMER_ID
         sync: false

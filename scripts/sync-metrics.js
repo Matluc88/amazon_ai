@@ -9,6 +9,7 @@
 require('dotenv').config();
 const { pool, query, initDatabase } = require('../database/db');
 const { fetchLastDays: fetchMeta } = require('../services/metaAdsService');
+const { fetchLastDays: fetchGoogle } = require('../services/googleAdsService');
 const { upsertAdsRows } = require('../routes/metrics');
 
 async function runPlatform(name, fetcher, days) {
@@ -56,7 +57,13 @@ async function main() {
     console.log('⏭️  Meta: skip (credenziali mancanti)');
   }
 
-  // Google Ads e GA4 verranno aggiunti qui nelle prossime fasi.
+  if (process.env.GOOGLE_ADS_REFRESH_TOKEN && process.env.GOOGLE_ADS_CUSTOMER_ID && process.env.GOOGLE_ADS_DEVELOPER_TOKEN) {
+    results.push(await runPlatform('google', fetchGoogle, days));
+  } else {
+    console.log('⏭️  Google Ads: skip (credenziali mancanti — manca refresh token?)');
+  }
+
+  // GA4 verrà aggiunto qui nelle prossime fasi.
 
   console.log('📊 Risultati:', JSON.stringify(results, null, 2));
   await pool.end();

@@ -1,6 +1,7 @@
 const express = require('express');
 const { query } = require('../database/db');
 const { fetchLastDays } = require('../services/metaAdsService');
+const { fetchLastDays: fetchGoogleLastDays } = require('../services/googleAdsService');
 
 const router = express.Router();
 
@@ -157,6 +158,22 @@ router.post('/sync/meta', async (req, res) => {
     res.json({ ok: true, fetched: rows.length, saved });
   } catch (err) {
     console.error('metrics/sync/meta error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/metrics/sync/google
+ * Trigger manuale sync Google Ads.
+ */
+router.post('/sync/google', async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 7;
+    const rows = await fetchGoogleLastDays(days);
+    const saved = await upsertAdsRows(rows);
+    res.json({ ok: true, fetched: rows.length, saved });
+  } catch (err) {
+    console.error('metrics/sync/google error:', err);
     res.status(500).json({ error: err.message });
   }
 });

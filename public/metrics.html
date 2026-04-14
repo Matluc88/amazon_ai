@@ -168,7 +168,8 @@
         </select>
       </label>
       <input type="search" id="searchInput" placeholder="Cerca campagna..." />
-      <button class="primary" id="syncBtn">🔄 Sync Meta ora</button>
+      <button class="primary" id="syncBtn">🔄 Sync Meta</button>
+      <button class="primary" id="syncGoogleBtn" style="background:#f59e0b;border-color:#f59e0b;">🔄 Sync Google</button>
       <span class="sync-info" id="syncInfo"></span>
     </div>
 
@@ -371,25 +372,28 @@
       });
     });
 
-    document.getElementById('syncBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('syncBtn');
+    async function runSync(platform, btnId, label) {
+      const btn = document.getElementById(btnId);
+      const original = btn.textContent;
       btn.disabled = true; btn.textContent = '⏳ Sync in corso...';
       try {
-        const r = await fetch('/api/metrics/sync/meta', {
+        const r = await fetch('/api/metrics/sync/' + platform, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ days: 7 }),
         }).then(r => r.json());
         if (r.error) throw new Error(r.error);
-        alert(`Sync OK: ${r.saved} righe importate`);
+        alert(`Sync ${label} OK: ${r.saved} righe importate`);
         await loadAll();
         await loadSyncInfo();
       } catch (err) {
-        alert('Errore sync: ' + err.message);
+        alert('Errore sync ' + label + ': ' + err.message);
       } finally {
-        btn.disabled = false; btn.textContent = '🔄 Sync Meta ora';
+        btn.disabled = false; btn.textContent = original;
       }
-    });
+    }
+    document.getElementById('syncBtn').addEventListener('click', () => runSync('meta', 'syncBtn', 'Meta'));
+    document.getElementById('syncGoogleBtn').addEventListener('click', () => runSync('google', 'syncGoogleBtn', 'Google'));
 
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
