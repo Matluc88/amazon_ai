@@ -33,12 +33,39 @@ async function fetchAll(endpoint, params = {}) {
   while (true) {
     const qs = new URLSearchParams({ ...params, per_page: String(perPage), page: String(page) });
     const url = `${base}${endpoint}?${qs.toString()}`;
-    const res = await fetch(url, { headers: { Authorization: authHeader } });
+    const res = await fetch(url, {
+      headers: {
+        Authorization: authHeader,
+        // Alcuni WAF/plugin (Wordfence, Cloudflare) bloccano UA "node" default
+        'User-Agent': 'Mozilla/5.0 (compatible; SivigliartBI/1.0; +https://amazon-ai.onrender.com)',
+        Accept: 'application/json',
+      },
+    });
+
+    const contentType = res.headers.get('content-type') || '';
+    const text = await res.text();
+
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`WC API ${res.status} ${endpoint}: ${text.slice(0, 500)}`);
+      // Se è HTML, estrai titolo per capire se è WAF/block/login page
+      const htmlTitle = text.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const hint = contentType.includes('html') && htmlTitle ? ` [HTML page: "${htmlTitle[1]}"]` : '';
+      throw new Error(`WC API ${res.status} ${endpoint}${hint}: ${text.slice(0, 400)}`);
     }
-    const json = await res.json();
+
+    if (contentType.includes('html') || text.trim().startsWith('<')) {
+      const htmlTitle = text.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const title = htmlTitle ? htmlTitle[1] : '(no title)';
+      throw new Error(
+        `WC API returned HTML instead of JSON — probabilmente il sito blocca l'IP di Render ` +
+        `tramite WAF/plugin di sicurezza. HTML title: "${title}". ` +
+        `Prime 300 lettere: ${text.slice(0, 300)}`
+      );
+    }
+
+    let json;
+    try { json = JSON.parse(text); }
+    catch (e) { throw new Error(`WC API response non-JSON: ${text.slice(0, 400)}`); }
+
     if (!Array.isArray(json)) break;
     all.push(...json);
     const totalPages = Number(res.headers.get('x-wp-totalpages') || '1');
