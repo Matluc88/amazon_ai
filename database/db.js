@@ -381,6 +381,50 @@ async function initDatabase() {
       ON metrics_matomo_daily (date DESC)
     `);
 
+    // Tabella ordini WooCommerce giornalieri (aggregato per data)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_wc_orders_daily (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        shop_domain VARCHAR(255) NOT NULL,
+        orders_count INTEGER DEFAULT 0,
+        gross_revenue DECIMAL(12,2) DEFAULT 0,
+        discount_total DECIMAL(12,2) DEFAULT 0,
+        shipping_total DECIMAL(12,2) DEFAULT 0,
+        tax_total DECIMAL(12,2) DEFAULT 0,
+        refund_total DECIMAL(12,2) DEFAULT 0,
+        items_sold INTEGER DEFAULT 0,
+        avg_order_value DECIMAL(12,2) DEFAULT 0,
+        currency VARCHAR(3) DEFAULT 'EUR',
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(date, shop_domain)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_orders_daily_date
+      ON metrics_wc_orders_daily (date DESC)
+    `);
+
+    // Tabella top prodotti WooCommerce (rolling window ultimi 90 gg, riscritta ad ogni sync)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_wc_products_recent (
+        id SERIAL PRIMARY KEY,
+        shop_domain VARCHAR(255) NOT NULL,
+        product_id VARCHAR(50) NOT NULL,
+        product_name TEXT,
+        sku VARCHAR(100),
+        quantity_sold INTEGER DEFAULT 0,
+        revenue DECIMAL(12,2) DEFAULT 0,
+        orders_count INTEGER DEFAULT 0,
+        period_days INTEGER DEFAULT 90,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_products_shop
+      ON metrics_wc_products_recent (shop_domain)
+    `);
+
     // Tabella snapshot catalogo Google Merchant Center (uno snapshot al giorno)
     await client.query(`
       CREATE TABLE IF NOT EXISTS metrics_merchant_snapshot (

@@ -234,6 +234,7 @@
       <button class="primary" id="syncGa4Btn" style="background:#10b981;border-color:#10b981;">🔄 Sync GA4</button>
       <button class="primary" id="syncMatomoBtn" style="background:#0e7490;border-color:#0e7490;">🔄 Sync Matomo</button>
       <button class="primary" id="syncMerchantBtn" style="background:#dc2626;border-color:#dc2626;">🔄 Sync Merchant</button>
+      <button class="primary" id="syncWcBtn" style="background:#7c3aed;border-color:#7c3aed;">🔄 Sync WooCommerce</button>
       <span class="sync-info" id="syncInfo"></span>
     </div>
 
@@ -277,6 +278,37 @@
         </thead>
         <tbody id="campaignsBody">
           <tr><td colspan="11" class="empty-state">Caricamento...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">🛍️ Vendite reali (WooCommerce)</div>
+    <div class="section-subtitle">
+      I soldi veri che entrano in cassa, presi direttamente dal database degli ordini WooCommerce del sito.
+      Qui trovi gli ordini completati, il fatturato reale (non le stime di Google Analytics), il valore medio
+      dell'ordine e quali prodotti stanno vendendo di più. È la fonte di verità per calcolare il ROAS effettivo.
+    </div>
+
+    <div class="kpi-grid" id="wcKpiGrid"></div>
+
+    <div class="chart-card">
+      <canvas id="wcChart"></canvas>
+    </div>
+
+    <div class="table-card">
+      <h3 style="margin: 0 0 12px; font-size: 16px;">🏆 Top prodotti venduti (ultimi 90 giorni)</h3>
+      <table class="metrics-table" id="wcTopProductsTable">
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th>SKU</th>
+            <th>Qtà vendute</th>
+            <th>Ordini</th>
+            <th>Fatturato</th>
+          </tr>
+        </thead>
+        <tbody id="wcTopProductsBody">
+          <tr><td colspan="5" class="empty-state">Caricamento...</td></tr>
         </tbody>
       </table>
     </div>
@@ -397,6 +429,7 @@
       chart: null,
       ga4Chart: null,
       matomoChart: null,
+      wcChart: null,
     };
 
     const fmtEur = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(Number(n || 0));
@@ -431,6 +464,7 @@
       renderChart(dailyRes.rows || []);
       state.campaigns = (campRes.campaigns || []).map(computeDerived);
       renderTable();
+      loadWooCommerce();
       loadGa4();
       loadMatomo();
       loadMerchant();
@@ -746,6 +780,102 @@
       }
     }
 
+    function renderWcKpis(t) {
+      const el = document.getElementById('wcKpiGrid');
+      const gross = Number(t.gross_revenue || 0);
+      const refunds = Number(t.refund_total || 0);
+      const net = gross - refunds;
+      el.innerHTML = `
+        <div class="kpi-card" style="border-left:4px solid #7c3aed;">
+          <div class="kpi-label">Fatturato lordo</div>
+          <div class="kpi-value">${fmtEur(gross)}</div>
+          <div class="kpi-help">Totale incassato dagli ordini completati nel periodo, include tasse e spedizioni. È il numero reale.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Ordini</div>
+          <div class="kpi-value">${fmtInt(t.orders_count || 0)}</div>
+          <div class="kpi-help">Numero di ordini completati/in lavorazione nel periodo (esclusi quelli cancellati).</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Valore medio ordine</div>
+          <div class="kpi-value">${fmtEur(t.avg_order_value || 0)}</div>
+          <div class="kpi-help">Quanto spende in media un cliente per ordine. Utile per capire se aumentare il prezzo medio.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pezzi venduti</div>
+          <div class="kpi-value">${fmtInt(t.items_sold || 0)}</div>
+          <div class="kpi-help">Numero totale di prodotti venduti nel periodo (se in un ordine ci sono 3 stampe, contano come 3).</div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #dc2626;">
+          <div class="kpi-label">Rimborsi</div>
+          <div class="kpi-value">${fmtEur(refunds)}</div>
+          <div class="kpi-sub">Netto: ${fmtEur(net)}</div>
+          <div class="kpi-help">Soldi restituiti per ordini rimborsati. Il "netto" è quello che resta davvero in cassa.</div>
+        </div>
+      `;
+    }
+
+    function renderWcChart(rows) {
+      const labels = rows.map(r => r.date && r.date.slice(0, 10));
+      const revenue = rows.map(r => Number(r.gross_revenue || 0));
+      const orders = rows.map(r => Number(r.orders_count || 0));
+
+      const ctx = document.getElementById('wcChart');
+      if (state.wcChart) state.wcChart.destroy();
+      state.wcChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Fatturato (€)', data: revenue, borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', tension: 0.3, yAxisID: 'y' },
+            { label: 'Ordini',        data: orders,  borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.3, yAxisID: 'y1' },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y:  { type: 'linear', position: 'left',  title: { display: true, text: 'Fatturato (€)' } },
+            y1: { type: 'linear', position: 'right', title: { display: true, text: 'Ordini' }, grid: { drawOnChartArea: false } },
+          },
+        },
+      });
+    }
+
+    function renderWcTopProducts(products) {
+      const tbody = document.getElementById('wcTopProductsBody');
+      if (!products.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nessun dato. Premi "Sync WooCommerce" per importare.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td>${escapeHtml((p.product_name || '').slice(0, 80))}</td>
+          <td><code style="font-size:11px;">${escapeHtml(p.sku || '—')}</code></td>
+          <td>${fmtInt(p.quantity_sold)}</td>
+          <td>${fmtInt(p.orders_count)}</td>
+          <td><strong>${fmtEur(p.revenue)}</strong></td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadWooCommerce() {
+      const qs = `?range=${state.range}`;
+      try {
+        const [sumRes, dailyRes, prodRes] = await Promise.all([
+          fetch('/api/metrics/woocommerce/summary' + qs).then(r => r.json()),
+          fetch('/api/metrics/woocommerce/daily' + qs).then(r => r.json()),
+          fetch('/api/metrics/woocommerce/top-products?limit=20').then(r => r.json()),
+        ]);
+        renderWcKpis(sumRes.totals || {});
+        renderWcChart(dailyRes.rows || []);
+        renderWcTopProducts(prodRes.products || []);
+      } catch (err) {
+        console.error('WooCommerce load error:', err);
+      }
+    }
+
     async function loadMerchant() {
       try {
         const [sumRes, issRes] = await Promise.all([
@@ -885,6 +1015,7 @@
     document.getElementById('syncGa4Btn').addEventListener('click', () => runSync('ga4', 'syncGa4Btn', 'GA4'));
     document.getElementById('syncMatomoBtn').addEventListener('click', () => runSync('matomo', 'syncMatomoBtn', 'Matomo'));
     document.getElementById('syncMerchantBtn').addEventListener('click', () => runSync('merchant', 'syncMerchantBtn', 'Merchant'));
+    document.getElementById('syncWcBtn').addEventListener('click', () => runSync('woocommerce', 'syncWcBtn', 'WooCommerce'));
 
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });

@@ -56,6 +56,12 @@ services:
         sync: false
       - key: MERCHANT_SERVICE_ACCOUNT_KEY_B64
         sync: false
+      - key: WOOCOMMERCE_URL
+        sync: false
+      - key: WOOCOMMERCE_CONSUMER_KEY
+        sync: false
+      - key: WOOCOMMERCE_CONSUMER_SECRET
+        sync: false
 
   - type: cron
     name: amazon-ai-metrics-sync
@@ -98,4 +104,10 @@ services:
       - key: MERCHANT_ACCOUNT_ID
         sync: false
       - key: MERCHANT_SERVICE_ACCOUNT_KEY_B64
+        sync: false
+      - key: WOOCOMMERCE_URL
+        sync: false
+      - key: WOOCOMMERCE_CONSUMER_KEY
+        sync: false
+      - key: WOOCOMMERCE_CONSUMER_SECRET
         sync: false

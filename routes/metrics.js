@@ -5,6 +5,7 @@ const { fetchLastDays: fetchGoogleLastDays } = require('../services/googleAdsSer
 const { fetchLastDays: fetchGa4LastDays } = require('../services/ga4Service');
 const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
+const { fetchLastDays: fetchWcLastDays } = require('../services/woocommerceService');
 
 const router = express.Router();
 
@@ -350,6 +351,90 @@ router.get('/matomo/sources', async (req, res) => {
 });
 
 /**
+ * POST /api/metrics/sync/woocommerce
+ * Scarica ordini ultimi N giorni e aggrega per data + prodotto.
+ */
+router.post('/sync/woocommerce', async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 7;
+    const data = await fetchWcLastDays(days);
+    const saved = await saveWooCommerceData(data);
+    res.json({ ok: true, days: data.dailyRows.length, products: data.productRows.length, saved });
+  } catch (err) {
+    console.error('metrics/sync/woocommerce error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/woocommerce/summary
+ * Totali del periodo selezionato.
+ */
+router.get('/woocommerce/summary', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT SUM(orders_count)   AS orders_count,
+              SUM(gross_revenue)  AS gross_revenue,
+              SUM(discount_total) AS discount_total,
+              SUM(shipping_total) AS shipping_total,
+              SUM(tax_total)      AS tax_total,
+              SUM(refund_total)   AS refund_total,
+              SUM(items_sold)     AS items_sold,
+              CASE WHEN SUM(orders_count) > 0
+                   THEN SUM(gross_revenue) / SUM(orders_count)
+                   ELSE 0 END AS avg_order_value
+         FROM metrics_wc_orders_daily
+        WHERE date BETWEEN $1 AND $2`,
+      [from, to]
+    );
+    res.json({ from, to, totals: r.rows[0] || {} });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/woocommerce/daily
+ * Serie temporale giornaliera ordini + fatturato.
+ */
+router.get('/woocommerce/daily', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT date, orders_count, gross_revenue, items_sold, avg_order_value
+         FROM metrics_wc_orders_daily
+        WHERE date BETWEEN $1 AND $2
+     ORDER BY date ASC`,
+      [from, to]
+    );
+    res.json({ from, to, rows: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/woocommerce/top-products
+ * Top prodotti venduti dalla tabella rolling.
+ */
+router.get('/woocommerce/top-products', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 20;
+    const r = await query(
+      `SELECT product_id, product_name, sku, quantity_sold, revenue, orders_count
+         FROM metrics_wc_products_recent
+     ORDER BY revenue DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.json({ products: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/metrics/sync/merchant
  * Scarica snapshot Merchant Center e lo salva in DB.
  */
@@ -533,8 +618,52 @@ async function saveMerchantSnapshot(snap) {
   return inserted;
 }
 
+async function saveWooCommerceData({ dailyRows, productRows }) {
+  // 1. UPSERT giornalieri
+  for (const r of dailyRows) {
+    await query(
+      `INSERT INTO metrics_wc_orders_daily
+         (date, shop_domain, orders_count, gross_revenue, discount_total, shipping_total,
+          tax_total, refund_total, items_sold, avg_order_value, currency, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
+       ON CONFLICT (date, shop_domain) DO UPDATE SET
+         orders_count    = EXCLUDED.orders_count,
+         gross_revenue   = EXCLUDED.gross_revenue,
+         discount_total  = EXCLUDED.discount_total,
+         shipping_total  = EXCLUDED.shipping_total,
+         tax_total       = EXCLUDED.tax_total,
+         refund_total    = EXCLUDED.refund_total,
+         items_sold      = EXCLUDED.items_sold,
+         avg_order_value = EXCLUDED.avg_order_value,
+         currency        = EXCLUDED.currency,
+         updated_at      = NOW()`,
+      [
+        r.date, r.shop_domain, r.orders_count, r.gross_revenue, r.discount_total,
+        r.shipping_total, r.tax_total, r.refund_total, r.items_sold,
+        r.avg_order_value, r.currency || 'EUR',
+      ]
+    );
+  }
+
+  // 2. Rolling top prodotti: DELETE + INSERT
+  if (productRows.length) {
+    const shopDomain = productRows[0].shop_domain;
+    await query(`DELETE FROM metrics_wc_products_recent WHERE shop_domain = $1`, [shopDomain]);
+    for (const p of productRows) {
+      await query(
+        `INSERT INTO metrics_wc_products_recent
+           (shop_domain, product_id, product_name, sku, quantity_sold, revenue, orders_count, period_days, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW())`,
+        [p.shop_domain, p.product_id, p.product_name, p.sku, p.quantity_sold, p.revenue, p.orders_count, p.period_days]
+      );
+    }
+  }
+  return dailyRows.length;
+}
+
 module.exports = router;
 module.exports.upsertAdsRows = upsertAdsRows;
 module.exports.upsertGa4Rows = upsertGa4Rows;
 module.exports.upsertMatomoRows = upsertMatomoRows;
 module.exports.saveMerchantSnapshot = saveMerchantSnapshot;
+module.exports.saveWooCommerceData = saveWooCommerceData;
