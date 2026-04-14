@@ -40,6 +40,7 @@ async function fetchCampaignInsights({ accessToken, adAccountId, dateFrom, dateT
     time_range: JSON.stringify({ since: dateFrom, until: dateTo }),
     fields,
     limit: '500',
+    use_unified_attribution_setting: 'true',
   });
 
   const url = `${BASE_URL}/${adAccountId}/insights?${params.toString()}`;
@@ -54,8 +55,10 @@ async function fetchCampaignInsights({ accessToken, adAccountId, dateFrom, dateT
     }
     const json = await res.json();
     for (const r of json.data || []) {
-      const conversions = sumActions(r.actions, ['purchase', 'offsite_conversion.fb_pixel_purchase']);
-      const revenue = sumActions(r.action_values, ['purchase', 'offsite_conversion.fb_pixel_purchase']);
+      // Usa solo offsite_conversion.fb_pixel_purchase per evitare il doppio conteggio
+      // (Meta restituisce sia 'purchase' che 'offsite_conversion.fb_pixel_purchase' per lo stesso evento)
+      const conversions = sumActions(r.actions, ['offsite_conversion.fb_pixel_purchase']);
+      const revenue = sumActions(r.action_values, ['offsite_conversion.fb_pixel_purchase']);
       rows.push({
         date: r.date_start,
         platform: 'meta',
