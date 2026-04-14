@@ -472,6 +472,27 @@ async function initDatabase() {
       ON metrics_merchant_issues (issue_code)
     `);
 
+    // Tabella richieste di sync asincrone (coda: Render scrive, daemon locale esegue)
+    // Usata per le piattaforme bloccate da WAF sul lato Render (es. WooCommerce su SG Security)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sync_requests (
+        id SERIAL PRIMARY KEY,
+        platform VARCHAR(50) NOT NULL,
+        days INTEGER DEFAULT 7,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        requested_at TIMESTAMP DEFAULT NOW(),
+        picked_at TIMESTAMP,
+        finished_at TIMESTAMP,
+        rows_synced INTEGER,
+        error_message TEXT,
+        requested_by VARCHAR(100)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_sync_requests_pending
+      ON sync_requests (status, requested_at) WHERE status = 'pending'
+    `);
+
     // Tabella log sincronizzazioni metriche
     await client.query(`
       CREATE TABLE IF NOT EXISTS metrics_sync_log (

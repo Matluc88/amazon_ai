@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.sivigliart.sync-daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/matteo/Desktop/AMAZON_AI/scripts/sync-daemon.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/matteo/Desktop/AMAZON_AI</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/matteo/Desktop/AMAZON_AI/logs/sync-daemon.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/matteo/Desktop/AMAZON_AI/logs/sync-daemon.error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    </dict>
+</dict>
+</plist>

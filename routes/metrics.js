@@ -353,15 +353,51 @@ router.get('/matomo/sources', async (req, res) => {
 /**
  * POST /api/metrics/sync/woocommerce
  * Scarica ordini ultimi N giorni e aggrega per data + prodotto.
+ *
+ * Nota: siccome SG Security (SiteGround) blocca le chiamate da IP Render,
+ * questo endpoint NON chiama direttamente WooCommerce ma accoda una richiesta
+ * nella tabella sync_requests. Un daemon locale (scripts/sync-daemon.js) sul
+ * Mac del developer legge la richiesta, esegue il fetch (IP whitelistato) e
+ * scrive i dati in DB. La UI fa polling su GET /sync/status/:id.
  */
 router.post('/sync/woocommerce', async (req, res) => {
   try {
     const days = Number(req.body.days) || 7;
-    const data = await fetchWcLastDays(days);
-    const saved = await saveWooCommerceData(data);
-    res.json({ ok: true, days: data.dailyRows.length, products: data.productRows.length, saved });
+    const direct = req.body.direct === true; // se true, esegue direttamente (solo in locale)
+    if (direct) {
+      const data = await fetchWcLastDays(days);
+      const saved = await saveWooCommerceData(data);
+      return res.json({ ok: true, mode: 'direct', saved });
+    }
+    const r = await query(
+      `INSERT INTO sync_requests (platform, days, status, requested_by)
+       VALUES ('woocommerce', $1, 'pending', $2) RETURNING id`,
+      [days, req.session?.email || 'dashboard']
+    );
+    const requestId = r.rows[0].id;
+    res.json({ ok: true, mode: 'queued', request_id: requestId });
   } catch (err) {
     console.error('metrics/sync/woocommerce error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/sync/status/:id
+ * Polling dello stato di una richiesta in coda.
+ */
+router.get('/sync/status/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const r = await query(
+      `SELECT id, platform, days, status, requested_at, picked_at, finished_at,
+              rows_synced, error_message
+         FROM sync_requests WHERE id = $1`,
+      [id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Request not found' });
+    res.json(r.rows[0]);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

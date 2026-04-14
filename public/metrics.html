@@ -1001,14 +1001,50 @@
           body: JSON.stringify({ days: 7 }),
         }).then(r => r.json());
         if (r.error) throw new Error(r.error);
-        alert(`Sync ${label} OK: ${r.saved} righe importate`);
-        await loadAll();
-        await loadSyncInfo();
+
+        // Modalità "queued": il sync viene processato dal daemon locale
+        if (r.mode === 'queued' && r.request_id) {
+          btn.textContent = '⏳ In coda... (daemon locale)';
+          const result = await pollSyncStatus(r.request_id, btn);
+          if (result.status === 'ok') {
+            alert(`Sync ${label} OK: ${result.rows_synced || 0} righe importate (via daemon locale)`);
+            await loadAll();
+            await loadSyncInfo();
+          } else {
+            throw new Error(result.error_message || 'Daemon non disponibile');
+          }
+        } else {
+          alert(`Sync ${label} OK: ${r.saved} righe importate`);
+          await loadAll();
+          await loadSyncInfo();
+        }
       } catch (err) {
         alert('Errore sync ' + label + ': ' + err.message);
       } finally {
         btn.disabled = false; btn.textContent = original;
       }
+    }
+
+    /**
+     * Polla lo stato di una richiesta finché diventa 'ok' o 'error'.
+     * Timeout dopo 60 secondi.
+     */
+    async function pollSyncStatus(requestId, btn) {
+      const maxAttempts = 30;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const res = await fetch('/api/metrics/sync/status/' + requestId).then((r) => r.json());
+          if (res.status === 'pending') {
+            if (btn) btn.textContent = `⏳ In coda... (${i + 1}/${maxAttempts})`;
+          } else if (res.status === 'running') {
+            if (btn) btn.textContent = '⚙️ Daemon in esecuzione...';
+          } else if (res.status === 'ok' || res.status === 'error') {
+            return res;
+          }
+        } catch (_) {}
+      }
+      return { status: 'error', error_message: 'Timeout: il daemon locale non ha risposto in 60s. È acceso?' };
     }
     document.getElementById('syncBtn').addEventListener('click', () => runSync('meta', 'syncBtn', 'Meta'));
     document.getElementById('syncGoogleBtn').addEventListener('click', () => runSync('google', 'syncGoogleBtn', 'Google'));
