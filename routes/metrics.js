@@ -899,6 +899,117 @@ async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], cust
 }
 
 /**
+ * GET /api/metrics/funnel
+ * Calcola il funnel "Vede → Clicca → Visita → Compra → Torna" per il periodo.
+ *
+ * Nota UX importante: i 5 stadi vengono da sistemi di tracking DIVERSI, quindi
+ * le percentuali di conversione fra stadi sono indicative, non esatte:
+ * - impression/clicks → dagli ads tracker (Meta/Google)
+ * - sessioni → da GA4 (tutto il traffico, non solo ads)
+ * - ordini → da WooCommerce (tutte le fonti)
+ * - ricorrenti → da WooCommerce (aggregato per email)
+ */
+router.get('/funnel', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+
+    const [ads, ga4, wc, customers] = await Promise.all([
+      query(
+        `SELECT COALESCE(SUM(impressions), 0) AS impressions,
+                COALESCE(SUM(clicks), 0) AS clicks
+           FROM metrics_ads_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      ),
+      query(
+        `SELECT COALESCE(SUM(sessions), 0) AS sessions,
+                COALESCE(SUM(users), 0) AS users
+           FROM metrics_ga4_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      ),
+      query(
+        `SELECT COALESCE(SUM(orders_count), 0) AS orders,
+                COALESCE(SUM(gross_revenue), 0) AS revenue
+           FROM metrics_wc_orders_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      ),
+      // Clienti ricorrenti: usiamo la tabella rolling (include sempre ultimi 90gg,
+      // non filtrata per periodo selezionato — onestamente meglio di niente)
+      query(
+        `SELECT COUNT(*) FILTER (WHERE orders_count >= 2) AS recurring,
+                COUNT(*) AS total_customers
+           FROM metrics_wc_customers_recent`
+      ),
+    ]);
+
+    const impressions = Number(ads.rows[0].impressions);
+    const clicks = Number(ads.rows[0].clicks);
+    const sessions = Number(ga4.rows[0].sessions);
+    const orders = Number(wc.rows[0].orders);
+    const revenue = Number(wc.rows[0].revenue);
+    const recurring = Number(customers.rows[0].recurring);
+
+    const stages = [
+      {
+        key: 'awareness',
+        label: 'Vede',
+        icon: '👁️',
+        value: impressions,
+        source: 'Meta + Google Ads',
+        help: 'Quante volte i tuoi annunci sono stati mostrati.',
+      },
+      {
+        key: 'interest',
+        label: 'Clicca',
+        icon: '👆',
+        value: clicks,
+        source: 'Meta + Google Ads',
+        help: 'Quante persone hanno cliccato sugli annunci.',
+        rate: impressions > 0 ? (clicks / impressions * 100) : null,
+        rate_label: 'CTR',
+      },
+      {
+        key: 'visit',
+        label: 'Visita il sito',
+        icon: '🌐',
+        value: sessions,
+        source: 'Google Analytics (tutto il traffico)',
+        help: 'Sessioni totali sul sito (include anche traffico organico, direct, social, referral — non solo ads).',
+      },
+      {
+        key: 'action',
+        label: 'Compra',
+        icon: '🛒',
+        value: orders,
+        source: 'WooCommerce (vendite reali)',
+        help: 'Ordini completati nel periodo.',
+        rate: sessions > 0 ? (orders / sessions * 100) : null,
+        rate_label: 'Conversion rate sito',
+      },
+      {
+        key: 'loyalty',
+        label: 'Torna',
+        icon: '🔄',
+        value: recurring,
+        source: 'WooCommerce (clienti con ≥2 ordini negli ultimi 90gg)',
+        help: 'Clienti che hanno comprato più di una volta. Dato su rolling 90gg, non filtrato per periodo.',
+      },
+    ];
+
+    res.json({
+      from,
+      to,
+      stages,
+      extras: {
+        revenue,
+        avg_order_value: orders > 0 ? revenue / orders : 0,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/metrics/token-status
  * Stato delle scadenze token API (Meta, Google Ads, ecc.)
  * Usato dalla dashboard per mostrare banner warning.

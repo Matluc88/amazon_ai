@@ -281,6 +281,74 @@
     .issue-pill.limited { background: #fef3c7; color: #92400e; }
     .issue-pill.pending { background: #dbeafe; color: #1e3a8a; }
 
+    /* ── Funnel ── */
+    .funnel-wrap {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+    .funnel-stages {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+    @media (max-width: 900px) {
+      .funnel-stages { grid-template-columns: 1fr; }
+    }
+    .funnel-stage {
+      background: linear-gradient(180deg, #fafbff 0%, #eef2ff 100%);
+      border: 1px solid #e0e7ff;
+      border-radius: var(--radius-md);
+      padding: 14px 12px;
+      position: relative;
+      text-align: center;
+    }
+    .funnel-stage .fs-icon { font-size: 28px; margin-bottom: 4px; }
+    .funnel-stage .fs-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      letter-spacing: 0.4px;
+      font-weight: 600;
+    }
+    .funnel-stage .fs-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin: 4px 0;
+      line-height: 1.1;
+    }
+    .funnel-stage .fs-source {
+      font-size: 10px;
+      color: var(--gray-500);
+      font-style: italic;
+      margin-top: 4px;
+    }
+    .funnel-stage .fs-rate {
+      display: inline-block;
+      background: #6366f1;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .funnel-help {
+      font-size: 11px;
+      color: var(--gray-500);
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fffbeb;
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      line-height: 1.5;
+    }
+
     /* ─── AI Chat Widget ─── */
     .ai-fab {
       position: fixed;
@@ -491,6 +559,22 @@
     <div class="sync-info-row" id="syncInfo"></div>
 
     <div class="token-banner" id="tokenBanner"></div>
+
+    <div class="section-title">🎯 Il tuo funnel di conversione</div>
+    <div class="section-subtitle">
+      Il percorso del cliente da quando "vede" fino a quando "torna". Ogni stadio ha un numero
+      e tra gli stadi vedi il tasso di conversione. Le percentuali ti dicono dove stai perdendo
+      più persone — quello è il punto su cui intervenire.
+    </div>
+
+    <div class="funnel-wrap">
+      <div class="funnel-stages" id="funnelStages">
+        <div class="funnel-stage">
+          <div class="fs-label">Caricamento...</div>
+        </div>
+      </div>
+      <div class="funnel-help" id="funnelHelp" style="display:none;"></div>
+    </div>
 
     <div class="alert-banner" id="merchantAlert">
       <div class="alert-title">⚠️ Prodotti disapprovati su Google Shopping</div>
@@ -764,8 +848,62 @@
       renderChart(dailyRes.rows || []);
       state.campaigns = (campRes.campaigns || []).map(computeDerived);
       renderTable();
+      loadFunnel();
       loadWooCommerce();
       loadGa4();
+    }
+
+    async function loadFunnel() {
+      const qs = `?range=${state.range}`;
+      try {
+        const r = await fetch('/api/metrics/funnel' + qs).then(r => r.json());
+        const stages = r.stages || [];
+        const el = document.getElementById('funnelStages');
+        if (!stages.length) {
+          el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Nessun dato funnel</div>';
+          return;
+        }
+        el.innerHTML = stages.map((s) => {
+          const rateHtml = s.rate != null
+            ? `<div class="fs-rate">${s.rate_label}: ${s.rate.toFixed(2)}%</div>`
+            : '';
+          return `
+            <div class="funnel-stage" title="${escapeHtml(s.help)}">
+              <div class="fs-icon">${s.icon}</div>
+              <div class="fs-label">${escapeHtml(s.label)}</div>
+              <div class="fs-value">${fmtInt(s.value)}</div>
+              ${rateHtml}
+              <div class="fs-source">${escapeHtml(s.source)}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Auto-insight basato sui numeri
+        const help = document.getElementById('funnelHelp');
+        const ctr = stages[1] && stages[1].rate;
+        const convRate = stages[3] && stages[3].rate;
+        let insight = '';
+        if (ctr != null && convRate != null) {
+          if (ctr >= 2 && convRate < 1) {
+            insight = '<strong>Analisi:</strong> Il CTR è buono ma la conversione sul sito è bassa. Gli utenti cliccano sugli ads ma non comprano — il collo di bottiglia è nel sito (UX, prezzi, trust), non negli annunci.';
+          } else if (ctr < 1 && convRate >= 1) {
+            insight = '<strong>Analisi:</strong> Chi arriva sul sito converte bene, ma pochi cliccano sugli ads. Il collo di bottiglia è negli annunci (creatività, targeting, copy) — migliorando gli ads scaleresti rapidamente.';
+          } else if (ctr >= 2 && convRate >= 1) {
+            insight = '<strong>Analisi:</strong> Funnel sano: ads efficaci + sito che converte. Il prossimo passo è aumentare il volume (budget ads, SEO, email marketing).';
+          } else {
+            insight = '<strong>Analisi:</strong> Sia il CTR ads che la conversione sito sono sotto la media. Prima di scalare, ottimizza entrambi: test A/B sugli ads e revisione della pagina prodotto/checkout.';
+          }
+        }
+        help.innerHTML = `
+          ${insight}
+          <br><br><em>Nota: i dati di questo funnel vengono da sistemi di tracking diversi
+          (ads tracker, GA4, WooCommerce), quindi le percentuali sono indicative — utili per
+          capire i trend, non per calcoli al centesimo.</em>
+        `;
+        help.style.display = 'block';
+      } catch (err) {
+        console.error('Funnel load error:', err);
+      }
     }
 
     function renderKpis(platforms) {
@@ -1303,9 +1441,15 @@
         const recurring = Number(stats.recurring_customers || 0);
         const pct = total > 0 ? (recurring / total * 100).toFixed(1) : '0';
         const avgLtv = Number(stats.avg_lifetime_value || 0);
+        const insight = recurring === 0
+          ? '<em style="color:#b45309;">⚠️ Nessun cliente ricorrente nel periodo — area di miglioramento critica.</em>'
+          : recurring < 3
+          ? `<em style="color:#b45309;">💎 Solo ${recurring} cliente${recurring > 1 ? 'i' : ''} ricorrent${recurring > 1 ? 'i' : 'e'}: curatel${recurring > 1 ? 'i' : 'o'} come asset strategic${recurring > 1 ? 'i' : 'o'}.</em>`
+          : `<em style="color:#047857;">🎯 ${recurring} clienti ricorrenti: la tua base di ambassador.</em>`;
         statsEl.innerHTML = `
           <strong>${total}</strong> clienti unici, di cui <strong>${recurring}</strong> ricorrenti (${pct}%).
-          Lifetime value medio: <strong>${fmtEur(avgLtv)}</strong>. Include guest via billing email.
+          Lifetime value medio: <strong>${fmtEur(avgLtv)}</strong>.<br>
+          <span style="font-size:11px;">"La migliore pubblicità è quella dei clienti soddisfatti" — Kotler. ${insight}</span>
         `;
       }
 
