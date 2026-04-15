@@ -553,6 +553,7 @@
           <button data-platform="google" id="syncGoogleBtn"><span class="dot google"></span>Google Ads</button>
           <button data-platform="ga4" id="syncGa4Btn"><span class="dot ga4"></span>Google Analytics 4</button>
           <button data-platform="woocommerce" id="syncWcBtn"><span class="dot wc"></span>WooCommerce</button>
+          <button data-platform="gbp" id="syncGbpBtn"><span class="dot" style="background:#ec4899;"></span>Google Business Profile</button>
         </div>
       </div>
     </div>
@@ -709,6 +710,20 @@
       </table>
     </div>
 
+    <div class="section-title">🏪 Punto vendita fisico (Google Business Profile)</div>
+    <div class="section-subtitle">
+      Come le persone trovano il negozio in Via della Divisione Torino 104 (EUR, Roma) tramite
+      Google Maps e Google Search. Questi numeri vengono direttamente dai dati che Google traccia
+      automaticamente sul Business Profile — chiamate al numero, richieste indicazioni stradali,
+      click sul sito, impression del profilo. È il termometro della visibilità locale.
+    </div>
+
+    <div class="kpi-grid" id="gbpKpiGrid"></div>
+
+    <div class="chart-card">
+      <canvas id="gbpChart"></canvas>
+    </div>
+
     <div class="section-title">🌐 Sito web (Google Analytics)</div>
     <div class="section-subtitle">
       Quanto traffico arriva al sito alessandrosiviglia.it, da dove vengono i visitatori,
@@ -814,6 +829,7 @@
       ga4Chart: null,
       matomoChart: null,
       wcChart: null,
+      gbpChart: null,
     };
 
     const fmtEur = (n) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(Number(n || 0));
@@ -851,6 +867,91 @@
       loadFunnel();
       loadWooCommerce();
       loadGa4();
+      loadGbp();
+    }
+
+    function renderGbpKpis(t) {
+      const el = document.getElementById('gbpKpiGrid');
+      if (!el) return;
+      const totalImp = Number(t.total_impressions || 0);
+      const mobileMaps = Number(t.imp_mobile_maps || 0);
+      const mobileSearch = Number(t.imp_mobile_search || 0);
+      const desktopMaps = Number(t.imp_desktop_maps || 0);
+      const desktopSearch = Number(t.imp_desktop_search || 0);
+      el.innerHTML = `
+        <div class="kpi-card" style="border-left:4px solid #ec4899;">
+          <div class="kpi-label">Visualizzazioni profilo</div>
+          <div class="kpi-value">${fmtInt(totalImp)}</div>
+          <div class="kpi-sub">${fmtInt(mobileMaps + mobileSearch)} mobile · ${fmtInt(desktopMaps + desktopSearch)} desktop</div>
+          <div class="kpi-help">Quante volte il tuo Business Profile è apparso nei risultati Google (Maps + Search).</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Chiamate ricevute</div>
+          <div class="kpi-value">${fmtInt(t.call_clicks || 0)}</div>
+          <div class="kpi-help">Quante persone hanno cliccato sul numero di telefono dal Business Profile. Probabilmente la metrica più preziosa di tutte.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Indicazioni stradali</div>
+          <div class="kpi-value">${fmtInt(t.direction_requests || 0)}</div>
+          <div class="kpi-help">Quante persone hanno chiesto le indicazioni per arrivare al negozio. Indica intenzione forte di visita.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Click sito dal profilo</div>
+          <div class="kpi-value">${fmtInt(t.website_clicks || 0)}</div>
+          <div class="kpi-help">Quanti hanno cliccato sul link del sito alessandrosiviglia.it direttamente dal Business Profile.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Ricerche Maps vs Search</div>
+          <div class="kpi-value" style="font-size:18px;">${totalImp > 0 ? Math.round((mobileMaps + desktopMaps) / totalImp * 100) : 0}% Maps</div>
+          <div class="kpi-sub">${totalImp > 0 ? Math.round((mobileSearch + desktopSearch) / totalImp * 100) : 0}% Search</div>
+          <div class="kpi-help">Proporzione di chi ti trova tramite mappa (ricerche tipo "negozio di quadri EUR Roma") vs Google generico.</div>
+        </div>
+      `;
+    }
+
+    function renderGbpChart(rows) {
+      const ctx = document.getElementById('gbpChart');
+      if (!ctx) return;
+      const labels = rows.map(r => r.date && r.date.slice(0, 10));
+      const impressions = rows.map(r => Number(r.total_impressions || 0));
+      const calls = rows.map(r => Number(r.call_clicks || 0));
+      const directions = rows.map(r => Number(r.direction_requests || 0));
+
+      if (state.gbpChart) state.gbpChart.destroy();
+      state.gbpChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Visualizzazioni profilo', data: impressions, borderColor: '#ec4899', backgroundColor: 'rgba(236,72,153,0.1)', tension: 0.3, yAxisID: 'y' },
+            { label: 'Chiamate',               data: calls,       borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, yAxisID: 'y1' },
+            { label: 'Indicazioni',            data: directions,  borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.3, yAxisID: 'y1' },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y:  { type: 'linear', position: 'left',  title: { display: true, text: 'Visualizzazioni' } },
+            y1: { type: 'linear', position: 'right', title: { display: true, text: 'Azioni (call/direction)' }, grid: { drawOnChartArea: false } },
+          },
+        },
+      });
+    }
+
+    async function loadGbp() {
+      const qs = `?range=${state.range}`;
+      try {
+        const [sumRes, dailyRes] = await Promise.all([
+          fetch('/api/metrics/gbp/summary' + qs).then(r => r.json()),
+          fetch('/api/metrics/gbp/daily' + qs).then(r => r.json()),
+        ]);
+        renderGbpKpis(sumRes.totals || {});
+        renderGbpChart(dailyRes.rows || []);
+      } catch (err) {
+        console.error('GBP load error:', err);
+      }
     }
 
     async function loadFunnel() {
@@ -1701,6 +1802,7 @@
     document.getElementById('syncGoogleBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('google', 'syncMenuBtn', 'Google'); });
     document.getElementById('syncGa4Btn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('ga4', 'syncMenuBtn', 'GA4'); });
     document.getElementById('syncWcBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('woocommerce', 'syncMenuBtn', 'WooCommerce'); });
+    document.getElementById('syncGbpBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('gbp', 'syncMenuBtn', 'Google Business Profile'); });
 
     // Sincronizza tutti in sequenza
     document.getElementById('syncAllBtn').addEventListener('click', async () => {

@@ -13,6 +13,7 @@ const {
 const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
 const { fetchLastDays: fetchWcLastDays } = require('../services/woocommerceService');
+const { fetchLastDays: fetchGbpLastDays } = require('../services/gbpService');
 const { chatAboutMetrics } = require('../services/anthropicService');
 
 const router = express.Router();
@@ -748,6 +749,36 @@ async function upsertMatomoRows(rows) {
   return count;
 }
 
+async function upsertGbpRows(rows) {
+  let count = 0;
+  for (const r of rows) {
+    await query(
+      `INSERT INTO metrics_gbp_daily
+         (date, location_id, call_clicks, website_clicks, direction_requests, conversations,
+          impressions_desktop_maps, impressions_desktop_search, impressions_mobile_maps,
+          impressions_mobile_search, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, NOW())
+       ON CONFLICT (date, location_id) DO UPDATE SET
+         call_clicks                 = EXCLUDED.call_clicks,
+         website_clicks              = EXCLUDED.website_clicks,
+         direction_requests          = EXCLUDED.direction_requests,
+         conversations               = EXCLUDED.conversations,
+         impressions_desktop_maps    = EXCLUDED.impressions_desktop_maps,
+         impressions_desktop_search  = EXCLUDED.impressions_desktop_search,
+         impressions_mobile_maps     = EXCLUDED.impressions_mobile_maps,
+         impressions_mobile_search   = EXCLUDED.impressions_mobile_search,
+         updated_at                  = NOW()`,
+      [
+        r.date, r.location_id, r.call_clicks, r.website_clicks, r.direction_requests,
+        r.conversations, r.impressions_desktop_maps, r.impressions_desktop_search,
+        r.impressions_mobile_maps, r.impressions_mobile_search,
+      ]
+    );
+    count++;
+  }
+  return count;
+}
+
 async function upsertGa4Rows(rows) {
   let count = 0;
   for (const r of rows) {
@@ -1010,6 +1041,73 @@ router.get('/funnel', async (req, res) => {
 });
 
 /**
+ * POST /api/metrics/sync/gbp
+ * Trigger manuale sync Google Business Profile.
+ */
+router.post('/sync/gbp', async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 30;
+    const rows = await fetchGbpLastDays(days);
+    const saved = await upsertGbpRows(rows);
+    res.json({ ok: true, fetched: rows.length, saved });
+  } catch (err) {
+    console.error('metrics/sync/gbp error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/gbp/summary
+ * Totali GBP del periodo (chiamate, direction, website clicks, impressions).
+ */
+router.get('/gbp/summary', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT
+         SUM(call_clicks)                 AS call_clicks,
+         SUM(website_clicks)              AS website_clicks,
+         SUM(direction_requests)          AS direction_requests,
+         SUM(conversations)               AS conversations,
+         SUM(impressions_desktop_maps)    AS imp_desktop_maps,
+         SUM(impressions_desktop_search)  AS imp_desktop_search,
+         SUM(impressions_mobile_maps)     AS imp_mobile_maps,
+         SUM(impressions_mobile_search)   AS imp_mobile_search,
+         SUM(impressions_desktop_maps + impressions_desktop_search +
+             impressions_mobile_maps + impressions_mobile_search) AS total_impressions
+       FROM metrics_gbp_daily
+       WHERE date BETWEEN $1 AND $2`,
+      [from, to]
+    );
+    res.json({ from, to, totals: r.rows[0] || {} });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/gbp/daily
+ * Serie temporale giornaliera GBP per grafico.
+ */
+router.get('/gbp/daily', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const r = await query(
+      `SELECT date, call_clicks, website_clicks, direction_requests,
+              (impressions_desktop_maps + impressions_desktop_search +
+               impressions_mobile_maps + impressions_mobile_search) AS total_impressions
+         FROM metrics_gbp_daily
+        WHERE date BETWEEN $1 AND $2
+     ORDER BY date ASC`,
+      [from, to]
+    );
+    res.json({ from, to, rows: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/metrics/token-status
  * Stato delle scadenze token API (Meta, Google Ads, ecc.)
  * Usato dalla dashboard per mostrare banner warning.
@@ -1132,3 +1230,4 @@ module.exports.upsertGa4Rows = upsertGa4Rows;
 module.exports.upsertMatomoRows = upsertMatomoRows;
 module.exports.saveMerchantSnapshot = saveMerchantSnapshot;
 module.exports.saveWooCommerceData = saveWooCommerceData;
+module.exports.upsertGbpRows = upsertGbpRows;

@@ -66,6 +66,14 @@ services:
         sync: false
       - key: WOOCOMMERCE_CONSUMER_SECRET
         sync: false
+      - key: GBP_CLIENT_ID
+        sync: false
+      - key: GBP_CLIENT_SECRET
+        sync: false
+      - key: GBP_REFRESH_TOKEN
+        sync: false
+      - key: GBP_LOCATION_ID
+        sync: false
 
   - type: cron
     name: amazon-ai-metrics-sync
@@ -118,4 +126,12 @@ services:
       - key: WOOCOMMERCE_CONSUMER_KEY
         sync: false
       - key: WOOCOMMERCE_CONSUMER_SECRET
+        sync: false
+      - key: GBP_CLIENT_ID
+        sync: false
+      - key: GBP_CLIENT_SECRET
+        sync: false
+      - key: GBP_REFRESH_TOKEN
+        sync: false
+      - key: GBP_LOCATION_ID
         sync: false

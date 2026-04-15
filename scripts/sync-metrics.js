@@ -14,7 +14,8 @@ const { fetchLastDays: fetchGA4 } = require('../services/ga4Service');
 const { fetchLastDays: fetchMatomo } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
 const { fetchLastDays: fetchWooCommerce } = require('../services/woocommerceService');
-const { upsertAdsRows, upsertGa4Rows, upsertMatomoRows, saveMerchantSnapshot, saveWooCommerceData } = require('../routes/metrics');
+const { fetchLastDays: fetchGbp } = require('../services/gbpService');
+const { upsertAdsRows, upsertGa4Rows, upsertMatomoRows, saveMerchantSnapshot, saveWooCommerceData, upsertGbpRows } = require('../routes/metrics');
 const { checkMetaToken, saveTokenStatus } = require('./check-meta-token');
 
 async function runPlatform(name, fetcher, days, upsertFn = upsertAdsRows) {
@@ -72,6 +73,12 @@ async function main() {
     results.push(await runPlatform('ga4', fetchGA4, days, upsertGa4Rows));
   } else {
     console.log('⏭️  GA4: skip (credenziali mancanti)');
+  }
+
+  if (process.env.GBP_REFRESH_TOKEN && process.env.GBP_LOCATION_ID) {
+    results.push(await runPlatform('gbp', fetchGbp, days, upsertGbpRows));
+  } else {
+    console.log('⏭️  GBP: skip (credenziali mancanti — lancia scripts/gbp-setup.js)');
   }
 
   if (process.env.MATOMO_URL && process.env.MATOMO_AUTH_TOKEN) {

@@ -537,6 +537,30 @@ async function initDatabase() {
       ON metrics_merchant_issues (issue_code)
     `);
 
+    // Tabella metriche Google Business Profile (punto vendita fisico)
+    // Dati da Business Profile Performance API v1
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_gbp_daily (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        location_id VARCHAR(100) NOT NULL,
+        call_clicks INTEGER DEFAULT 0,
+        website_clicks INTEGER DEFAULT 0,
+        direction_requests INTEGER DEFAULT 0,
+        conversations INTEGER DEFAULT 0,
+        impressions_desktop_maps INTEGER DEFAULT 0,
+        impressions_desktop_search INTEGER DEFAULT 0,
+        impressions_mobile_maps INTEGER DEFAULT 0,
+        impressions_mobile_search INTEGER DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(date, location_id)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_gbp_date
+      ON metrics_gbp_daily (date DESC)
+    `);
+
     // Tabella richieste di sync asincrone (coda: Render scrive, daemon locale esegue)
     // Usata per le piattaforme bloccate da WAF sul lato Render (es. WooCommerce su SG Security)
     await client.query(`
