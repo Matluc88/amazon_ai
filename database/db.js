@@ -425,6 +425,71 @@ async function initDatabase() {
       ON metrics_wc_products_recent (shop_domain)
     `);
 
+    // Città d'acquisto WooCommerce (dai billing address, rolling 90gg)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_wc_city_revenue (
+        id SERIAL PRIMARY KEY,
+        shop_domain VARCHAR(255) NOT NULL,
+        city_key VARCHAR(200) NOT NULL,
+        city_display VARCHAR(200),
+        country VARCHAR(10),
+        orders_count INTEGER DEFAULT 0,
+        revenue DECIMAL(12,2) DEFAULT 0,
+        items_sold INTEGER DEFAULT 0,
+        period_days INTEGER DEFAULT 90,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_cities_shop
+      ON metrics_wc_city_revenue (shop_domain, revenue DESC)
+    `);
+
+    // Clienti WooCommerce aggregati per email (include anche ordini da guest)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_wc_customers_recent (
+        id SERIAL PRIMARY KEY,
+        shop_domain VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255),
+        city VARCHAR(200),
+        country VARCHAR(10),
+        orders_count INTEGER DEFAULT 0,
+        total_spent DECIMAL(12,2) DEFAULT 0,
+        first_order_at TIMESTAMP,
+        last_order_at TIMESTAMP,
+        period_days INTEGER DEFAULT 90,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_customers_shop
+      ON metrics_wc_customers_recent (shop_domain, total_spent DESC)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_customers_recurring
+      ON metrics_wc_customers_recent (shop_domain, orders_count DESC)
+      WHERE orders_count >= 2
+    `);
+
+    // Categorie prodotto aggregate per fatturato (rolling 90gg)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_wc_categories_recent (
+        id SERIAL PRIMARY KEY,
+        shop_domain VARCHAR(255) NOT NULL,
+        category VARCHAR(255) NOT NULL,
+        revenue DECIMAL(12,2) DEFAULT 0,
+        items_sold INTEGER DEFAULT 0,
+        occurrences INTEGER DEFAULT 0,
+        period_days INTEGER DEFAULT 90,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_categories_shop
+      ON metrics_wc_categories_recent (shop_domain, revenue DESC)
+    `);
+
     // Tabella snapshot catalogo Google Merchant Center (uno snapshot al giorno)
     await client.query(`
       CREATE TABLE IF NOT EXISTS metrics_merchant_snapshot (

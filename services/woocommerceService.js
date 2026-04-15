@@ -80,8 +80,52 @@ function formatDateISO(d) {
 }
 
 /**
- * Scarica TUTTI gli ordini in un range di date e li aggrega per giorno.
- * Ritorna { dailyRows, productRows } pronte per l'UPSERT.
+ * Recupera i dettagli prodotto (inclusi categories) per un set di product_id
+ * in batch da 100 tramite il parametro ?include=id1,id2,...
+ */
+async function fetchProductsByIds(ids) {
+  if (!ids.length) return new Map();
+  const { base, authHeader } = getConfig();
+  const map = new Map();
+  for (let i = 0; i < ids.length; i += 100) {
+    const batch = ids.slice(i, i + 100);
+    const res = await fetch(`${base}/products?include=${batch.join(',')}&per_page=100`, {
+      headers: {
+        Authorization: authHeader,
+        'User-Agent': 'Mozilla/5.0 (compatible; SivigliartBI/1.0)',
+        Accept: 'application/json',
+      },
+    });
+    if (!res.ok) continue;
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch { continue; }
+    if (!Array.isArray(json)) continue;
+    for (const p of json) {
+      map.set(Number(p.id), {
+        name: p.name || '',
+        categories: (p.categories || []).map((c) => c.name),
+      });
+    }
+  }
+  return map;
+}
+
+/**
+ * Normalizza una città per raggruppare varianti di maiuscole/spazi.
+ * Es. "Nocera superiore" e "NOCERA SUPERIORE" → "nocera superiore".
+ */
+function normalizeCity(raw) {
+  return (raw || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Scarica TUTTI gli ordini in un range di date e li aggrega per:
+ *   - giorno (dailyRows)
+ *   - prodotto top (productRows)
+ *   - città d'acquisto (cityRows, dai billing address)
+ *   - clienti per email (customerRows, aggrega guest + registrati)
+ *   - categoria prodotto (categoryRows, richiede fetch /products)
  */
 async function fetchOrdersAggregated({ dateFrom, dateTo, days }) {
   const orders = await fetchAll('/orders', {
@@ -95,16 +139,17 @@ async function fetchOrdersAggregated({ dateFrom, dateTo, days }) {
   const { shopDomain } = getConfig();
   const byDate = new Map();
   const byProduct = new Map();
+  const byCity = new Map();
+  const byEmail = new Map();
 
   for (const o of orders) {
-    // Usiamo la data locale del sito (date_created è già "local time" senza TZ in WC)
     const dateKey = String(o.date_created || '').slice(0, 10);
     if (!dateKey) continue;
 
-    // Solo ordini "finalizzati" contribuiscono al fatturato reale
     const countable = ['processing', 'completed', 'on-hold'].includes(o.status);
     const refunded = o.status === 'refunded';
 
+    // ─── Aggregato giornaliero ───
     let day = byDate.get(dateKey);
     if (!day) {
       day = {
@@ -136,33 +181,116 @@ async function fetchOrdersAggregated({ dateFrom, dateTo, days }) {
       day.refund_total += Number(o.total || 0);
     }
 
-    // Aggrega per prodotto (solo ordini countable)
-    if (countable) {
-      for (const li of (o.line_items || [])) {
-        const pid = String(li.product_id || li.id || '');
-        if (!pid) continue;
-        let p = byProduct.get(pid);
-        if (!p) {
-          p = {
+    if (!countable) continue;
+
+    // ─── Aggregato per prodotto ───
+    for (const li of (o.line_items || [])) {
+      const pid = String(li.product_id || li.id || '');
+      if (!pid) continue;
+      let p = byProduct.get(pid);
+      if (!p) {
+        p = {
+          shop_domain: shopDomain,
+          product_id: pid,
+          product_name: li.name || '',
+          sku: li.sku || '',
+          quantity_sold: 0,
+          revenue: 0,
+          orders_count: 0,
+          period_days: days,
+        };
+        byProduct.set(pid, p);
+      }
+      p.quantity_sold += Number(li.quantity || 0);
+      p.revenue += Number(li.total || 0) + Number(li.total_tax || 0);
+      p.orders_count += 1;
+    }
+
+    // ─── Aggregato per città (billing) ───
+    const cityDisplay = (o.billing?.city || '').trim();
+    const cityKey = normalizeCity(cityDisplay) || '(unknown)';
+    const country = (o.billing?.country || '').toUpperCase();
+    const cityMapKey = `${cityKey}|${country}`;
+    let c = byCity.get(cityMapKey);
+    if (!c) {
+      c = {
+        shop_domain: shopDomain,
+        city_key: cityKey,
+        city_display: cityDisplay || '(unknown)',
+        country,
+        orders_count: 0,
+        revenue: 0,
+        items_sold: 0,
+        period_days: days,
+      };
+      byCity.set(cityMapKey, c);
+    }
+    c.orders_count += 1;
+    c.revenue += Number(o.total || 0);
+    for (const li of (o.line_items || [])) {
+      c.items_sold += Number(li.quantity || 0);
+    }
+
+    // ─── Aggregato per cliente (email, anche guest) ───
+    const email = (o.billing?.email || '').toLowerCase().trim();
+    if (email) {
+      let cust = byEmail.get(email);
+      if (!cust) {
+        cust = {
+          shop_domain: shopDomain,
+          email,
+          full_name: `${o.billing?.first_name || ''} ${o.billing?.last_name || ''}`.trim(),
+          city: cityDisplay,
+          country,
+          orders_count: 0,
+          total_spent: 0,
+          first_order_at: o.date_created,
+          last_order_at: o.date_created,
+          period_days: days,
+        };
+        byEmail.set(email, cust);
+      }
+      cust.orders_count += 1;
+      cust.total_spent += Number(o.total || 0);
+      if (o.date_created < cust.first_order_at) cust.first_order_at = o.date_created;
+      if (o.date_created > cust.last_order_at) cust.last_order_at = o.date_created;
+    }
+  }
+
+  // ─── Aggregato per categoria (richiede fetch /products) ───
+  const productIds = Array.from(byProduct.values()).map((p) => Number(p.product_id));
+  const productInfo = await fetchProductsByIds(productIds);
+
+  const byCategory = new Map();
+  for (const o of orders) {
+    if (!['processing', 'completed', 'on-hold'].includes(o.status)) continue;
+    for (const li of (o.line_items || [])) {
+      const info = productInfo.get(Number(li.product_id));
+      const cats = info && info.categories && info.categories.length
+        ? info.categories
+        : ['(senza categoria)'];
+      const liRevenue = Number(li.total || 0) + Number(li.total_tax || 0);
+      const liQty = Number(li.quantity || 0);
+      for (const cat of cats) {
+        let e = byCategory.get(cat);
+        if (!e) {
+          e = {
             shop_domain: shopDomain,
-            product_id: pid,
-            product_name: li.name || '',
-            sku: li.sku || '',
-            quantity_sold: 0,
+            category: cat,
             revenue: 0,
-            orders_count: 0,
+            items_sold: 0,
+            occurrences: 0,
             period_days: days,
           };
-          byProduct.set(pid, p);
+          byCategory.set(cat, e);
         }
-        p.quantity_sold += Number(li.quantity || 0);
-        p.revenue += Number(li.total || 0) + Number(li.total_tax || 0);
-        p.orders_count += 1;
+        e.revenue += liRevenue;
+        e.items_sold += liQty;
+        e.occurrences += 1;
       }
     }
   }
 
-  // Calcola AOV per ogni giorno
   const dailyRows = Array.from(byDate.values()).map((d) => ({
     ...d,
     avg_order_value: d.orders_count > 0 ? d.gross_revenue / d.orders_count : 0,
@@ -172,7 +300,16 @@ async function fetchOrdersAggregated({ dateFrom, dateTo, days }) {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 200);
 
-  return { dailyRows, productRows };
+  const cityRows = Array.from(byCity.values())
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const customerRows = Array.from(byEmail.values())
+    .sort((a, b) => b.total_spent - a.total_spent);
+
+  const categoryRows = Array.from(byCategory.values())
+    .sort((a, b) => b.revenue - a.revenue);
+
+  return { dailyRows, productRows, cityRows, customerRows, categoryRows };
 }
 
 /**

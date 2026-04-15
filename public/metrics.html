@@ -358,6 +358,64 @@
       <canvas id="wcChart"></canvas>
     </div>
 
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="table-card">
+        <h3 style="margin:0 0 4px;font-size:16px;">🏙️ Top città d'acquisto</h3>
+        <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Dove vivono davvero i tuoi clienti (billing address degli ordini)</div>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Città</th>
+              <th>Paese</th>
+              <th>Ordini</th>
+              <th>Fatturato</th>
+            </tr>
+          </thead>
+          <tbody id="wcCitiesBody">
+            <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-card">
+        <h3 style="margin:0 0 4px;font-size:16px;">📂 Top categorie per fatturato</h3>
+        <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Quali tipi di quadri generano più vendite</div>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Fatturato</th>
+              <th>Pezzi</th>
+            </tr>
+          </thead>
+          <tbody id="wcCategoriesBody">
+            <tr><td colspan="3" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-card" style="margin-bottom:16px;">
+      <h3 style="margin:0 0 4px;font-size:16px;">👤 Top clienti (anche guest)</h3>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;" id="wcCustomersStats">
+        Aggregati per email — include clienti registrati e ordini da guest.
+      </div>
+      <table class="metrics-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Città</th>
+            <th>Ordini</th>
+            <th>Totale speso</th>
+          </tr>
+        </thead>
+        <tbody id="wcCustomersBody">
+          <tr><td colspan="5" class="empty-state">Caricamento...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="table-card">
       <h3 style="margin: 0 0 12px; font-size: 16px;">🏆 Top prodotti venduti (ultimi 90 giorni)</h3>
       <table class="metrics-table" id="wcTopProductsTable">
@@ -389,7 +447,67 @@
       <canvas id="ga4Chart"></canvas>
     </div>
 
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="table-card">
+        <h3 style="margin:0 0 12px;font-size:16px;">📡 Canali di traffico</h3>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Canale</th>
+              <th>Sessioni</th>
+              <th>%</th>
+              <th>Conv.</th>
+            </tr>
+          </thead>
+          <tbody id="ga4ChannelsBody">
+            <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="kpi-card" id="ga4AiWidget" style="align-self:start;">
+        <div class="kpi-label">Visite da AI Assistants</div>
+        <div class="kpi-value">—</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="table-card">
+        <h3 style="margin:0 0 12px;font-size:16px;">🏙️ Top città (visite)</h3>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Città</th>
+              <th>Paese</th>
+              <th>Sessioni</th>
+              <th>Utenti</th>
+            </tr>
+          </thead>
+          <tbody id="ga4CitiesBody">
+            <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-card">
+        <h3 style="margin:0 0 12px;font-size:16px;">🚪 Top pagine di entrata</h3>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Pagina</th>
+              <th>Sessioni</th>
+              <th>Rimbalzo</th>
+            </tr>
+          </thead>
+          <tbody id="ga4LandingBody">
+            <tr><td colspan="3" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="table-card">
+      <h3 style="margin:0 0 12px;font-size:16px;">🌐 Sorgenti di traffico dettagliate</h3>
       <table class="metrics-table" id="sourcesTable">
         <thead>
           <tr>
@@ -578,8 +696,12 @@
       `;
     }
 
-    function renderGa4Kpis(t) {
+    function renderGa4Kpis(t, ext) {
       const el = document.getElementById('ga4KpiGrid');
+      const bounce = Number((ext && ext.bounceRate) || 0) * 100;
+      const avgDur = Number((ext && ext.averageSessionDuration) || 0);
+      const pagesPerSession = Number((ext && ext.screenPageViewsPerSession) || 0);
+      const avgDurStr = avgDur > 0 ? `${Math.floor(avgDur/60)}m ${Math.round(avgDur%60)}s` : '—';
       el.innerHTML = `
         <div class="kpi-card">
           <div class="kpi-label">Sessioni</div>
@@ -594,17 +716,23 @@
         <div class="kpi-card">
           <div class="kpi-label">Pagine viste</div>
           <div class="kpi-value">${fmtInt(t.page_views || 0)}</div>
+          <div class="kpi-sub">${pagesPerSession.toFixed(1)} per visita</div>
           <div class="kpi-help">Numero totale di pagine del sito che sono state caricate dai visitatori.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Durata media</div>
+          <div class="kpi-value">${avgDurStr}</div>
+          <div class="kpi-help">Quanto tempo i visitatori restano in media sul sito.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Frequenza rimbalzo</div>
+          <div class="kpi-value">${bounce.toFixed(0)}%</div>
+          <div class="kpi-help">Percentuale di visite in cui l'utente arriva e se ne va subito senza interagire. Più basso è, meglio è.</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Conversioni</div>
           <div class="kpi-value">${fmtInt(t.conversions || 0)}</div>
           <div class="kpi-help">Acquisti e altre azioni importanti completate sul sito (configurate come "eventi chiave" in GA4).</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Revenue sito</div>
-          <div class="kpi-value">${fmtEur(t.revenue || 0)}</div>
-          <div class="kpi-help">Fatturato totale degli acquisti completati sul sito (somma di tutti gli ordini del periodo).</div>
         </div>
       `;
     }
@@ -654,17 +782,100 @@
     async function loadGa4() {
       const qs = `?range=${state.range}`;
       try {
-        const [sumRes, dailyRes, srcRes] = await Promise.all([
+        const [sumRes, extRes, dailyRes, srcRes, citiesRes, channelsRes, landingRes, aiRes] = await Promise.all([
           fetch('/api/metrics/ga4/summary' + qs).then(r => r.json()),
+          fetch('/api/metrics/ga4/summary-extended' + qs).then(r => r.json()).catch(() => ({})),
           fetch('/api/metrics/ga4/daily' + qs).then(r => r.json()),
           fetch('/api/metrics/ga4/sources' + qs).then(r => r.json()),
+          fetch('/api/metrics/ga4/top-cities' + qs + '&limit=15').then(r => r.json()).catch(() => ({ cities: [] })),
+          fetch('/api/metrics/ga4/channels' + qs).then(r => r.json()).catch(() => ({ channels: [] })),
+          fetch('/api/metrics/ga4/landing-pages' + qs + '&limit=15').then(r => r.json()).catch(() => ({ pages: [] })),
+          fetch('/api/metrics/ga4/ai-assistants' + qs).then(r => r.json()).catch(() => ({ sources: [], total_sessions: 0 })),
         ]);
-        renderGa4Kpis(sumRes.totals || {});
+        renderGa4Kpis(sumRes.totals || {}, extRes.totals || {});
         renderGa4Chart(dailyRes.rows || []);
         renderSourcesTable(srcRes.sources || []);
+        renderGa4Cities(citiesRes.cities || []);
+        renderGa4Channels(channelsRes.channels || []);
+        renderGa4LandingPages(landingRes.pages || []);
+        renderGa4AI(aiRes.sources || [], aiRes.total_sessions || 0);
       } catch (err) {
         console.error('GA4 load error:', err);
       }
+    }
+
+    function renderGa4Cities(cities) {
+      const tbody = document.getElementById('ga4CitiesBody');
+      if (!tbody) return;
+      if (!cities.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun dato</td></tr>';
+        return;
+      }
+      tbody.innerHTML = cities.map(c => `
+        <tr>
+          <td>${escapeHtml(c.city || '(unknown)')}</td>
+          <td>${escapeHtml(c.country || '')}</td>
+          <td>${fmtInt(c.sessions)}</td>
+          <td>${fmtInt(c.users)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderGa4Channels(channels) {
+      const tbody = document.getElementById('ga4ChannelsBody');
+      if (!tbody) return;
+      if (!channels.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun dato</td></tr>';
+        return;
+      }
+      const total = channels.reduce((s, c) => s + Number(c.sessions || 0), 0);
+      tbody.innerHTML = channels.map(c => {
+        const pct = total > 0 ? (Number(c.sessions) / total * 100) : 0;
+        return `
+          <tr>
+            <td>${escapeHtml(c.channel || '—')}</td>
+            <td>${fmtInt(c.sessions)}</td>
+            <td>${pct.toFixed(1)}%</td>
+            <td>${fmtInt(c.conversions)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderGa4LandingPages(pages) {
+      const tbody = document.getElementById('ga4LandingBody');
+      if (!tbody) return;
+      if (!pages.length) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Nessun dato</td></tr>';
+        return;
+      }
+      tbody.innerHTML = pages.map(p => `
+        <tr>
+          <td>${escapeHtml((p.page || '').slice(0, 60))}</td>
+          <td>${fmtInt(p.sessions)}</td>
+          <td>${(Number(p.bounce_rate || 0) * 100).toFixed(0)}%</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderGa4AI(sources, total) {
+      const el = document.getElementById('ga4AiWidget');
+      if (!el) return;
+      if (!sources.length) {
+        el.innerHTML = `
+          <div class="kpi-label">Visite da AI Assistants</div>
+          <div class="kpi-value">0</div>
+          <div class="kpi-help">Nessuna visita da ChatGPT, Perplexity, Copilot, Claude o Gemini nel periodo.</div>
+        `;
+        return;
+      }
+      const list = sources.map(s => `<li>${escapeHtml(s.source)}: <strong>${fmtInt(s.sessions)}</strong></li>`).join('');
+      el.innerHTML = `
+        <div class="kpi-label">Visite da AI Assistants</div>
+        <div class="kpi-value">${fmtInt(total)}</div>
+        <ul style="margin:6px 0 0;padding-left:18px;font-size:11px;color:var(--gray-600);">${list}</ul>
+        <div class="kpi-help">Visitatori provenienti da ChatGPT, Perplexity e altri AI che linkano il sito.</div>
+      `;
     }
 
     function renderMatomoKpis(t) {
@@ -926,17 +1137,90 @@
     async function loadWooCommerce() {
       const qs = `?range=${state.range}`;
       try {
-        const [sumRes, dailyRes, prodRes] = await Promise.all([
+        const [sumRes, dailyRes, prodRes, citiesRes, custRes, catRes] = await Promise.all([
           fetch('/api/metrics/woocommerce/summary' + qs).then(r => r.json()),
           fetch('/api/metrics/woocommerce/daily' + qs).then(r => r.json()),
           fetch('/api/metrics/woocommerce/top-products?limit=20').then(r => r.json()),
+          fetch('/api/metrics/woocommerce/top-cities?limit=15').then(r => r.json()).catch(() => ({ cities: [] })),
+          fetch('/api/metrics/woocommerce/top-customers?limit=15').then(r => r.json()).catch(() => ({ customers: [], stats: {} })),
+          fetch('/api/metrics/woocommerce/top-categories?limit=15').then(r => r.json()).catch(() => ({ categories: [] })),
         ]);
         renderWcKpis(sumRes.totals || {});
         renderWcChart(dailyRes.rows || []);
         renderWcTopProducts(prodRes.products || []);
+        renderWcCities(citiesRes.cities || []);
+        renderWcCustomers(custRes.customers || [], custRes.stats || {});
+        renderWcCategories(catRes.categories || []);
       } catch (err) {
         console.error('WooCommerce load error:', err);
       }
+    }
+
+    function renderWcCities(cities) {
+      const tbody = document.getElementById('wcCitiesBody');
+      if (!tbody) return;
+      if (!cities.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nessun dato</td></tr>';
+        return;
+      }
+      tbody.innerHTML = cities.map(c => `
+        <tr>
+          <td>${escapeHtml(c.city_display || '(unknown)')}</td>
+          <td>${escapeHtml(c.country || '')}</td>
+          <td>${fmtInt(c.orders_count)}</td>
+          <td><strong>${fmtEur(c.revenue)}</strong></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderWcCustomers(customers, stats) {
+      const tbody = document.getElementById('wcCustomersBody');
+      const statsEl = document.getElementById('wcCustomersStats');
+      if (!tbody) return;
+
+      if (statsEl && stats) {
+        const total = Number(stats.total_customers || 0);
+        const recurring = Number(stats.recurring_customers || 0);
+        const pct = total > 0 ? (recurring / total * 100).toFixed(1) : '0';
+        const avgLtv = Number(stats.avg_lifetime_value || 0);
+        statsEl.innerHTML = `
+          <strong>${total}</strong> clienti unici, di cui <strong>${recurring}</strong> ricorrenti (${pct}%).
+          Lifetime value medio: <strong>${fmtEur(avgLtv)}</strong>. Include guest via billing email.
+        `;
+      }
+
+      if (!customers.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nessun dato</td></tr>';
+        return;
+      }
+      tbody.innerHTML = customers.map(c => {
+        const isRecurring = Number(c.orders_count) >= 2;
+        return `
+          <tr${isRecurring ? ' style="background:#fef3c7;"' : ''}>
+            <td>${escapeHtml((c.full_name || '—').slice(0, 30))}</td>
+            <td style="font-size:11px;">${escapeHtml((c.email || '').slice(0, 35))}</td>
+            <td>${escapeHtml(c.city || '')}</td>
+            <td>${isRecurring ? '<strong style="color:#b45309;">' + c.orders_count + ' 🔄</strong>' : c.orders_count}</td>
+            <td><strong>${fmtEur(c.total_spent)}</strong></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderWcCategories(categories) {
+      const tbody = document.getElementById('wcCategoriesBody');
+      if (!tbody) return;
+      if (!categories.length) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Nessun dato</td></tr>';
+        return;
+      }
+      tbody.innerHTML = categories.map(c => `
+        <tr>
+          <td>${escapeHtml((c.category || '').slice(0, 40))}</td>
+          <td><strong>${fmtEur(c.revenue)}</strong></td>
+          <td>${fmtInt(c.items_sold)}</td>
+        </tr>
+      `).join('');
     }
 
     async function loadMerchant() {

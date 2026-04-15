@@ -2,7 +2,14 @@ const express = require('express');
 const { query } = require('../database/db');
 const { fetchLastDays } = require('../services/metaAdsService');
 const { fetchLastDays: fetchGoogleLastDays } = require('../services/googleAdsService');
-const { fetchLastDays: fetchGa4LastDays } = require('../services/ga4Service');
+const {
+  fetchLastDays: fetchGa4LastDays,
+  fetchSummaryExtended: fetchGa4SummaryExtended,
+  fetchTopCities: fetchGa4TopCities,
+  fetchChannelGroup: fetchGa4Channels,
+  fetchLandingPages: fetchGa4LandingPages,
+  fetchAiAssistants: fetchGa4AI,
+} = require('../services/ga4Service');
 const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
 const { fetchLastDays: fetchWcLastDays } = require('../services/woocommerceService');
@@ -248,6 +255,80 @@ router.get('/ga4/daily', async (req, res) => {
 });
 
 /**
+ * GET /api/metrics/ga4/summary-extended
+ * Summary con le 5 metriche "Matomo-like": bounce, duration, pag/visit, engagement.
+ * Chiama GA4 Data API direttamente (non dal DB cache).
+ */
+router.get('/ga4/summary-extended', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const totals = await fetchGa4SummaryExtended({ dateFrom: from, dateTo: to });
+    res.json({ from, to, totals });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/top-cities
+ * Top città per sessioni (live da GA4 Data API).
+ */
+router.get('/ga4/top-cities', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const limit = Number(req.query.limit) || 20;
+    const cities = await fetchGa4TopCities({ dateFrom: from, dateTo: to, limit });
+    res.json({ from, to, cities });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/channels
+ * Breakdown per channel group (Direct/Organic/Paid/...).
+ */
+router.get('/ga4/channels', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const channels = await fetchGa4Channels({ dateFrom: from, dateTo: to });
+    res.json({ from, to, channels });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/landing-pages
+ * Top pagine di entrata con bounce rate.
+ */
+router.get('/ga4/landing-pages', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const limit = Number(req.query.limit) || 20;
+    const pages = await fetchGa4LandingPages({ dateFrom: from, dateTo: to, limit });
+    res.json({ from, to, pages });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/ai-assistants
+ * Sorgenti che matchano pattern AI (ChatGPT, Perplexity, ecc.).
+ */
+router.get('/ga4/ai-assistants', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const sources = await fetchGa4AI({ dateFrom: from, dateTo: to });
+    const total_sessions = sources.reduce((s, r) => s + Number(r.sessions || 0), 0);
+    res.json({ from, to, sources, total_sessions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/metrics/ga4/sources
  * Top sorgenti di traffico per il periodo.
  */
@@ -471,6 +552,79 @@ router.get('/woocommerce/top-products', async (req, res) => {
 });
 
 /**
+ * GET /api/metrics/woocommerce/top-cities
+ * Top città per fatturato reale (dai billing address).
+ */
+router.get('/woocommerce/top-cities', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 20;
+    const r = await query(
+      `SELECT city_display, country, orders_count, revenue, items_sold
+         FROM metrics_wc_city_revenue
+     ORDER BY revenue DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.json({ cities: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/woocommerce/top-customers
+ * Top clienti (anche guest) aggregati per email.
+ */
+router.get('/woocommerce/top-customers', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 20;
+    const onlyRecurring = req.query.recurring === 'true';
+    const r = await query(
+      `SELECT email, full_name, city, country, orders_count, total_spent,
+              first_order_at, last_order_at
+         FROM metrics_wc_customers_recent
+        WHERE orders_count >= $1
+     ORDER BY total_spent DESC
+        LIMIT $2`,
+      [onlyRecurring ? 2 : 1, limit]
+    );
+    // Stats di contorno
+    const stats = await query(
+      `SELECT COUNT(*) AS total_customers,
+              COUNT(*) FILTER (WHERE orders_count >= 2) AS recurring_customers,
+              AVG(total_spent) AS avg_lifetime_value
+         FROM metrics_wc_customers_recent`
+    );
+    res.json({
+      customers: r.rows,
+      stats: stats.rows[0] || {},
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/woocommerce/top-categories
+ * Top categorie prodotto per fatturato.
+ */
+router.get('/woocommerce/top-categories', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 20;
+    const r = await query(
+      `SELECT category, revenue, items_sold, occurrences
+         FROM metrics_wc_categories_recent
+     ORDER BY revenue DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.json({ categories: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/metrics/sync/merchant
  * Scarica snapshot Merchant Center e lo salva in DB.
  */
@@ -654,7 +808,7 @@ async function saveMerchantSnapshot(snap) {
   return inserted;
 }
 
-async function saveWooCommerceData({ dailyRows, productRows }) {
+async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], customerRows = [], categoryRows = [] }) {
   // 1. UPSERT giornalieri
   for (const r of dailyRows) {
     await query(
@@ -681,9 +835,16 @@ async function saveWooCommerceData({ dailyRows, productRows }) {
     );
   }
 
-  // 2. Rolling top prodotti: DELETE + INSERT
-  if (productRows.length) {
-    const shopDomain = productRows[0].shop_domain;
+  // Determiniamo il shop_domain da una qualsiasi delle collezioni
+  const shopDomain =
+    (productRows[0] && productRows[0].shop_domain) ||
+    (cityRows[0] && cityRows[0].shop_domain) ||
+    (customerRows[0] && customerRows[0].shop_domain) ||
+    (categoryRows[0] && categoryRows[0].shop_domain) ||
+    null;
+
+  if (shopDomain) {
+    // 2. Rolling top prodotti
     await query(`DELETE FROM metrics_wc_products_recent WHERE shop_domain = $1`, [shopDomain]);
     for (const p of productRows) {
       await query(
@@ -693,7 +854,46 @@ async function saveWooCommerceData({ dailyRows, productRows }) {
         [p.shop_domain, p.product_id, p.product_name, p.sku, p.quantity_sold, p.revenue, p.orders_count, p.period_days]
       );
     }
+
+    // 3. Rolling top città
+    await query(`DELETE FROM metrics_wc_city_revenue WHERE shop_domain = $1`, [shopDomain]);
+    for (const c of cityRows) {
+      await query(
+        `INSERT INTO metrics_wc_city_revenue
+           (shop_domain, city_key, city_display, country, orders_count, revenue, items_sold, period_days, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW())`,
+        [c.shop_domain, c.city_key, c.city_display, c.country, c.orders_count, c.revenue, c.items_sold, c.period_days]
+      );
+    }
+
+    // 4. Rolling clienti per email
+    await query(`DELETE FROM metrics_wc_customers_recent WHERE shop_domain = $1`, [shopDomain]);
+    for (const cust of customerRows) {
+      await query(
+        `INSERT INTO metrics_wc_customers_recent
+           (shop_domain, email, full_name, city, country, orders_count, total_spent,
+            first_order_at, last_order_at, period_days, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, NOW())`,
+        [
+          cust.shop_domain, cust.email, cust.full_name, cust.city, cust.country,
+          cust.orders_count, cust.total_spent, cust.first_order_at, cust.last_order_at,
+          cust.period_days,
+        ]
+      );
+    }
+
+    // 5. Rolling categorie
+    await query(`DELETE FROM metrics_wc_categories_recent WHERE shop_domain = $1`, [shopDomain]);
+    for (const cat of categoryRows) {
+      await query(
+        `INSERT INTO metrics_wc_categories_recent
+           (shop_domain, category, revenue, items_sold, occurrences, period_days, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6, NOW())`,
+        [cat.shop_domain, cat.category, cat.revenue, cat.items_sold, cat.occurrences, cat.period_days]
+      );
+    }
   }
+
   return dailyRows.length;
 }
 

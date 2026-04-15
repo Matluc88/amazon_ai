@@ -164,9 +164,132 @@ async function fetchLastDays(days = 90) {
   });
 }
 
+/**
+ * Summary extended: restituisce 5 metriche in un colpo solo
+ * (sessions, bounceRate, avgSessionDuration, pagesPerSession, engagementRate).
+ */
+async function fetchSummaryExtended({ dateFrom, dateTo }) {
+  const r = await runReport({
+    dateFrom,
+    dateTo,
+    dimensions: [],
+    metrics: ['sessions', 'totalUsers', 'screenPageViews', 'bounceRate',
+              'averageSessionDuration', 'screenPageViewsPerSession', 'engagementRate',
+              'conversions', 'totalRevenue'],
+  });
+  const row = (r.rows || [])[0];
+  if (!row) return {};
+  const out = {};
+  (r.metricHeaders || []).forEach((h, i) => {
+    out[h.name] = Number((row.metricValues[i] || {}).value || 0);
+  });
+  return out;
+}
+
+/**
+ * Top N città per sessioni.
+ */
+async function fetchTopCities({ dateFrom, dateTo, limit = 20 }) {
+  const r = await runReport({
+    dateFrom, dateTo,
+    dimensions: ['city', 'country'],
+    metrics: ['sessions', 'totalUsers', 'screenPageViews', 'conversions'],
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit,
+  });
+  return (r.rows || []).map((row) => {
+    const dims = row.dimensionValues || [];
+    const mets = row.metricValues || [];
+    return {
+      city: (dims[0] && dims[0].value) || '(unknown)',
+      country: (dims[1] && dims[1].value) || '',
+      sessions: Number((mets[0] || {}).value || 0),
+      users: Number((mets[1] || {}).value || 0),
+      page_views: Number((mets[2] || {}).value || 0),
+      conversions: Number((mets[3] || {}).value || 0),
+    };
+  });
+}
+
+/**
+ * Channel group aggregato (Direct/Organic/Paid/Social/...).
+ */
+async function fetchChannelGroup({ dateFrom, dateTo }) {
+  const r = await runReport({
+    dateFrom, dateTo,
+    dimensions: ['sessionDefaultChannelGroup'],
+    metrics: ['sessions', 'totalUsers', 'conversions'],
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+  });
+  return (r.rows || []).map((row) => {
+    const dims = row.dimensionValues || [];
+    const mets = row.metricValues || [];
+    return {
+      channel: (dims[0] && dims[0].value) || '(unassigned)',
+      sessions: Number((mets[0] || {}).value || 0),
+      users: Number((mets[1] || {}).value || 0),
+      conversions: Number((mets[2] || {}).value || 0),
+    };
+  });
+}
+
+/**
+ * Top landing pages (pagine di entrata).
+ */
+async function fetchLandingPages({ dateFrom, dateTo, limit = 20 }) {
+  const r = await runReport({
+    dateFrom, dateTo,
+    dimensions: ['landingPage'],
+    metrics: ['sessions', 'bounceRate', 'conversions'],
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit,
+  });
+  return (r.rows || []).map((row) => {
+    const dims = row.dimensionValues || [];
+    const mets = row.metricValues || [];
+    return {
+      page: (dims[0] && dims[0].value) || '(not set)',
+      sessions: Number((mets[0] || {}).value || 0),
+      bounce_rate: Number((mets[1] || {}).value || 0),
+      conversions: Number((mets[2] || {}).value || 0),
+    };
+  });
+}
+
+/**
+ * Cerca sorgenti che matchano pattern di AI Assistants (ChatGPT, Perplexity, ecc.).
+ */
+async function fetchAiAssistants({ dateFrom, dateTo }) {
+  const r = await runReport({
+    dateFrom, dateTo,
+    dimensions: ['sessionSource'],
+    metrics: ['sessions', 'totalUsers'],
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit: 500,
+  });
+  const AI_PATTERNS = ['chatgpt', 'perplexity', 'copilot', 'claude', 'gemini.google', 'openai', 'bard', 'poe.com'];
+  const rows = [];
+  for (const row of (r.rows || [])) {
+    const source = ((row.dimensionValues[0] || {}).value || '').toLowerCase();
+    if (AI_PATTERNS.some((p) => source.includes(p))) {
+      rows.push({
+        source: source,
+        sessions: Number((row.metricValues[0] || {}).value || 0),
+        users: Number((row.metricValues[1] || {}).value || 0),
+      });
+    }
+  }
+  return rows;
+}
+
 module.exports = {
   getAccessToken,
   runReport,
   fetchDailyBySource,
   fetchLastDays,
+  fetchSummaryExtended,
+  fetchTopCities,
+  fetchChannelGroup,
+  fetchLandingPages,
+  fetchAiAssistants,
 };
