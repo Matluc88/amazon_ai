@@ -480,6 +480,7 @@
       <div class="sync-menu-wrap">
         <button class="primary" id="syncMenuBtn">🔄 Sincronizza ▾</button>
         <div class="sync-menu-items" id="syncMenuItems">
+          <button id="syncAllBtn" style="background:#eef2ff;font-weight:700;"><span class="dot" style="background:linear-gradient(135deg,#6366f1,#a855f7);"></span>⚡ Sincronizza tutti</button>
           <button data-platform="meta" id="syncBtn"><span class="dot meta"></span>Meta Ads</button>
           <button data-platform="google" id="syncGoogleBtn"><span class="dot google"></span>Google Ads</button>
           <button data-platform="ga4" id="syncGa4Btn"><span class="dot ga4"></span>Google Analytics 4</button>
@@ -1557,34 +1558,119 @@
     document.getElementById('syncGa4Btn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('ga4', 'syncMenuBtn', 'GA4'); });
     document.getElementById('syncWcBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('woocommerce', 'syncMenuBtn', 'WooCommerce'); });
 
+    // Sincronizza tutti in sequenza
+    document.getElementById('syncAllBtn').addEventListener('click', async () => {
+      syncMenuItems.classList.remove('open');
+      const btn = document.getElementById('syncMenuBtn');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+
+      const platforms = [
+        { key: 'meta', label: 'Meta' },
+        { key: 'ga4', label: 'GA4' },
+        { key: 'woocommerce', label: 'WooCommerce' },
+        // Google Ads escluso finché non abbiamo l'approvazione developer token
+      ];
+
+      let okCount = 0;
+      let errors = [];
+      for (let i = 0; i < platforms.length; i++) {
+        const p = platforms[i];
+        btn.textContent = `⏳ ${i + 1}/${platforms.length} ${p.label}...`;
+        try {
+          const r = await fetch('/api/metrics/sync/' + p.key, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ days: 7 }),
+          }).then(r => r.json());
+          if (r.error) throw new Error(r.error);
+
+          // Per WooCommerce che va in coda, aspetta il daemon
+          if (r.mode === 'queued' && r.request_id) {
+            btn.textContent = `⏳ ${i + 1}/${platforms.length} ${p.label} (coda)...`;
+            const result = await pollSyncStatus(r.request_id, null);
+            if (result.status === 'ok') okCount++;
+            else errors.push(`${p.label}: ${result.error_message || 'timeout'}`);
+          } else {
+            okCount++;
+          }
+        } catch (err) {
+          errors.push(`${p.label}: ${err.message}`);
+        }
+      }
+
+      btn.textContent = originalText;
+      btn.disabled = false;
+
+      if (errors.length === 0) {
+        alert(`✅ Sincronizzati ${okCount}/${platforms.length} canali con successo`);
+      } else {
+        alert(`⚠️ Completati ${okCount}/${platforms.length}\n\nErrori:\n${errors.join('\n')}`);
+      }
+
+      await loadAll();
+      await loadSyncInfo();
+    });
+
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/login.html';
     });
 
     // ─── AI Chat widget ───────────────────────────────────────────
+    // Wrap in DOMContentLoaded perché il widget HTML è DOPO questo script
     const aiState = { history: [], loading: false };
-    const aiFab = document.getElementById('aiFab');
-    const aiPanel = document.getElementById('aiPanel');
-    const aiMessages = document.getElementById('aiMessages');
-    const aiInput = document.getElementById('aiInput');
-    const aiSend = document.getElementById('aiSend');
-    const aiClose = document.getElementById('aiClose');
+    let aiFab, aiPanel, aiMessages, aiInput, aiSend, aiClose;
 
-    aiFab.addEventListener('click', () => {
-      aiPanel.classList.toggle('open');
-      if (aiPanel.classList.contains('open')) aiInput.focus();
-    });
-    aiClose.addEventListener('click', () => aiPanel.classList.remove('open'));
+    function initAiChat() {
+      aiFab = document.getElementById('aiFab');
+      aiPanel = document.getElementById('aiPanel');
+      aiMessages = document.getElementById('aiMessages');
+      aiInput = document.getElementById('aiInput');
+      aiSend = document.getElementById('aiSend');
+      aiClose = document.getElementById('aiClose');
+      if (!aiFab || !aiPanel) {
+        console.warn('AI chat widget non trovato nel DOM');
+        return;
+      }
+
+      aiFab.addEventListener('click', () => {
+        aiPanel.classList.toggle('open');
+        if (aiPanel.classList.contains('open')) aiInput.focus();
+      });
+      aiClose.addEventListener('click', () => aiPanel.classList.remove('open'));
+
+      aiSend.addEventListener('click', () => sendAiMessage(aiInput.value));
+      aiInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendAiMessage(aiInput.value);
+        }
+      });
+
+      document.querySelectorAll('.ai-chip').forEach((chip) => {
+        chip.addEventListener('click', () => sendAiMessage(chip.textContent));
+      });
+
+      addAiMessage('assistant', 'Ciao! Posso analizzare i tuoi dati di marketing e vendite. Dimmi cosa vuoi sapere, o clicca uno dei suggerimenti qui sotto. 💡');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAiChat);
+    } else {
+      // DOM già caricato, rimandiamo al prossimo tick così il widget HTML
+      // (che è parsato DOPO lo script) sarà disponibile
+      setTimeout(initAiChat, 0);
+    }
 
     function escapeAiHtml(s) {
       return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     function addAiMessage(role, text) {
+      if (!aiMessages) return null;
       const div = document.createElement('div');
       div.className = 'ai-msg ' + role;
-      // Semplice markdown → html (bold, bullet, code inline)
       let html = escapeAiHtml(text);
       html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
       html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -1595,7 +1681,7 @@
     }
 
     async function sendAiMessage(text) {
-      if (!text.trim() || aiState.loading) return;
+      if (!text.trim() || aiState.loading || !aiInput) return;
       aiState.loading = true;
       aiSend.disabled = true;
       aiInput.value = '';
@@ -1605,8 +1691,10 @@
       aiState.history.push({ role: 'user', content: text });
 
       const thinkingEl = addAiMessage('assistant', '...');
-      thinkingEl.classList.add('ai-thinking');
-      thinkingEl.textContent = 'Sto pensando...';
+      if (thinkingEl) {
+        thinkingEl.classList.add('ai-thinking');
+        thinkingEl.textContent = 'Sto pensando...';
+      }
 
       try {
         const r = await fetch('/api/metrics/chat', {
@@ -1619,7 +1707,7 @@
           }),
         }).then((r) => r.json());
 
-        thinkingEl.remove();
+        if (thinkingEl) thinkingEl.remove();
         if (r.error) {
           addAiMessage('assistant', '❌ Errore: ' + r.error);
         } else {
@@ -1627,7 +1715,7 @@
           aiState.history.push({ role: 'assistant', content: r.reply || '' });
         }
       } catch (err) {
-        thinkingEl.remove();
+        if (thinkingEl) thinkingEl.remove();
         addAiMessage('assistant', '❌ Errore di rete: ' + err.message);
       } finally {
         aiState.loading = false;
@@ -1636,22 +1724,6 @@
         aiInput.focus();
       }
     }
-
-    aiSend.addEventListener('click', () => sendAiMessage(aiInput.value));
-    aiInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendAiMessage(aiInput.value);
-      }
-    });
-
-    // Chips suggerimento
-    document.querySelectorAll('.ai-chip').forEach((chip) => {
-      chip.addEventListener('click', () => sendAiMessage(chip.textContent));
-    });
-
-    // Messaggio di benvenuto
-    addAiMessage('assistant', 'Ciao! Posso analizzare i tuoi dati di marketing e vendite. Dimmi cosa vuoi sapere, o clicca uno dei suggerimenti qui sotto. 💡');
 
     loadAll();
     loadSyncInfo();
