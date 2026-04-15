@@ -932,6 +932,14 @@ router.post('/chat', async (req, res) => {
     // Costruisci context dai dati più rilevanti nel DB
     const { from, to } = resolveRange({ query: { range } });
 
+    // Proviamo anche a prendere il channel breakdown LIVE da GA4 per dare più
+    // contesto all'AI. Se fallisce (es. quota raggiunta), ignora.
+    let ga4Channels = [];
+    try {
+      const { fetchChannelGroup } = require('../services/ga4Service');
+      ga4Channels = await fetchChannelGroup({ dateFrom: from, dateTo: to });
+    } catch (_) {}
+
     const [adsSum, adsCamp, wcSum, wcCities, wcCustomers, wcCategories, wcProducts, ga4Sum] = await Promise.all([
       query(
         `SELECT platform, SUM(spend) AS spend, SUM(impressions) AS impressions,
@@ -976,11 +984,14 @@ router.post('/chat', async (req, res) => {
 
     const context = {
       periodo: { from, to, range },
+      _note: 'I totali WooCommerce includono TUTTE le vendite da TUTTI i canali (non solo Meta o Google). Per capire la provenienza del traffico usa ga4.channel_breakdown, non confrontare direttamente ads.per_platform con woocommerce.totals.',
       ads: {
+        _note: 'Conversioni e revenue qui sono quelli TRACCIATI DAL PIXEL della piattaforma. Il Pixel tipicamente perde il 30-50% delle conversioni reali per motivi tecnici (Safari privacy, cookie rifiutati, cross-device). NON rappresentano le vendite vere, sono solo quello che la piattaforma stessa ha osservato.',
         per_platform: adsSum.rows,
         top_campaigns: adsCamp.rows,
       },
       woocommerce: {
+        _note: 'Questi sono i soldi REALI incassati dal sito, somma di TUTTE le vendite indipendentemente dal canale di provenienza. Sono la fonte di verità per il business.',
         totals: wcSum.rows[0] || {},
         top_cities: wcCities.rows,
         top_customers: wcCustomers.rows,
@@ -988,7 +999,12 @@ router.post('/chat', async (req, res) => {
         top_products: wcProducts.rows,
         customer_stats: customerStats.rows[0] || {},
       },
-      ga4: ga4Sum.rows[0] || {},
+      ga4: {
+        _note: 'Totali traffico del sito (TUTTO il traffico da TUTTE le fonti).',
+        totals: ga4Sum.rows[0] || {},
+        channel_breakdown: ga4Channels,
+        _channel_note: 'channel_breakdown mostra come GA4 attribuisce sessioni e conversioni ai canali (Direct/Organic/Paid Search/Paid Social/...). Usa QUESTI numeri per capire da quale canale arriva il traffico, non quelli di ads.per_platform.',
+      },
     };
 
     const reply = await chatAboutMetrics(userMessage, context, history);
