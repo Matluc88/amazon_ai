@@ -45,7 +45,14 @@
       flex-wrap: wrap;
       gap: 12px;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
+    }
+    .controls > label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--gray-600);
     }
     .controls select, .controls input, .controls button {
       padding: 8px 12px;
@@ -54,6 +61,7 @@
       font-size: 14px;
       background: var(--white);
     }
+    .controls input[type="search"] { min-width: 200px; }
     .controls button.primary {
       background: #6366f1;
       color: white;
@@ -61,6 +69,58 @@
       cursor: pointer;
     }
     .controls button.primary:hover { background: #4f46e5; }
+
+    /* Dropdown menu Sync */
+    .sync-menu-wrap {
+      position: relative;
+      margin-left: auto;
+    }
+    .sync-menu-items {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      min-width: 220px;
+      z-index: 100;
+      display: none;
+      overflow: hidden;
+    }
+    .sync-menu-items.open { display: block; }
+    .sync-menu-items button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      font-size: 14px;
+      color: var(--gray-800);
+      cursor: pointer;
+      border-radius: 0;
+    }
+    .sync-menu-items button:hover { background: var(--gray-50); }
+    .sync-menu-items button:not(:last-child) { border-bottom: 1px solid var(--gray-100); }
+    .sync-menu-items .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .sync-menu-items .dot.meta   { background: #6366f1; }
+    .sync-menu-items .dot.google { background: #f59e0b; }
+    .sync-menu-items .dot.ga4    { background: #10b981; }
+    .sync-menu-items .dot.wc     { background: #7c3aed; }
+
+    .sync-info-row {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-bottom: 16px;
+      padding-left: 2px;
+    }
 
     .chart-card {
       background: var(--white);
@@ -128,7 +188,6 @@
     .sync-info {
       font-size: 12px;
       color: var(--gray-500);
-      margin-left: auto;
     }
     .kpi-help {
       font-size: 11px;
@@ -229,14 +288,18 @@
         </select>
       </label>
       <input type="search" id="searchInput" placeholder="Cerca campagna..." />
-      <button class="primary" id="syncBtn">🔄 Sync Meta</button>
-      <button class="primary" id="syncGoogleBtn" style="background:#f59e0b;border-color:#f59e0b;">🔄 Sync Google</button>
-      <button class="primary" id="syncGa4Btn" style="background:#10b981;border-color:#10b981;">🔄 Sync GA4</button>
-      <button class="primary" id="syncMatomoBtn" style="background:#0e7490;border-color:#0e7490;">🔄 Sync Matomo</button>
-      <button class="primary" id="syncMerchantBtn" style="background:#dc2626;border-color:#dc2626;">🔄 Sync Merchant</button>
-      <button class="primary" id="syncWcBtn" style="background:#7c3aed;border-color:#7c3aed;">🔄 Sync WooCommerce</button>
-      <span class="sync-info" id="syncInfo"></span>
+
+      <div class="sync-menu-wrap">
+        <button class="primary" id="syncMenuBtn">🔄 Sincronizza ▾</button>
+        <div class="sync-menu-items" id="syncMenuItems">
+          <button data-platform="meta" id="syncBtn"><span class="dot meta"></span>Meta Ads</button>
+          <button data-platform="google" id="syncGoogleBtn"><span class="dot google"></span>Google Ads</button>
+          <button data-platform="ga4" id="syncGa4Btn"><span class="dot ga4"></span>Google Analytics 4</button>
+          <button data-platform="woocommerce" id="syncWcBtn"><span class="dot wc"></span>WooCommerce</button>
+        </div>
+      </div>
     </div>
+    <div class="sync-info-row" id="syncInfo"></div>
 
     <div class="alert-banner" id="merchantAlert">
       <div class="alert-title">⚠️ Prodotti disapprovati su Google Shopping</div>
@@ -1046,12 +1109,23 @@
       }
       return { status: 'error', error_message: 'Timeout: il daemon locale non ha risposto in 60s. È acceso?' };
     }
-    document.getElementById('syncBtn').addEventListener('click', () => runSync('meta', 'syncBtn', 'Meta'));
-    document.getElementById('syncGoogleBtn').addEventListener('click', () => runSync('google', 'syncGoogleBtn', 'Google'));
-    document.getElementById('syncGa4Btn').addEventListener('click', () => runSync('ga4', 'syncGa4Btn', 'GA4'));
-    document.getElementById('syncMatomoBtn').addEventListener('click', () => runSync('matomo', 'syncMatomoBtn', 'Matomo'));
-    document.getElementById('syncMerchantBtn').addEventListener('click', () => runSync('merchant', 'syncMerchantBtn', 'Merchant'));
-    document.getElementById('syncWcBtn').addEventListener('click', () => runSync('woocommerce', 'syncWcBtn', 'WooCommerce'));
+    // Toggle menu Sync
+    const syncMenuBtn = document.getElementById('syncMenuBtn');
+    const syncMenuItems = document.getElementById('syncMenuItems');
+    syncMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      syncMenuItems.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!syncMenuItems.contains(e.target) && e.target !== syncMenuBtn) {
+        syncMenuItems.classList.remove('open');
+      }
+    });
+
+    document.getElementById('syncBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('meta', 'syncMenuBtn', 'Meta'); });
+    document.getElementById('syncGoogleBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('google', 'syncMenuBtn', 'Google'); });
+    document.getElementById('syncGa4Btn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('ga4', 'syncMenuBtn', 'GA4'); });
+    document.getElementById('syncWcBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('woocommerce', 'syncMenuBtn', 'WooCommerce'); });
 
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
