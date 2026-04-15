@@ -13,6 +13,7 @@ const {
 const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
 const { fetchLastDays: fetchWcLastDays } = require('../services/woocommerceService');
+const { chatAboutMetrics } = require('../services/anthropicService');
 
 const router = express.Router();
 
@@ -896,6 +897,90 @@ async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], cust
 
   return dailyRows.length;
 }
+
+/**
+ * POST /api/metrics/chat
+ * Chat AI con contesto metriche: l'assistente ha accesso ai dati correnti
+ * (KPI ads, vendite, top clienti, città, categorie, GA4) e dà consigli.
+ * Body: { message, range?, history? }
+ */
+router.post('/chat', async (req, res) => {
+  try {
+    const userMessage = String(req.body.message || '').trim();
+    if (!userMessage) return res.status(400).json({ error: 'message mancante' });
+
+    const range = req.body.range || '30d';
+    const history = Array.isArray(req.body.history) ? req.body.history.slice(-10) : [];
+
+    // Costruisci context dai dati più rilevanti nel DB
+    const { from, to } = resolveRange({ query: { range } });
+
+    const [adsSum, adsCamp, wcSum, wcCities, wcCustomers, wcCategories, wcProducts, ga4Sum] = await Promise.all([
+      query(
+        `SELECT platform, SUM(spend) AS spend, SUM(impressions) AS impressions,
+                SUM(clicks) AS clicks, SUM(conversions) AS conversions, SUM(revenue) AS revenue
+           FROM metrics_ads_daily WHERE date BETWEEN $1 AND $2 GROUP BY platform`,
+        [from, to]
+      ),
+      query(
+        `SELECT platform, MAX(campaign_name) AS name, SUM(spend) AS spend,
+                SUM(clicks) AS clicks, SUM(conversions) AS conversions, SUM(revenue) AS revenue
+           FROM metrics_ads_daily WHERE date BETWEEN $1 AND $2
+          GROUP BY platform, campaign_id ORDER BY spend DESC LIMIT 10`,
+        [from, to]
+      ),
+      query(
+        `SELECT SUM(orders_count) AS orders, SUM(gross_revenue) AS revenue,
+                SUM(items_sold) AS items,
+                CASE WHEN SUM(orders_count) > 0 THEN SUM(gross_revenue)/SUM(orders_count) ELSE 0 END AS aov
+           FROM metrics_wc_orders_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      ),
+      query(`SELECT city_display, country, orders_count, revenue FROM metrics_wc_city_revenue ORDER BY revenue DESC LIMIT 10`),
+      query(
+        `SELECT full_name, email, city, orders_count, total_spent
+           FROM metrics_wc_customers_recent ORDER BY total_spent DESC LIMIT 10`
+      ),
+      query(`SELECT category, revenue, items_sold FROM metrics_wc_categories_recent ORDER BY revenue DESC LIMIT 10`),
+      query(`SELECT product_name, quantity_sold, revenue FROM metrics_wc_products_recent ORDER BY revenue DESC LIMIT 10`),
+      query(
+        `SELECT SUM(sessions) AS sessions, SUM(users) AS users, SUM(page_views) AS page_views,
+                SUM(conversions) AS conversions
+           FROM metrics_ga4_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      ),
+    ]);
+
+    const customerStats = await query(
+      `SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE orders_count >= 2) AS recurring,
+              AVG(total_spent) AS avg_ltv
+         FROM metrics_wc_customers_recent`
+    );
+
+    const context = {
+      periodo: { from, to, range },
+      ads: {
+        per_platform: adsSum.rows,
+        top_campaigns: adsCamp.rows,
+      },
+      woocommerce: {
+        totals: wcSum.rows[0] || {},
+        top_cities: wcCities.rows,
+        top_customers: wcCustomers.rows,
+        top_categories: wcCategories.rows,
+        top_products: wcProducts.rows,
+        customer_stats: customerStats.rows[0] || {},
+      },
+      ga4: ga4Sum.rows[0] || {},
+    };
+
+    const reply = await chatAboutMetrics(userMessage, context, history);
+    res.json({ ok: true, reply });
+  } catch (err) {
+    console.error('metrics/chat error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
 module.exports.upsertAdsRows = upsertAdsRows;

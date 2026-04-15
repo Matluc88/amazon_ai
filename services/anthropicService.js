@@ -1236,4 +1236,61 @@ Rispondi SOLO con JSON valido:
   return result;
 }
 
-module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR, generateAllAiAttributesDE };
+/**
+ * Chat AI per la dashboard metriche.
+ * Riceve la domanda dell'utente e un oggetto "context" con i dati correnti
+ * (KPI, top prodotti, clienti, città, ecc.) e usa Claude per dare consigli
+ * di business marketing personalizzati.
+ *
+ * @param {string} userMessage   - domanda dell'utente
+ * @param {object} context       - snapshot dei dati correnti dalla dashboard
+ * @param {Array}  history       - storia della conversazione (opz): [{role, content}]
+ */
+async function chatAboutMetrics(userMessage, context = {}, history = []) {
+  const contextBlock = JSON.stringify(context, null, 2);
+
+  const systemPrompt = `Sei un consulente di marketing e business intelligence per Sivigliart,
+un'attività italiana che vende quadri moderni (stampe su tela e dipinti originali) online tramite
+il sito alessandrosiviglia.it e tramite Meta Ads + Google Ads.
+
+Rispondi SEMPRE in italiano, con tono diretto, pratico e orientato all'azione.
+Evita paroloni e preamboli. Vai dritto al consiglio.
+
+Quando rispondi:
+- Cita i numeri esatti dai dati forniti quando rilevanti (es. "Anita Fumelli ha fatto 4 ordini per €820")
+- Dai consigli CONCRETI e implementabili, non teoria generica
+- Se noti un problema (ROAS basso, % ricorrenza bassa, bounce rate alto, ecc.), indicalo chiaramente
+- Se i dati non bastano per rispondere, dillo onestamente invece di inventare
+- Preferisci elenchi puntati brevi rispetto a paragrafi lunghi
+- Non usare emoji tranne quando il tono è molto informale
+
+I dati correnti della dashboard che l'utente sta guardando:
+
+\`\`\`json
+${contextBlock}
+\`\`\``;
+
+  const messages = [];
+  for (const h of (history || [])) {
+    if (h.role === 'user' || h.role === 'assistant') {
+      messages.push({ role: h.role, content: String(h.content || '').slice(0, 4000) });
+    }
+  }
+  messages.push({ role: 'user', content: String(userMessage || '').slice(0, 4000) });
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 1024,
+    system: systemPrompt,
+    messages,
+  });
+
+  const text = (response.content || [])
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text)
+    .join('\n');
+
+  return text || 'Mi spiace, non ho potuto generare una risposta.';
+}
+
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR, generateAllAiAttributesDE, chatAboutMetrics };

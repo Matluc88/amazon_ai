@@ -6,6 +6,9 @@
   <title>Metriche — Amazon AI Tool</title>
   <link rel="stylesheet" href="/css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    // Nota: il widget AI chat è definito in fondo al body insieme al resto del JS
+  </script>
   <style>
     .metrics-wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
 
@@ -250,6 +253,164 @@
     }
     .issue-pill.limited { background: #fef3c7; color: #92400e; }
     .issue-pill.pending { background: #dbeafe; color: #1e3a8a; }
+
+    /* ─── AI Chat Widget ─── */
+    .ai-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: white;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(99,102,241,0.4);
+      z-index: 1000;
+      transition: transform 0.2s;
+    }
+    .ai-fab:hover { transform: scale(1.08); }
+
+    .ai-panel {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      width: 420px;
+      max-width: calc(100vw - 48px);
+      height: 560px;
+      max-height: calc(100vh - 140px);
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+      overflow: hidden;
+    }
+    .ai-panel.open { display: flex; }
+    .ai-header {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: white;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .ai-header h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .ai-header .ai-sub {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+    .ai-close {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .ai-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ai-msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .ai-msg.user {
+      align-self: flex-end;
+      background: #6366f1;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .ai-msg.assistant {
+      align-self: flex-start;
+      background: white;
+      color: var(--gray-800);
+      border: 1px solid var(--gray-200);
+      border-bottom-left-radius: 4px;
+    }
+    .ai-msg.assistant code {
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .ai-thinking {
+      color: var(--gray-500);
+      font-style: italic;
+      font-size: 12px;
+    }
+    .ai-suggestion-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #f9fafb;
+      border-top: 1px solid var(--gray-100);
+    }
+    .ai-chip {
+      background: white;
+      border: 1px solid var(--gray-300);
+      border-radius: 14px;
+      padding: 6px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--gray-700);
+    }
+    .ai-chip:hover { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+
+    .ai-input-row {
+      display: flex;
+      padding: 12px;
+      gap: 8px;
+      border-top: 1px solid var(--gray-200);
+      background: white;
+    }
+    .ai-input-row textarea {
+      flex: 1;
+      resize: none;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      min-height: 40px;
+      max-height: 120px;
+      outline: none;
+    }
+    .ai-input-row textarea:focus { border-color: #6366f1; }
+    .ai-input-row button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0 16px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .ai-input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -525,78 +686,6 @@
       </table>
     </div>
 
-    <div class="section-title">📈 Sito web (Matomo)</div>
-    <div class="section-subtitle">
-      Stessi numeri di Google Analytics ma raccolti da Matomo, una piattaforma alternativa
-      installata direttamente sul sito. I dati sono identici a quelli sopra ma calcolati con un metodo diverso —
-      utili per fare un controllo incrociato e accorgersi di eventuali discrepanze.
-    </div>
-
-    <div class="kpi-grid" id="matomoKpiGrid"></div>
-
-    <div class="chart-card">
-      <canvas id="matomoChart"></canvas>
-    </div>
-
-    <div class="table-card">
-      <table class="metrics-table" id="matomoSourcesTable">
-        <thead>
-          <tr>
-            <th>Sorgente</th>
-            <th>Sessioni</th>
-            <th>Utenti</th>
-            <th>Azioni</th>
-            <th>Conversioni</th>
-          </tr>
-        </thead>
-        <tbody id="matomoSourcesBody">
-          <tr><td colspan="5" class="empty-state">Caricamento...</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section-title">🛒 Catalogo Google Shopping (Merchant Center)</div>
-    <div class="section-subtitle">
-      Stato del tuo catalogo prodotti su Google Shopping: quanti sono approvati e mostrati
-      nelle ricerche, quanti sono bloccati/disapprovati e non appaiono. Ogni prodotto disapprovato
-      è una vendita persa. Sotto trovi il riepilogo dei motivi di rifiuto per capire cosa correggere.
-    </div>
-
-    <div class="kpi-grid" id="merchantKpiGrid"></div>
-
-    <div class="table-card" style="margin-bottom: 24px;">
-      <h3 style="margin: 0 0 12px; font-size: 16px;">🔧 Motivi di rifiuto più frequenti</h3>
-      <table class="metrics-table" id="merchantIssuesTable">
-        <thead>
-          <tr>
-            <th>Codice problema</th>
-            <th>Descrizione</th>
-            <th>Gravità</th>
-            <th>Prodotti coinvolti</th>
-          </tr>
-        </thead>
-        <tbody id="merchantIssuesBody">
-          <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="table-card">
-      <h3 style="margin: 0 0 12px; font-size: 16px;">📦 Primi 100 prodotti problematici</h3>
-      <table class="metrics-table" id="merchantProductsTable">
-        <thead>
-          <tr>
-            <th>Prodotto</th>
-            <th>Stato</th>
-            <th>Paese</th>
-            <th>Problema</th>
-          </tr>
-        </thead>
-        <tbody id="merchantProductsBody">
-          <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 
   <script>
@@ -647,8 +736,6 @@
       renderTable();
       loadWooCommerce();
       loadGa4();
-      loadMatomo();
-      loadMerchant();
     }
 
     function renderKpis(platforms) {
@@ -878,6 +965,9 @@
       `;
     }
 
+    // NOTA: le funzioni Matomo e Merchant sotto sono DEAD CODE
+    // (le sezioni HTML relative sono state rimosse). Non vengono più chiamate
+    // ma le lascio definite per future riattivazioni — zero costi runtime.
     function renderMatomoKpis(t) {
       const el = document.getElementById('matomoKpiGrid');
       const avgTime = Number(t.avg_time || 0);
@@ -1416,8 +1506,128 @@
       location.href = '/login.html';
     });
 
+    // ─── AI Chat widget ───────────────────────────────────────────
+    const aiState = { history: [], loading: false };
+    const aiFab = document.getElementById('aiFab');
+    const aiPanel = document.getElementById('aiPanel');
+    const aiMessages = document.getElementById('aiMessages');
+    const aiInput = document.getElementById('aiInput');
+    const aiSend = document.getElementById('aiSend');
+    const aiClose = document.getElementById('aiClose');
+
+    aiFab.addEventListener('click', () => {
+      aiPanel.classList.toggle('open');
+      if (aiPanel.classList.contains('open')) aiInput.focus();
+    });
+    aiClose.addEventListener('click', () => aiPanel.classList.remove('open'));
+
+    function escapeAiHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function addAiMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = 'ai-msg ' + role;
+      // Semplice markdown → html (bold, bullet, code inline)
+      let html = escapeAiHtml(text);
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+      div.innerHTML = html;
+      aiMessages.appendChild(div);
+      aiMessages.scrollTop = aiMessages.scrollHeight;
+      return div;
+    }
+
+    async function sendAiMessage(text) {
+      if (!text.trim() || aiState.loading) return;
+      aiState.loading = true;
+      aiSend.disabled = true;
+      aiInput.value = '';
+      aiInput.disabled = true;
+
+      addAiMessage('user', text);
+      aiState.history.push({ role: 'user', content: text });
+
+      const thinkingEl = addAiMessage('assistant', '...');
+      thinkingEl.classList.add('ai-thinking');
+      thinkingEl.textContent = 'Sto pensando...';
+
+      try {
+        const r = await fetch('/api/metrics/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            range: state.range,
+            history: aiState.history.slice(-10),
+          }),
+        }).then((r) => r.json());
+
+        thinkingEl.remove();
+        if (r.error) {
+          addAiMessage('assistant', '❌ Errore: ' + r.error);
+        } else {
+          addAiMessage('assistant', r.reply || '(risposta vuota)');
+          aiState.history.push({ role: 'assistant', content: r.reply || '' });
+        }
+      } catch (err) {
+        thinkingEl.remove();
+        addAiMessage('assistant', '❌ Errore di rete: ' + err.message);
+      } finally {
+        aiState.loading = false;
+        aiSend.disabled = false;
+        aiInput.disabled = false;
+        aiInput.focus();
+      }
+    }
+
+    aiSend.addEventListener('click', () => sendAiMessage(aiInput.value));
+    aiInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendAiMessage(aiInput.value);
+      }
+    });
+
+    // Chips suggerimento
+    document.querySelectorAll('.ai-chip').forEach((chip) => {
+      chip.addEventListener('click', () => sendAiMessage(chip.textContent));
+    });
+
+    // Messaggio di benvenuto
+    addAiMessage('assistant', 'Ciao! Posso analizzare i tuoi dati di marketing e vendite. Dimmi cosa vuoi sapere, o clicca uno dei suggerimenti qui sotto. 💡');
+
     loadAll();
     loadSyncInfo();
   </script>
+
+  <!-- ─── AI Chat Floating Widget ─── -->
+  <button class="ai-fab" id="aiFab" title="Chiedi a Claude">💬</button>
+
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-header">
+      <div>
+        <h3>🤖 Assistente Sivigliart BI</h3>
+        <div class="ai-sub">Powered by Claude — conosce i tuoi dati live</div>
+      </div>
+      <button class="ai-close" id="aiClose">✕</button>
+    </div>
+
+    <div class="ai-messages" id="aiMessages"></div>
+
+    <div class="ai-suggestion-chips">
+      <button class="ai-chip">Come sta andando questa settimana?</button>
+      <button class="ai-chip">Quale campagna rende di più?</button>
+      <button class="ai-chip">Come aumentare la % di clienti ricorrenti?</button>
+      <button class="ai-chip">Da dove arrivano le mie vendite?</button>
+      <button class="ai-chip">Cosa dovrei fare su Meta Ads?</button>
+      <button class="ai-chip">Dammi 3 azioni concrete</button>
+    </div>
+
+    <div class="ai-input-row">
+      <textarea id="aiInput" placeholder="Chiedi qualcosa sui dati... (Invio per inviare)" rows="1"></textarea>
+      <button id="aiSend">Invia</button>
+    </div>
+  </div>
 </body>
 </html>
