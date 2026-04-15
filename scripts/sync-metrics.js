@@ -15,6 +15,7 @@ const { fetchLastDays: fetchMatomo } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
 const { fetchLastDays: fetchWooCommerce } = require('../services/woocommerceService');
 const { upsertAdsRows, upsertGa4Rows, upsertMatomoRows, saveMerchantSnapshot, saveWooCommerceData } = require('../routes/metrics');
+const { checkMetaToken, saveTokenStatus } = require('./check-meta-token');
 
 async function runPlatform(name, fetcher, days, upsertFn = upsertAdsRows) {
   const log = await query(
@@ -132,6 +133,20 @@ async function main() {
     }
   } else {
     console.log('⏭️  Merchant: skip (credenziali mancanti)');
+  }
+
+  // Check scadenze token (solo Meta per ora — Google Ads e GA4 gestiti diversamente)
+  if (process.env.META_ACCESS_TOKEN) {
+    try {
+      const tokenStatus = await checkMetaToken();
+      await saveTokenStatus('meta', tokenStatus);
+      console.log(`🔐 Token Meta: ${tokenStatus.status}${tokenStatus.days_remaining ? ` (${tokenStatus.days_remaining} giorni rimasti)` : ''}`);
+      if (tokenStatus.status === 'warning' || tokenStatus.status === 'critical') {
+        console.log(`⚠️  ATTENZIONE: token Meta scade il ${tokenStatus.expires_at?.toISOString().slice(0, 10)}`);
+      }
+    } catch (err) {
+      console.error('⚠️  Check token Meta fallito:', err.message);
+    }
   }
 
   console.log('📊 Risultati:', JSON.stringify(results, null, 2));

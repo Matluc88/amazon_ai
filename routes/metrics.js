@@ -899,6 +899,23 @@ async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], cust
 }
 
 /**
+ * GET /api/metrics/token-status
+ * Stato delle scadenze token API (Meta, Google Ads, ecc.)
+ * Usato dalla dashboard per mostrare banner warning.
+ */
+router.get('/token-status', async (_req, res) => {
+  try {
+    const r = await query(
+      `SELECT platform, expires_at, days_remaining, status, error_message, checked_at
+         FROM app_tokens ORDER BY platform`
+    );
+    res.json({ tokens: r.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/metrics/chat
  * Chat AI con contesto metriche: l'assistente ha accesso ai dati correnti
  * (KPI ads, vendite, top clienti, città, categorie, GA4) e dà consigli.

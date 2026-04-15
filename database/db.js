@@ -558,6 +558,19 @@ async function initDatabase() {
       ON sync_requests (status, requested_at) WHERE status = 'pending'
     `);
 
+    // Tabella stato token API (scadenze, errori, ultimo check)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS app_tokens (
+        id SERIAL PRIMARY KEY,
+        platform VARCHAR(30) UNIQUE NOT NULL,
+        expires_at TIMESTAMP,
+        days_remaining INTEGER,
+        status VARCHAR(20) DEFAULT 'unknown',
+        error_message TEXT,
+        checked_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     // Tabella log sincronizzazioni metriche
     await client.query(`
       CREATE TABLE IF NOT EXISTS metrics_sync_log (

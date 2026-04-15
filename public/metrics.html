@@ -224,6 +224,33 @@
       display: none;
     }
     .alert-banner.show { display: block; }
+
+    .token-banner {
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      display: none;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .token-banner.show { display: flex; align-items: center; gap: 12px; }
+    .token-banner.warning {
+      background: #fefce8;
+      border: 1px solid #eab308;
+      color: #854d0e;
+    }
+    .token-banner.critical {
+      background: #fef2f2;
+      border: 2px solid #dc2626;
+      color: #991b1b;
+    }
+    .token-banner .token-icon { font-size: 22px; }
+    .token-banner code {
+      background: rgba(255,255,255,0.6);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
     .alert-banner .alert-title {
       font-size: 18px;
       font-weight: 700;
@@ -461,6 +488,8 @@
       </div>
     </div>
     <div class="sync-info-row" id="syncInfo"></div>
+
+    <div class="token-banner" id="tokenBanner"></div>
 
     <div class="alert-banner" id="merchantAlert">
       <div class="alert-title">⚠️ Prodotti disapprovati su Google Shopping</div>
@@ -1402,6 +1431,33 @@
       return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
+    async function loadTokenStatus() {
+      try {
+        const r = await fetch('/api/metrics/token-status').then(r => r.json());
+        const tokens = r.tokens || [];
+        const banner = document.getElementById('tokenBanner');
+        if (!banner) return;
+        const meta = tokens.find(t => t.platform === 'meta');
+        if (!meta || !meta.expires_at || (meta.status !== 'warning' && meta.status !== 'critical')) {
+          banner.classList.remove('show');
+          return;
+        }
+        const level = meta.status === 'critical' ? 'critical' : 'warning';
+        const icon = level === 'critical' ? '🚨' : '⚠️';
+        const date = new Date(meta.expires_at).toLocaleDateString('it-IT');
+        banner.className = 'token-banner show ' + level;
+        banner.innerHTML = `
+          <span class="token-icon">${icon}</span>
+          <div>
+            <strong>Token Meta in scadenza</strong> — Scade tra <strong>${meta.days_remaining} giorni</strong> (${date}).
+            <br>Rigenera il token long-lived lanciando da terminale:
+            <code>node scripts/meta-longlived-token.js</code>
+            poi aggiorna <code>META_ACCESS_TOKEN</code> su Render.
+          </div>
+        `;
+      } catch (_) {}
+    }
+
     async function loadSyncInfo() {
       try {
         const r = await fetch('/api/metrics/sync-log').then(r => r.json());
@@ -1599,6 +1655,7 @@
 
     loadAll();
     loadSyncInfo();
+    loadTokenStatus();
   </script>
 
   <!-- ─── AI Chat Floating Widget ─── -->
