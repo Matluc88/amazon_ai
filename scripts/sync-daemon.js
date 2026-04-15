@@ -23,9 +23,15 @@ const { fetchLastDays: fetchWc } = require('../services/woocommerceService');
 const { saveWooCommerceData } = require('../routes/metrics');
 
 const POLL_INTERVAL_MS = 10_000; // 10 secondi
-const DAEMON_VERSION = '1.0.0';
+const DAEMON_VERSION = '1.1.0';
+
+// Orari schedule (ora locale Mac)
+const SCHEDULED_SYNC_HOUR = 4;   // 04:xx
+const SCHEDULED_SYNC_MIN = 30;   // xx:30
+const SCHEDULED_SYNC_DAYS = 7;   // Quanti giorni scaricare
 
 let running = true;
+let lastScheduledRunDate = null; // "YYYY-MM-DD" dell'ultima esecuzione schedulata
 
 async function processRequest(req) {
   const { id, platform, days } = req;
@@ -64,10 +70,60 @@ async function processRequest(req) {
   }
 }
 
+/**
+ * Verifica se è il momento di lanciare la sync schedulata giornaliera.
+ * Gira una sola volta al giorno anche se il daemon viene riavviato.
+ */
+async function maybeRunScheduled() {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10); // YYYY-MM-DD locale
+  if (lastScheduledRunDate === today) return; // già fatto oggi
+
+  // Controlla se l'orario è >= dell'orario schedulato
+  const targetMinutes = SCHEDULED_SYNC_HOUR * 60 + SCHEDULED_SYNC_MIN;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  if (nowMinutes < targetMinutes) return; // ancora presto
+
+  // Doppio check contro race condition: verifica se c'è già stato un sync
+  // successo oggi (da qualsiasi fonte — schedulato o manuale)
+  try {
+    const r = await query(
+      `SELECT COUNT(*) AS n FROM sync_requests
+        WHERE platform = 'woocommerce'
+          AND status = 'ok'
+          AND DATE(finished_at) = CURRENT_DATE`
+    );
+    if (Number(r.rows[0].n) > 0) {
+      lastScheduledRunDate = today;
+      console.log(`[${now.toISOString()}] ⏭️  Scheduled sync skip: già sincronizzato oggi`);
+      return;
+    }
+  } catch (err) {
+    console.error(`[${now.toISOString()}] ⚠️  Scheduled check error: ${err.message}`);
+    return;
+  }
+
+  // Accoda una nuova richiesta schedulata, che il loop la processerà subito dopo
+  try {
+    await query(
+      `INSERT INTO sync_requests (platform, days, status, requested_by)
+       VALUES ('woocommerce', $1, 'pending', 'daemon-scheduled')`,
+      [SCHEDULED_SYNC_DAYS]
+    );
+    lastScheduledRunDate = today;
+    console.log(`[${now.toISOString()}] 🕓 Scheduled sync avviato (woocommerce ${SCHEDULED_SYNC_DAYS}gg)`);
+  } catch (err) {
+    console.error(`[${now.toISOString()}] ⚠️  Errore accodamento schedulato: ${err.message}`);
+  }
+}
+
 async function loop() {
   while (running) {
     try {
-      // Prende la prima richiesta pending per una piattaforma supportata
+      // 1. Verifica schedule giornaliero
+      await maybeRunScheduled();
+
+      // 2. Prende la prima richiesta pending per una piattaforma supportata
       const r = await query(
         `SELECT id, platform, days
            FROM sync_requests
@@ -100,6 +156,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 console.log(`[${new Date().toISOString()}] 🚀 Sync daemon v${DAEMON_VERSION} avviato`);
 console.log(`   Polling ogni ${POLL_INTERVAL_MS / 1000}s sulla tabella sync_requests`);
 console.log(`   Platform supportate: woocommerce`);
+console.log(`   Schedule automatico: ogni giorno alle ${String(SCHEDULED_SYNC_HOUR).padStart(2,'0')}:${String(SCHEDULED_SYNC_MIN).padStart(2,'0')} (${SCHEDULED_SYNC_DAYS}gg)`);
 console.log(`   Premi Ctrl+C per fermare`);
 
 loop().catch((err) => {
