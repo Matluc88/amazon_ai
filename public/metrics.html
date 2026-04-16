@@ -506,6 +506,37 @@
       font-weight: 600;
     }
     .ai-input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Privacy mode: sfoca dati sensibili per screenshot/demo */
+    body.privacy-mode .kpi-value,
+    body.privacy-mode .kpi-sub,
+    body.privacy-mode .funnel-stage .fs-value,
+    body.privacy-mode .funnel-stage .fs-rate,
+    body.privacy-mode .metrics-table tbody td,
+    body.privacy-mode canvas,
+    body.privacy-mode [data-sensitive] {
+      filter: blur(6px);
+      transition: filter 0.15s;
+      user-select: none;
+    }
+    body.privacy-mode .kpi-value:hover,
+    body.privacy-mode .kpi-sub:hover,
+    body.privacy-mode .funnel-stage:hover .fs-value,
+    body.privacy-mode .funnel-stage:hover .fs-rate {
+      filter: blur(6px);
+    }
+    #privacyToggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--gray-300);
+      font-size: 16px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    #privacyToggle:hover { background: rgba(255,255,255,0.1); }
+    #privacyToggle.active { color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -519,6 +550,7 @@
       <a href="/cerebro" class="nav-link">🔬 Cerebro</a>
       <a href="/metrics" class="nav-link active">📊 Metriche</a>
       <a href="/config.html" class="nav-link">⚙️ Config</a>
+      <button id="privacyToggle" title="Nascondi/mostra dati (utile per screenshot)">👁️</button>
       <button class="nav-link" id="logoutBtn" style="background:none;border:none;cursor:pointer;color:var(--gray-300);">🚪 Esci</button>
     </nav>
   </nav>
@@ -1862,6 +1894,24 @@
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/login.html';
     });
+
+    // ─── Privacy toggle (nasconde i dati sensibili per screenshot/demo) ───
+    (function initPrivacyToggle() {
+      const btn = document.getElementById('privacyToggle');
+      if (!btn) return;
+      const applyState = (on) => {
+        document.body.classList.toggle('privacy-mode', on);
+        btn.classList.toggle('active', on);
+        btn.textContent = on ? '🙈' : '👁️';
+        btn.title = on ? 'Modalità privacy attiva — clicca per mostrare i dati' : 'Nascondi dati (utile per screenshot)';
+      };
+      applyState(localStorage.getItem('privacyMode') === '1');
+      btn.addEventListener('click', () => {
+        const next = !document.body.classList.contains('privacy-mode');
+        localStorage.setItem('privacyMode', next ? '1' : '0');
+        applyState(next);
+      });
+    })();
 
     // ─── AI Chat widget ───────────────────────────────────────────
     // Wrap in DOMContentLoaded perché il widget HTML è DOPO questo script
