@@ -742,6 +742,49 @@
       </table>
     </div>
 
+    <div class="table-card" style="margin-top:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+        <div>
+          <h3 style="margin:0 0 2px;font-size:16px;">🧾 Ordini recenti</h3>
+          <div style="font-size:12px;color:var(--gray-500);">Cerca per cliente, email, città, prodotto, numero ordine.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="ordersSearch" placeholder="🔍 Cerca..." style="padding:7px 10px;border:1.5px solid var(--gray-300);border-radius:6px;font-size:13px;min-width:200px;" />
+          <select id="ordersStatus" style="padding:7px 10px;border:1.5px solid var(--gray-300);border-radius:6px;font-size:13px;">
+            <option value="all">Tutti gli stati</option>
+            <option value="completed">Completato</option>
+            <option value="processing">In lavorazione</option>
+            <option value="on-hold">In attesa</option>
+            <option value="pending">In sospeso</option>
+            <option value="cancelled">Annullato</option>
+            <option value="refunded">Rimborsato</option>
+            <option value="failed">Fallito</option>
+          </select>
+          <button id="ordersSearchBtn" class="btn" style="padding:7px 14px;font-size:13px;">Cerca</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Data e ora</th>
+              <th>Stato</th>
+              <th>Cliente</th>
+              <th>Città</th>
+              <th>Prodotti</th>
+              <th>Totale</th>
+              <th>Provenienza</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody">
+            <tr><td colspan="8" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="ordersFooter" style="font-size:12px;color:var(--gray-500);margin-top:8px;"></div>
+    </div>
+
     <div class="section-title">🏪 Punto vendita fisico (Google Business Profile)</div>
     <div class="section-subtitle">
       Come le persone trovano il negozio in Via della Divisione Torino 104 (EUR, Roma) tramite
@@ -1542,10 +1585,81 @@
         renderWcCities(citiesRes.cities || []);
         renderWcCustomers(custRes.customers || [], custRes.stats || {});
         renderWcCategories(catRes.categories || []);
+        loadWcOrders();
       } catch (err) {
         console.error('WooCommerce load error:', err);
       }
     }
+
+    async function loadWcOrders() {
+      const tbody = document.getElementById('ordersBody');
+      const footer = document.getElementById('ordersFooter');
+      if (!tbody) return;
+      const q = (document.getElementById('ordersSearch')?.value || '').trim();
+      const status = document.getElementById('ordersStatus')?.value || 'all';
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (status && status !== 'all') params.set('status', status);
+      params.set('limit', '50');
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Caricamento...</td></tr>';
+      try {
+        const r = await fetch('/api/metrics/woocommerce/orders?' + params.toString()).then(x => x.json());
+        const orders = r.orders || [];
+        if (!orders.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nessun ordine trovato.</td></tr>';
+          if (footer) footer.textContent = '';
+          return;
+        }
+        tbody.innerHTML = orders.map(o => {
+          const dt = o.date_created ? new Date(o.date_created) : null;
+          const dateStr = dt ? dt.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+          const statusLabel = {
+            'completed': '🟢 Completato',
+            'processing': '🟡 In lavorazione',
+            'on-hold': '⏸️ In attesa',
+            'pending': '⏳ In sospeso',
+            'cancelled': '❌ Annullato',
+            'refunded': '↩️ Rimborsato',
+            'failed': '⚠️ Fallito',
+          }[o.status] || o.status || '—';
+          const city = [o.billing_city, o.billing_country].filter(Boolean).join(', ') || '—';
+          const customer = o.customer_name || o.customer_email || '—';
+          const items = o.items_summary || `${o.items_count || 0} articoli`;
+          const source = o.source_channel || '—';
+          return `
+            <tr>
+              <td><strong>#${escapeHtml(o.order_number || o.order_id)}</strong></td>
+              <td style="white-space:nowrap;font-size:12px;">${escapeHtml(dateStr)}</td>
+              <td style="font-size:12px;">${escapeHtml(statusLabel)}</td>
+              <td>
+                <div>${escapeHtml(customer)}</div>
+                ${o.customer_email ? `<div style="font-size:11px;color:var(--gray-500);">${escapeHtml(o.customer_email)}</div>` : ''}
+              </td>
+              <td style="font-size:12px;">${escapeHtml(city)}</td>
+              <td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(items)}">${escapeHtml(items)}</td>
+              <td><strong>${fmtEur(o.total)}</strong></td>
+              <td style="font-size:12px;">${escapeHtml(source)}</td>
+            </tr>
+          `;
+        }).join('');
+        if (footer) {
+          footer.textContent = `Mostrati ${orders.length} ordini${r.count >= r.limited_to ? ` (limite ${r.limited_to} — affina la ricerca per vedere altro)` : ''}.`;
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Errore nel caricamento.</td></tr>';
+        console.error('loadWcOrders error:', err);
+      }
+    }
+
+    // Wiring search box ordini
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('ordersSearchBtn');
+      const input = document.getElementById('ordersSearch');
+      const sel = document.getElementById('ordersStatus');
+      if (btn) btn.addEventListener('click', loadWcOrders);
+      if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); loadWcOrders(); } });
+      if (sel) sel.addEventListener('change', loadWcOrders);
+    });
 
     function renderWcCities(cities) {
       const tbody = document.getElementById('wcCitiesBody');

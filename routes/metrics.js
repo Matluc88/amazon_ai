@@ -627,6 +627,58 @@ router.get('/woocommerce/top-categories', async (req, res) => {
 });
 
 /**
+ * GET /api/metrics/woocommerce/orders
+ * Ricerca ordini individuali con filtri: q (cliente/email/città/prodotto/numero),
+ * from, to (date ISO), status, limit.
+ */
+router.get('/woocommerce/orders', async (req, res) => {
+  try {
+    const q = (req.query.q || '').toString().trim();
+    const from = (req.query.from || '').toString().trim();
+    const to = (req.query.to || '').toString().trim();
+    const status = (req.query.status || '').toString().trim();
+    const limit = Math.min(Number(req.query.limit) || 50, 500);
+
+    const where = [];
+    const params = [];
+    let idx = 1;
+
+    if (q) {
+      where.push(
+        `(LOWER(customer_name) LIKE $${idx}
+          OR LOWER(customer_email) LIKE $${idx}
+          OR LOWER(billing_city) LIKE $${idx}
+          OR LOWER(items_summary) LIKE $${idx}
+          OR order_number LIKE $${idx}
+          OR order_id LIKE $${idx})`
+      );
+      params.push(`%${q.toLowerCase()}%`);
+      idx++;
+    }
+    if (from) { where.push(`date_created >= $${idx}`); params.push(from); idx++; }
+    if (to)   { where.push(`date_created <= $${idx}`); params.push(to); idx++; }
+    if (status && status !== 'all') {
+      where.push(`status = $${idx}`); params.push(status); idx++;
+    }
+
+    params.push(limit);
+    const sql = `
+      SELECT order_id, order_number, date_created, status, customer_email, customer_name,
+             billing_city, billing_country, total, currency, items_count, items_summary,
+             payment_method, source_channel, source_referrer
+        FROM metrics_wc_orders
+       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+       ORDER BY date_created DESC
+       LIMIT $${idx}
+    `;
+    const r = await query(sql, params);
+    res.json({ orders: r.rows, count: r.rows.length, limited_to: limit });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/metrics/sync/merchant
  * Scarica snapshot Merchant Center e lo salva in DB.
  */
@@ -840,7 +892,7 @@ async function saveMerchantSnapshot(snap) {
   return inserted;
 }
 
-async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], customerRows = [], categoryRows = [] }) {
+async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], customerRows = [], categoryRows = [], orderRows = [] }) {
   // 1. UPSERT giornalieri
   for (const r of dailyRows) {
     await query(
@@ -922,6 +974,45 @@ async function saveWooCommerceData({ dailyRows, productRows, cityRows = [], cust
            (shop_domain, category, revenue, items_sold, occurrences, period_days, updated_at)
          VALUES ($1,$2,$3,$4,$5,$6, NOW())`,
         [cat.shop_domain, cat.category, cat.revenue, cat.items_sold, cat.occurrences, cat.period_days]
+      );
+    }
+
+    // 6. Ordini individuali (upsert per order_id — non cancelliamo, gli ordini restano)
+    for (const o of orderRows) {
+      if (!o.order_id) continue;
+      await query(
+        `INSERT INTO metrics_wc_orders
+           (shop_domain, order_id, order_number, date_created, status, customer_email,
+            customer_name, billing_city, billing_country, total, discount_total, shipping_total,
+            tax_total, currency, items_count, items_summary, payment_method, source_channel,
+            source_referrer, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19, NOW())
+         ON CONFLICT (shop_domain, order_id) DO UPDATE SET
+           order_number    = EXCLUDED.order_number,
+           date_created    = EXCLUDED.date_created,
+           status          = EXCLUDED.status,
+           customer_email  = EXCLUDED.customer_email,
+           customer_name   = EXCLUDED.customer_name,
+           billing_city    = EXCLUDED.billing_city,
+           billing_country = EXCLUDED.billing_country,
+           total           = EXCLUDED.total,
+           discount_total  = EXCLUDED.discount_total,
+           shipping_total  = EXCLUDED.shipping_total,
+           tax_total       = EXCLUDED.tax_total,
+           currency        = EXCLUDED.currency,
+           items_count     = EXCLUDED.items_count,
+           items_summary   = EXCLUDED.items_summary,
+           payment_method  = EXCLUDED.payment_method,
+           source_channel  = EXCLUDED.source_channel,
+           source_referrer = EXCLUDED.source_referrer,
+           updated_at      = NOW()`,
+        [
+          o.shop_domain, o.order_id, o.order_number, o.date_created, o.status,
+          o.customer_email, o.customer_name, o.billing_city, o.billing_country,
+          o.total, o.discount_total, o.shipping_total, o.tax_total, o.currency,
+          o.items_count, o.items_summary, o.payment_method, o.source_channel,
+          o.source_referrer,
+        ]
       );
     }
   }
@@ -1191,6 +1282,19 @@ router.post('/chat', async (req, res) => {
          FROM metrics_wc_customers_recent`
     );
 
+    // Ordini individuali del periodo — per domande di drill-down tipo
+    // "quando è stato fatto l'ordine di Mario?" / "ordini recenti da Roma"
+    const recentOrders = await query(
+      `SELECT order_number, date_created, status, customer_name, customer_email,
+              billing_city, billing_country, total, items_count, items_summary,
+              payment_method, source_channel
+         FROM metrics_wc_orders
+        WHERE date_created BETWEEN $1 AND $2
+        ORDER BY date_created DESC
+        LIMIT 50`,
+      [from, to]
+    );
+
     const context = {
       periodo: { from, to, range },
       _note: 'I totali WooCommerce includono TUTTE le vendite da TUTTI i canali (non solo Meta o Google). Per capire la provenienza del traffico usa ga4.channel_breakdown, non confrontare direttamente ads.per_platform con woocommerce.totals.',
@@ -1207,6 +1311,8 @@ router.post('/chat', async (req, res) => {
         top_categories: wcCategories.rows,
         top_products: wcProducts.rows,
         customer_stats: customerStats.rows[0] || {},
+        recent_orders: recentOrders.rows,
+        _orders_note: 'recent_orders contiene gli ordini SINGOLI del periodo con data_ora esatta, cliente, città, prodotti, totale, provenienza (source_channel dal plugin Order Attribution di WooCommerce quando installato). Usa questi per rispondere a domande specifiche tipo "quando è stato fatto l\'ordine di X" o "ordini da Roma".',
       },
       ga4: {
         _note: 'Totali traffico del sito (TUTTO il traffico da TUTTE le fonti).',

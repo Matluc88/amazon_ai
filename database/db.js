@@ -490,6 +490,46 @@ async function initDatabase() {
       ON metrics_wc_categories_recent (shop_domain, revenue DESC)
     `);
 
+    // Tabella ordini WC individuali (una riga per ordine, per drill-down e ricerca)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS metrics_wc_orders (
+        id SERIAL PRIMARY KEY,
+        shop_domain VARCHAR(200) NOT NULL,
+        order_id VARCHAR(50) NOT NULL,
+        order_number VARCHAR(50),
+        date_created TIMESTAMP NOT NULL,
+        status VARCHAR(30),
+        customer_email VARCHAR(320),
+        customer_name VARCHAR(300),
+        billing_city VARCHAR(200),
+        billing_country VARCHAR(3),
+        total DECIMAL(12,2) DEFAULT 0,
+        discount_total DECIMAL(12,2) DEFAULT 0,
+        shipping_total DECIMAL(12,2) DEFAULT 0,
+        tax_total DECIMAL(12,2) DEFAULT 0,
+        currency VARCHAR(3) DEFAULT 'EUR',
+        items_count INTEGER DEFAULT 0,
+        items_summary TEXT,
+        payment_method VARCHAR(100),
+        source_channel VARCHAR(100),
+        source_referrer TEXT,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(shop_domain, order_id)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_orders_date
+      ON metrics_wc_orders (shop_domain, date_created DESC)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_orders_email
+      ON metrics_wc_orders (shop_domain, customer_email)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_metrics_wc_orders_status
+      ON metrics_wc_orders (shop_domain, status, date_created DESC)
+    `);
+
     // Tabella snapshot catalogo Google Merchant Center (uno snapshot al giorno)
     await client.query(`
       CREATE TABLE IF NOT EXISTS metrics_merchant_snapshot (

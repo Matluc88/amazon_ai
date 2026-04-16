@@ -142,12 +142,61 @@ async function fetchOrdersAggregated({ dateFrom, dateTo, days }) {
   const byCity = new Map();
   const byEmail = new Map();
 
+  const orderRows = [];
+
   for (const o of orders) {
     const dateKey = String(o.date_created || '').slice(0, 10);
     if (!dateKey) continue;
 
     const countable = ['processing', 'completed', 'on-hold'].includes(o.status);
     const refunded = o.status === 'refunded';
+
+    // ─── Riga per ordine singolo (tutti gli status — utile per drill-down) ───
+    {
+      const lineItems = o.line_items || [];
+      const itemsCount = lineItems.reduce((s, li) => s + Number(li.quantity || 0), 0);
+      const itemsSummary = lineItems
+        .map((li) => `${li.quantity || 1}× ${li.name || ''}`.trim())
+        .filter(Boolean)
+        .join(' | ')
+        .slice(0, 2000);
+      const meta = Array.isArray(o.meta_data) ? o.meta_data : [];
+      const metaGet = (key) => {
+        const m = meta.find((x) => x && x.key === key);
+        return m ? String(m.value || '') : '';
+      };
+      // Order Attribution plugin (WooCommerce core dal 2024) o HPOS fields
+      const sourceChannel =
+        metaGet('_wc_order_attribution_source_type') ||
+        metaGet('_wc_order_attribution_utm_source') ||
+        metaGet('_wc_order_source') ||
+        '';
+      const sourceReferrer =
+        metaGet('_wc_order_attribution_referrer') ||
+        metaGet('_wc_order_attribution_session_entry') ||
+        '';
+      orderRows.push({
+        shop_domain: shopDomain,
+        order_id: String(o.id || ''),
+        order_number: String(o.number || o.id || ''),
+        date_created: o.date_created || null,
+        status: o.status || '',
+        customer_email: (o.billing?.email || '').toLowerCase().trim(),
+        customer_name: `${o.billing?.first_name || ''} ${o.billing?.last_name || ''}`.trim(),
+        billing_city: (o.billing?.city || '').trim(),
+        billing_country: (o.billing?.country || '').toUpperCase(),
+        total: Number(o.total || 0),
+        discount_total: Number(o.discount_total || 0),
+        shipping_total: Number(o.shipping_total || 0),
+        tax_total: Number(o.total_tax || 0),
+        currency: o.currency || 'EUR',
+        items_count: itemsCount,
+        items_summary: itemsSummary,
+        payment_method: (o.payment_method_title || o.payment_method || '').slice(0, 100),
+        source_channel: sourceChannel.slice(0, 100),
+        source_referrer: sourceReferrer.slice(0, 500),
+      });
+    }
 
     // ─── Aggregato giornaliero ───
     let day = byDate.get(dateKey);
@@ -309,7 +358,7 @@ async function fetchOrdersAggregated({ dateFrom, dateTo, days }) {
   const categoryRows = Array.from(byCategory.values())
     .sort((a, b) => b.revenue - a.revenue);
 
-  return { dailyRows, productRows, cityRows, customerRows, categoryRows };
+  return { dailyRows, productRows, cityRows, customerRows, categoryRows, orderRows };
 }
 
 /**
