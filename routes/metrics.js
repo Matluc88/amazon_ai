@@ -9,6 +9,7 @@ const {
   fetchChannelGroup: fetchGa4Channels,
   fetchLandingPages: fetchGa4LandingPages,
   fetchAiAssistants: fetchGa4AI,
+  fetchOutboundClicks: fetchGa4OutboundClicks,
 } = require('../services/ga4Service');
 const { fetchLastDays: fetchMatomoLastDays, fetchSources: fetchMatomoSources } = require('../services/matomoService');
 const { fetchCatalogSnapshot } = require('../services/merchantService');
@@ -325,6 +326,21 @@ router.get('/ga4/ai-assistants', async (req, res) => {
     const sources = await fetchGa4AI({ dateFrom: from, dateTo: to });
     const total_sessions = sources.reduce((s, r) => s + Number(r.sessions || 0), 0);
     res.json({ from, to, sources, total_sessions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/ga4/outbound-clicks
+ * Click sui link outbound (evento click di Enhanced Measurement) aggregati per canale.
+ */
+router.get('/ga4/outbound-clicks', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const data = await fetchGa4OutboundClicks({ dateFrom: from, dateTo: to });
+    const total = data.byChannel.reduce((s, c) => s + c.clicks, 0);
+    res.json({ from, to, by_channel: data.byChannel, total_clicks: total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1235,9 +1251,12 @@ router.post('/chat', async (req, res) => {
     // Proviamo anche a prendere il channel breakdown LIVE da GA4 per dare più
     // contesto all'AI. Se fallisce (es. quota raggiunta), ignora.
     let ga4Channels = [];
+    let ga4OutboundClicks = [];
     try {
-      const { fetchChannelGroup } = require('../services/ga4Service');
+      const { fetchChannelGroup, fetchOutboundClicks } = require('../services/ga4Service');
       ga4Channels = await fetchChannelGroup({ dateFrom: from, dateTo: to });
+      const out = await fetchOutboundClicks({ dateFrom: from, dateTo: to });
+      ga4OutboundClicks = out.byChannel || [];
     } catch (_) {}
 
     const [adsSum, adsCamp, wcSum, wcCities, wcCustomers, wcCategories, wcProducts, ga4Sum] = await Promise.all([
@@ -1319,6 +1338,8 @@ router.post('/chat', async (req, res) => {
         totals: ga4Sum.rows[0] || {},
         channel_breakdown: ga4Channels,
         _channel_note: 'channel_breakdown mostra come GA4 attribuisce sessioni e conversioni ai canali (Direct/Organic/Paid Search/Paid Social/...). Usa QUESTI numeri per capire da quale canale arriva il traffico, non quelli di ads.per_platform.',
+        outbound_clicks: ga4OutboundClicks,
+        _outbound_note: 'outbound_clicks mostra quante volte qualcuno clicca dal sito verso canali esterni (WhatsApp, Instagram, Facebook, YouTube, Telefono, ecc.). I click WhatsApp sono CONTATTI INIZIATI: qualcuno ha visto il sito e ha aperto una chat con Alessandro. ATTENZIONE: NON puoi attribuire un ordine specifico ai click WA — WhatsApp non passa il referrer, quindi quando il cliente torna sul sito per comprare, GA4 lo classifica come Direct. Puoi solo parlare in termini di CORRELAZIONE (es. "in una settimana con molti click WA c\'è stato 1 ordine"), mai di CAUSALITÀ.',
       },
     };
 

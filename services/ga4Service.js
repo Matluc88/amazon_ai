@@ -282,6 +282,60 @@ async function fetchAiAssistants({ dateFrom, dateTo }) {
   return rows;
 }
 
+/**
+ * Click sui link outbound (evento `click` di Enhanced Measurement).
+ * Raggruppa per URL e classifica il canale (WhatsApp, Facebook, Instagram, ...).
+ */
+async function fetchOutboundClicks({ dateFrom, dateTo, limit = 50 }) {
+  const r = await runReport({
+    dateFrom, dateTo,
+    dimensions: ['eventName', 'linkUrl'],
+    metrics: ['eventCount'],
+    orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+    limit,
+  });
+
+  const rows = (r.rows || [])
+    .filter((row) => (row.dimensionValues[0] || {}).value === 'click')
+    .map((row) => {
+      const url = (row.dimensionValues[1] || {}).value || '';
+      const count = Number((row.metricValues[0] || {}).value || 0);
+      return { url, clicks: count, channel: classifyChannel(url) };
+    });
+
+  // Aggregato per canale
+  const byChannel = new Map();
+  for (const row of rows) {
+    const ch = row.channel;
+    const prev = byChannel.get(ch) || { channel: ch, clicks: 0, urls: [] };
+    prev.clicks += row.clicks;
+    prev.urls.push({ url: row.url, clicks: row.clicks });
+    byChannel.set(ch, prev);
+  }
+  const channelAgg = Array.from(byChannel.values()).sort((a, b) => b.clicks - a.clicks);
+
+  return { byChannel: channelAgg, rawRows: rows };
+}
+
+/**
+ * Classifica un URL outbound in un canale noto per la dashboard.
+ */
+function classifyChannel(url) {
+  const u = (url || '').toLowerCase();
+  if (u.includes('wa.me') || u.includes('whatsapp.com') || u.includes('api.whatsapp')) return 'WhatsApp';
+  if (u.includes('instagram.com') || u.includes('ig.me')) return 'Instagram';
+  if (u.includes('facebook.com') || u.includes('fb.me') || u.includes('messenger.com')) return 'Facebook';
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
+  if (u.includes('tiktok.com')) return 'TikTok';
+  if (u.includes('twitter.com') || u.includes('x.com')) return 'X / Twitter';
+  if (u.includes('linkedin.com')) return 'LinkedIn';
+  if (u.includes('telegram') || u.includes('t.me')) return 'Telegram';
+  if (u.includes('mailto:')) return 'Email';
+  if (u.includes('tel:')) return 'Telefono';
+  if (u.includes('amazon.')) return 'Amazon';
+  return 'Altro';
+}
+
 module.exports = {
   getAccessToken,
   runReport,
@@ -292,4 +346,5 @@ module.exports = {
   fetchChannelGroup,
   fetchLandingPages,
   fetchAiAssistants,
+  fetchOutboundClicks,
 };

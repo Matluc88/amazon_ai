@@ -890,6 +890,30 @@
       </table>
     </div>
 
+    <div class="table-card" style="margin-top:16px;">
+      <h3 style="margin:0 0 4px;font-size:16px;">🔗 Click sui canali di contatto</h3>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">
+        Quante volte qualcuno clicca sul pulsante WhatsApp o sui link ai tuoi profili social dal sito.
+        Dato da GA4 Enhanced Measurement (evento <code>click</code> outbound).
+        <strong>Nota:</strong> WhatsApp non passa il referrer, quindi i ritorni al sito da una chat WA
+        vengono contati come "Direct" — non c'è modo di attribuire un ordine specifico al click WA
+        senza il plugin Order Attribution o UTM nei link condivisi da Alessandro.
+      </div>
+      <table class="metrics-table">
+        <thead>
+          <tr>
+            <th>Canale</th>
+            <th>Click</th>
+            <th>% sul totale</th>
+          </tr>
+        </thead>
+        <tbody id="outboundClicksBody">
+          <tr><td colspan="3" class="empty-state">Caricamento...</td></tr>
+        </tbody>
+      </table>
+      <div id="outboundClicksFooter" style="font-size:12px;color:var(--gray-500);margin-top:8px;"></div>
+    </div>
+
   </div>
 
   <script>
@@ -1213,7 +1237,7 @@
     async function loadGa4() {
       const qs = `?range=${state.range}`;
       try {
-        const [sumRes, extRes, dailyRes, srcRes, citiesRes, channelsRes, landingRes, aiRes] = await Promise.all([
+        const [sumRes, extRes, dailyRes, srcRes, citiesRes, channelsRes, landingRes, aiRes, outboundRes] = await Promise.all([
           fetch('/api/metrics/ga4/summary' + qs).then(r => r.json()),
           fetch('/api/metrics/ga4/summary-extended' + qs).then(r => r.json()).catch(() => ({})),
           fetch('/api/metrics/ga4/daily' + qs).then(r => r.json()),
@@ -1222,6 +1246,7 @@
           fetch('/api/metrics/ga4/channels' + qs).then(r => r.json()).catch(() => ({ channels: [] })),
           fetch('/api/metrics/ga4/landing-pages' + qs + '&limit=15').then(r => r.json()).catch(() => ({ pages: [] })),
           fetch('/api/metrics/ga4/ai-assistants' + qs).then(r => r.json()).catch(() => ({ sources: [], total_sessions: 0 })),
+          fetch('/api/metrics/ga4/outbound-clicks' + qs).then(r => r.json()).catch(() => ({ by_channel: [], total_clicks: 0 })),
         ]);
         renderGa4Kpis(sumRes.totals || {}, extRes.totals || {});
         renderGa4Chart(dailyRes.rows || []);
@@ -1230,8 +1255,44 @@
         renderGa4Channels(channelsRes.channels || []);
         renderGa4LandingPages(landingRes.pages || []);
         renderGa4AI(aiRes.sources || [], aiRes.total_sessions || 0);
+        renderOutboundClicks(outboundRes.by_channel || [], outboundRes.total_clicks || 0);
       } catch (err) {
         console.error('GA4 load error:', err);
+      }
+    }
+
+    function renderOutboundClicks(byChannel, total) {
+      const tbody = document.getElementById('outboundClicksBody');
+      const footer = document.getElementById('outboundClicksFooter');
+      if (!tbody) return;
+      if (!byChannel.length || total === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Nessun click outbound nel periodo.</td></tr>';
+        if (footer) footer.textContent = '';
+        return;
+      }
+      const icons = {
+        'WhatsApp': '💬', 'Instagram': '📷', 'Facebook': '👍', 'YouTube': '📺',
+        'TikTok': '🎵', 'X / Twitter': '𝕏', 'LinkedIn': '💼', 'Telegram': '✈️',
+        'Email': '📧', 'Telefono': '📞', 'Amazon': '📦', 'Altro': '🔗',
+      };
+      tbody.innerHTML = byChannel.map(c => {
+        const pct = total > 0 ? (c.clicks / total * 100).toFixed(1) : '0.0';
+        const icon = icons[c.channel] || '🔗';
+        return `
+          <tr>
+            <td><strong>${icon} ${escapeHtml(c.channel)}</strong></td>
+            <td>${fmtInt(c.clicks)}</td>
+            <td>${pct}%</td>
+          </tr>
+        `;
+      }).join('');
+      if (footer) {
+        const waRow = byChannel.find(c => c.channel === 'WhatsApp');
+        const wa = waRow ? waRow.clicks : 0;
+        const note = wa > 0
+          ? `Totale ${total} click outbound nel periodo. I ${wa} click WhatsApp sono contatti avviati dal sito verso Alessandro.`
+          : `Totale ${total} click outbound nel periodo.`;
+        footer.textContent = note;
       }
     }
 
