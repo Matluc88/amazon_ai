@@ -120,6 +120,12 @@ const PERSONAGGIO = {
   'Ballerina':             { fr: 'Danseuse',            de: 'Tänzerin',              es: 'Bailarina' },
   'Ballerino':             { fr: 'Danseur',             de: 'Tänzer',                es: 'Bailarín' },
   'Famiglia':              { fr: 'Famille',             de: 'Familie',               es: 'Familia' },
+  'Famiglia reale':        { fr: 'Famille royale',      de: 'Königliche Familie',    es: 'Familia real' },
+  'Genitori':              { fr: 'Parents',             de: 'Eltern',                es: 'Padres' },
+  'Artista':               { fr: 'Artiste',             de: 'Künstler',              es: 'Artista' },
+  'Re':                    { fr: 'Roi',                 de: 'König',                 es: 'Rey' },
+  'Regina':                { fr: 'Reine',               de: 'Königin',               es: 'Reina' },
+  'Principessa':           { fr: 'Princesse',           de: 'Prinzessin',            es: 'Princesa' },
   'Madre e figlio':        { fr: 'Mère et enfant',      de: 'Mutter und Kind',       es: 'Madre e hijo' },
   'Animali':               { fr: 'Animaux',             de: 'Tiere',                 es: 'Animales' },
   'Figure umane':          { fr: 'Figures humaines',    de: 'Menschliche Figuren',   es: 'Figuras humanas' },
@@ -284,6 +290,16 @@ const TEMA = {
   'Picnic campestre':      { fr: 'Pique-nique champêtre',    de: 'Ländliches Picknick',    es: 'Picnic campestre' },
   'Crescita':              { fr: 'Croissance',               de: 'Wachstum',               es: 'Crecimiento' },
   'Primi passi':           { fr: 'Premiers pas',             de: 'Erste Schritte',         es: 'Primeros pasos' },
+  'Arte':                  { fr: 'Art',                      de: 'Kunst',                  es: 'Arte' },
+  'Forza femminile':       { fr: 'Force féminine',           de: 'Weibliche Stärke',       es: 'Fuerza femenina' },
+  'Libertà':               { fr: 'Liberté',                  de: 'Freiheit',               es: 'Libertad' },
+  'Uguaglianza':           { fr: 'Égalité',                  de: 'Gleichheit',             es: 'Igualdad' },
+  'Educazione':            { fr: 'Éducation',                de: 'Bildung',                es: 'Educación' },
+  'Amore parentale':       { fr: 'Amour parental',           de: 'Elternliebe',            es: 'Amor parental' },
+  'Amore genitoriale':     { fr: 'Amour parental',           de: 'Elternliebe',            es: 'Amor parental' },
+  'Famiglia felice':       { fr: 'Famille heureuse',         de: 'Glückliche Familie',     es: 'Familia feliz' },
+  'Gioia':                 { fr: 'Joie',                     de: 'Freude',                 es: 'Alegría' },
+  'Gioia di vivere':       { fr: 'Joie de vivre',            de: 'Lebensfreude',           es: 'Alegría de vivir' },
   'Gatto':                 { fr: 'Chat',                     de: 'Katze',                  es: 'Gato' },
 };
 
@@ -297,16 +313,18 @@ const EDIZIONE = {
 };
 
 const MOTIVO = {
-  'Personaggi e animali':            { fr: 'Personnages et animaux',        de: 'Figuren und Tiere',            es: 'Personajes y animales' },
-  'Circo sotto la luna':             { fr: 'Cirque sous la lune',           de: 'Zirkus unter dem Mond',        es: 'Circo bajo la luna' },
-  'Famiglia reale simbolica':        { fr: 'Famille royale symbolique',     de: 'Symbolische Königsfamilie',    es: 'Familia real simbólica' },
-  'Famiglia con bambino':            { fr: 'Famille avec enfant',           de: 'Familie mit Kind',             es: 'Familia con bebé' },
-  'Scena musicale con personaggi':   { fr: 'Scène musicale avec personnages',de: 'Musikszene mit Figuren',      es: 'Escena musical con personajes' },
-  'Coppia romantica':                { fr: 'Couple romantique',             de: 'Romantisches Paar',            es: 'Pareja romántica' },
-  'Scena di danza':                  { fr: 'Scène de danse',                de: 'Tanzszene',                    es: 'Escena de baile' },
-  'Paesaggio urbano':                { fr: 'Paysage urbain',                de: 'Stadtlandschaft',              es: 'Paisaje urbano' },
-  'Natura astratta':                 { fr: 'Nature abstraite',              de: 'Abstrakte Natur',              es: 'Naturaleza abstracta' },
-  'Figure umane astratte':           { fr: 'Figures humaines abstraites',   de: 'Abstrakte menschliche Figuren',es: 'Figuras humanas abstractas' },
+  'Personaggi e animali':                    { fr: 'Personnages et animaux',              de: 'Figuren und Tiere',                es: 'Personajes y animales' },
+  'Circo sotto la luna':                     { fr: 'Cirque sous la lune',                 de: 'Zirkus unter dem Mond',            es: 'Circo bajo la luna' },
+  'Famiglia reale simbolica':                { fr: 'Famille royale symbolique',           de: 'Symbolische Königsfamilie',        es: 'Familia real simbólica' },
+  'Famiglia con bambino':                    { fr: 'Famille avec enfant',                 de: 'Familie mit Kind',                 es: 'Familia con bebé' },
+  'Scena musicale con personaggi':           { fr: 'Scène musicale avec personnages',     de: 'Musikszene mit Figuren',           es: 'Escena musical con personajes' },
+  'Coppia romantica':                        { fr: 'Couple romantique',                   de: 'Romantisches Paar',                es: 'Pareja romántica' },
+  'Scena di danza':                          { fr: 'Scène de danse',                      de: 'Tanzszene',                        es: 'Escena de baile' },
+  'Paesaggio urbano':                        { fr: 'Paysage urbain',                      de: 'Stadtlandschaft',                  es: 'Paisaje urbano' },
+  'Natura astratta':                         { fr: 'Nature abstraite',                    de: 'Abstrakte Natur',                  es: 'Naturaleza abstracta' },
+  'Figure umane astratte':                   { fr: 'Figures humaines abstraites',         de: 'Abstrakte menschliche Figuren',    es: 'Figuras humanas abstractas' },
+  'Figura con simboli':                      { fr: 'Figure avec symboles',                de: 'Figur mit Symbolen',               es: 'Figura con símbolos' },
+  'Figure stilizzate con corone e simboli':  { fr: 'Figures stylisées avec couronnes',    de: 'Stilisierte Figuren mit Kronen',   es: 'Figuras estilizadas con coronas' },
 };
 
 // ── Mappa principale nome_attributo → dizionario ─────────────────────────────
