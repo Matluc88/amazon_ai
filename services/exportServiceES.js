@@ -1,6 +1,6 @@
 /**
- * Export Service DE — Compila il template WALL_ART_DE.xlsm con i dati del prodotto
- * e ritorna un buffer pronto per il download su Amazon.de.
+ * Export Service ES — Compila il template WALL_ART_ES.xlsm con i dati del prodotto
+ * e ritorna un buffer pronto per il download su Amazon.es.
  *
  * Struttura righe output:
  *   Row 5 (DATA_START_ROW)     → Parent SKU
@@ -8,29 +8,29 @@
  *   Row 7                      → Child variante Media  (misura_media) — se presente
  *   Row 8                      → Child variante Mini   (misura_mini)  — se presente
  *
- * Differenze rispetto al template IT/FR:
- *   - DATA_START_ROW = 5 (IT: 7, FR: 6) — il template DE ha 5 righe di intestazione
- *   - Foglio "Vorlage" (IT: "Modello", FR: "Modèle")
- *   - Valori in tedesco: Eltern/Kind, Ja/Nein, Neu, Einheit, Zentimeter, Kilogramm
- *   - Colonne completamente diverse: offerta a col 146+, prezzo a col 178
- *   - Immagine principale a col 20 (IT/FR: 21)
+ * Differenze rispetto ai template IT/FR/DE:
+ *   - DATA_START_ROW = 5 (IT: 7, FR: 6, DE: 5) — il template ES ha 5 righe di intestazione
+ *   - Foglio "Plantilla" (IT: "Modello", FR: "Modèle", DE: "Vorlage")
+ *   - Valori in spagnolo: Principal./Niños, Sí/No, Nuevo, Unidad, Centímetros, Kilogramos
+ *   - 295 colonne totali; sezione "Oferta" dalla col 147, "Oferta (Vender en Amazon)" dalla col 173
+ *   - Immagine principale a col 21 (come IT/FR, a differenza di DE col 20)
  *   - Prezzo Amazon = prezzo DB + €20
- *   - marketplace_id = A1PA6795UKMFR9 (DE)
+ *   - marketplace_id = A1RKKUPIHCS9HS (ES)
  *
- * Categoria: Küche, Haushalt & Wohnen > Bilder, Poster, Kunstdrucke & Skulpturen > Poster & Kunstdrucke
+ * Categoria: Hogar y cocina > Obras de arte y material decorativo > Pósteres y grabados
  */
 const xlsx = require('xlsx');
 const path = require('path');
 const { query } = require('../database/db');
-const { getProductListing, getProductListingDE, extractDimensions } = require('./attributeService');
+const { getProductListing, getProductListingES, extractDimensions } = require('./attributeService');
 const { translateEnumValue } = require('./enumTranslations');
 
-const TEMPLATE_PATH = path.join(__dirname, '../WALL_ART_DE.xlsm');
-const DATA_START_ROW = 5; // indice 0-based — il template DE ha 5 righe header (vs 7 IT, 6 FR)
+const TEMPLATE_PATH = path.join(__dirname, '../WALL_ART_ES.xlsm');
+const DATA_START_ROW = 5; // indice 0-based — il template ES ha 5 righe header
 
-// ─── Browse node Germania — Poster & Kunstdrucke ────────────────────────────
-// Küche, Haushalt & Wohnen > Bilder, Poster, Kunstdrucke & Skulpturen > Poster & Kunstdrucke
-const BROWSE_NODE_DE = '372854011';
+// ─── Browse node Spagna — Pósteres y grabados ────────────────────────────────
+// Hogar y cocina > Obras de arte y material decorativo > Pósteres y grabados
+const BROWSE_NODE_ES = '14304083031';
 
 // ─── Lookup peso per dimensioni (kg) ─────────────────────────────────────────
 const WEIGHT_LOOKUP = {
@@ -51,14 +51,16 @@ function lookupWeight(text) {
   return WEIGHT_LOOKUP[`${min}_${max}`] || null;
 }
 
-// ─── Mapping: nome_attributo DB (italiano) → colonna XLSM tedesca ────────────
-// Il template DE ha una struttura colonne molto diversa da IT/FR.
-// Immagini shift -1, offerta molto prima, dimensioni a col 135+.
-const ATTR_COL_DE = {
+// ─── Mapping: nome_attributo DB (italiano) → colonna XLSM spagnola ───────────
+// Colonne verificate dal foglio "Plantilla" del template WALL_ART_ES.xlsm.
+// Rispetto a DE, la maggior parte delle colonne è shiftata di +1 nella prima metà
+// (perché DE aveva "Immagine principale" a col 20, ES a col 21); il blocco Oferta
+// si riallinea a partire da col 173 (channel_code).
+const ATTR_COL_ES = {
   // ── Identità listing / Informazioni generali ──────────────────────────────
   "Nome dell'articolo":                                         6,
   "Nome del marchio":                                           7,
-  "Modellname":                                                 18,
+  "Nome del modello":                                           18,
   "Produttore":                                                 19,
   "Immagine principale":                                        20,
   "Immagine 2":                                                 21,
@@ -114,17 +116,17 @@ const ATTR_COL_DE = {
   "Codice fiscale del prodotto":                                150,
   "L'offerta può essere inviata tramite messaggio regalo":      153,
   "È disponibile in confezione regalo":                         154,
-  "Prezzo minimo pubblicizzato":                                155,
+  "Prezzo minimo pubblicizzato":                                179,
   // ── Logistica ─────────────────────────────────────────────────────────────
-  "Altezza imballaggio":                                        192,
-  "Peso imballaggio":                                           194,
+  "Altezza imballaggio":                                        191,
+  "Peso imballaggio":                                           193,
   // ── Sicurezza / Conformità ────────────────────────────────────────────────
-  "Paese/Regione di origine":                                   232,
-  "Questo prodotto è soggetto a restrizioni di età per l'acquirente?": 256,
-  "E-mail o indirizzo elettronico della persona responsabile":  267,
-  "Attestazione di sicurezza GPSR":                             287,
-  "E-mail o indirizzo elettronico del produttore":              288,
-  "Prodotto OEM originale":                                     300,
+  "Paese/Regione di origine":                                   231,
+  "Questo prodotto è soggetto a restrizioni di età per l'acquirente?": 255,
+  "E-mail o indirizzo elettronico della persona responsabile":  256,
+  "Attestazione di sicurezza GPSR":                             276,
+  "E-mail o indirizzo elettronico del produttore":              277,
+  "Prodotto OEM originale":                                     289,
 };
 
 // ─── Helper celle ──────────────────────────────────────────────────────────────
@@ -182,61 +184,61 @@ function splitKeywordsTo5Slots(keywordsStr) {
   return slots;
 }
 
-// ─── Costruzione riga dati (DE) ───────────────────────────────────────────────
-function buildRowDE(sheet, rowIdx, product, attrs, variant) {
+// ─── Costruzione riga dati (ES) ───────────────────────────────────────────────
+function buildRowES(sheet, rowIdx, product, attrs, variant) {
   const { isParent, sku, taglia, dims, peso, prezzo, immagine, immagine2, immagine3, immagine4, asin } = variant;
 
   // ── Colonne strutturali ──────────────────────────────────────────────────
   setCellValue(sheet, 0, rowIdx, sku || '');
   setCellValue(sheet, 1, rowIdx, 'WALL_ART');
-  // Col 2 (Angebotsaktion) → vuota = default "Erstellen oder Ersetzen"
+  // Col 2 (Acción de listing) → vuota = default "Crear o reemplazar"
 
-  // ID prodotto: ASIN se disponibile, altrimenti GTIN-Freistellung
+  // ID prodotto: ASIN se disponibile, altrimenti Exención de GTIN
   if (asin) {
     setCellValue(sheet, 8, rowIdx, 'ASIN');
     setCellValue(sheet, 9, rowIdx, asin);
   } else {
-    setCellValue(sheet, 8, rowIdx, 'GTIN-Freistellung');
+    setCellValue(sheet, 8, rowIdx, 'Exención de GTIN');
   }
 
-  // Browse node DE — Poster & Kunstdrucke
-  setCellValue(sheet, 10, rowIdx, BROWSE_NODE_DE);
-  // Paketebene = Einheit (singolo pezzo)
-  setCellValue(sheet, 15, rowIdx, 'Einheit');
-  // Batterie non necessarie
-  setCellValue(sheet, 233, rowIdx, 'Nein');
-  setCellValue(sheet, 234, rowIdx, 'Nein');
+  // Browse node ES — Pósteres y grabados (col 10 = K)
+  setCellValue(sheet, 10, rowIdx, BROWSE_NODE_ES);
+  // Nivel de paquete = Unidad (singolo pezzo, col 15 = P)
+  setCellValue(sheet, 15, rowIdx, 'Unidad');
+  // Baterías no necesarias (col 232 HY, 233 HZ)
+  setCellValue(sheet, 232, rowIdx, 'No');
+  setCellValue(sheet, 233, rowIdx, 'No');
 
   if (isParent) {
-    setCellValue(sheet, 3, rowIdx, 'Eltern');
-    setCellValue(sheet, 5, rowIdx, 'SIZE/ORIENTATION');
-    setCellValue(sheet, 146, rowIdx, 'Ja'); // Angebot überspringen: parent non acquistabile
+    setCellValue(sheet, 3, rowIdx, 'Principal.');                // Nivel de relación (col D) — valore esatto da Valores válidos (con punto)
+    setCellValue(sheet, 5, rowIdx, 'SIZE/ORIENTATION');           // Nombre del tema de variación (col F)
+    setCellValue(sheet, 146, rowIdx, 'Sí');                       // Saltar oferta (col EQ): parent non acquistabile
   } else {
-    setCellValue(sheet, 3, rowIdx, 'Kind');
-    setCellValue(sheet, 4, rowIdx, product.sku_padre || '');
+    setCellValue(sheet, 3, rowIdx, 'Niños');                      // Nivel de relación (col D) — valore esatto da Valores válidos
+    setCellValue(sheet, 4, rowIdx, product.sku_padre || '');      // SKU principal
     setCellValue(sheet, 5, rowIdx, 'SIZE/ORIENTATION');
-    setCellValue(sheet, 62, rowIdx, taglia || '');        // Größe (taglia)
-    // Artikelzustand
-    setCellValue(sheet, 147, rowIdx, 'Neu');
-    // Offerta
-    setCellValue(sheet, 173, rowIdx, 'DEFAULT');           // Fulfillment-Channel-Code (DE)
-    setCellValue(sheet, 174, rowIdx, 100);                 // Menge (quantità)
-    setCellValue(sheet, 175, rowIdx, 7);                   // Bearbeitungszeit 7 giorni
-    if (prezzo) setCellValue(sheet, 178, rowIdx, Number(prezzo) + 20);  // Ihr Preis EUR = prezzo DB + €20
-    if (prezzo) setCellValue(sheet, 149, rowIdx, Number(prezzo) + 60);  // Listenpreis mit Steuern = prezzo vendita + €40 (= DB + €60)
-    setCellValue(sheet, 187, rowIdx, 'studio');            // Versandvorlage (gruppo spedizione)
+    setCellValue(sheet, 62, rowIdx, taglia || '');                // Tamaño (col BK)
+    // Estado del producto
+    setCellValue(sheet, 147, rowIdx, 'Nuevo');                    // Estado del producto (col ER)
+    // Oferta (ES) - Vender en Amazon
+    setCellValue(sheet, 172, rowIdx, 'DEFAULT');                  // fulfillment_channel_code (col FQ)
+    setCellValue(sheet, 173, rowIdx, 100);                        // Cantidad (col FR)
+    setCellValue(sheet, 174, rowIdx, 7);                          // Tiempo de tramitación 7 giorni (col FS)
+    if (prezzo) setCellValue(sheet, 177, rowIdx, Number(prezzo) + 20);  // Tu precio EUR (col FV) = prezzo DB + €20
+    if (prezzo) setCellValue(sheet, 149, rowIdx, Number(prezzo) + 60);  // Precio de venta recomendado PVPR (col ET) = prezzo vendita + €40
+    setCellValue(sheet, 186, rowIdx, 'studio');                   // Plantilla de envío (col GE)
   }
 
-  // ── Attributi DB → colonne DE ─────────────────────────────────────────────
+  // ── Attributi DB → colonne ES ─────────────────────────────────────────────
   const INVALID_VALUES = new Set(['N/D', 'n/d']);
-  for (const [nome, col] of Object.entries(ATTR_COL_DE)) {
+  for (const [nome, col] of Object.entries(ATTR_COL_ES)) {
     let val = attrs[nome];
     if (val === undefined || val === '') continue;
     if (INVALID_VALUES.has(String(val).trim())) continue;
     if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)' && (val === '0' || val === 0 || val === '' || !val)) continue;
-    // Traduci i valori enum IT → DE (Colore, Tema, Tipo di stanza, Famiglia di
+    // Traduci i valori enum IT → ES (Colore, Tema, Tipo di stanza, Famiglia di
     // colori, Stagioni, Funzioni speciali, ecc.). Non-enum restano invariati.
-    val = translateEnumValue(nome, val, 'de');
+    val = translateEnumValue(nome, val, 'es');
     if (!val || INVALID_VALUES.has(String(val).trim())) continue;
     setCellValue(sheet, col, rowIdx, val);
   }
@@ -247,65 +249,71 @@ function buildRowDE(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 42 + i, rowIdx, slot);
   });
 
-  // ── Defaults fissi Amazon.de — obbligatori per "Poster & Kunstdrucke" ─────
-  // Valori validati dal foglio "Gültige Werte" del template WALL_ART_DE.xlsm.
+  // ── Defaults fissi Amazon.es — obbligatori per "Pósteres y grabados" ──────
+  // Valori validati dal foglio "Valores válidos" del template WALL_ART_ES.xlsm.
   // Sovrascrivono eventuali valori italiani dal DB. Fissi per parent + child.
   // ── Brand & Manufacturer — fissi per tutti i prodotti ────────────────────
-  setCellValue(sheet, 7,   rowIdx, 'SivigliArt');               // Markenname (Brand)
-  setCellValue(sheet, 19,  rowIdx, 'SivigliArt');               // Hersteller (Manufacturer)
+  setCellValue(sheet, 7,   rowIdx, 'SivigliArt');               // Marca (Brand) — col H
+  setCellValue(sheet, 19,  rowIdx, 'SivigliArt');               // Fabricante (Manufacturer) — col T
 
-  // ── Ausrichtung — calcolata dalle dimensioni (Hochformat / Querformat) ───
+  // ── Orientación — calcolata dalle dimensioni (Paisaje / Retrato / Redondo) ─
   if (dims && dims.lunghezza && dims.larghezza) {
-    const orient = Number(dims.lunghezza) > Number(dims.larghezza) ? 'Querformat' : 'Hochformat';
-    setCellValue(sheet, 94, rowIdx, orient);                     // Ausrichtung
+    const orient = Number(dims.lunghezza) > Number(dims.larghezza)
+      ? 'Paisaje'
+      : Number(dims.lunghezza) < Number(dims.larghezza)
+        ? 'Retrato'
+        : 'Redondo';
+    setCellValue(sheet, 94, rowIdx, orient);                    // Orientación (col CP)
   }
 
-  setCellValue(sheet, 75,  rowIdx, 'Stoff');                    // Druckmaterial — "Stoff" = tessuto/canvas
-  setCellValue(sheet, 92,  rowIdx, 'Nein');                     // Anpassbar? (Ja / Nein)
-  setCellValue(sheet, 114, rowIdx, 'Nein');                     // Ist der Artikel zerbrechlich? (Ja / Nein)
-  setCellValue(sheet, 121, rowIdx, 'Nein');                     // Ist gerahmt — canvas su telaio, non cornice (Ja / Nein)
-  setCellValue(sheet, 132, rowIdx, 'Innenbereich');             // Verwendung im Innen- und Außenbereich
-  setCellValue(sheet, 139, rowIdx, 'Kunstdruck');               // Wand Dekoration Form
-  setCellValue(sheet, 147, rowIdx, 'Neu');                      // Artikelzustand
-  setCellValue(sheet, 153, rowIdx, 'Nein');                     // Geschenknachricht (Ja / Nein)
-  setCellValue(sheet, 154, rowIdx, 'Nein');                     // Geschenkverpackung (Ja / Nein)
-  setCellValue(sheet, 232, rowIdx, 'Italien');                  // Ursprungsland
-  setCellValue(sheet, 256, rowIdx, 'Nein');                     // Altersbeschränkungen (Ja / Nein)
-  setCellValue(sheet, 267, rowIdx, 'sivigliart@outlook.it');    // E-Mail zuständige Person (GPSR)
-  setCellValue(sheet, 287, rowIdx, 'Ja');                       // GPSR-Sicherheitsbescheinigung (Ja / Nein)
-  setCellValue(sheet, 288, rowIdx, 'sivigliart@outlook.it');    // E-Mail Hersteller (GPSR)
-  setCellValue(sheet, 300, rowIdx, 'Nein');                     // Ist ein OEM-Produkt (Ja / Nein)
+  setCellValue(sheet, 75,  rowIdx, 'Tela');                     // Papel Impresión — "Tela" = canvas/tessuto
+  setCellValue(sheet, 92,  rowIdx, 'No');                       // ¿Es personalizable? (Sí / No)
+  setCellValue(sheet, 114, rowIdx, 'No');                       // ¿Es frágil? (Sí / No)
+  setCellValue(sheet, 121, rowIdx, 'No');                       // ¿Está enmarcado? — canvas su telaio, non cornice (Sí / No)
+  setCellValue(sheet, 132, rowIdx, 'Interior');                 // Uso interior y exterior
+  setCellValue(sheet, 139, rowIdx, 'Impresión de Arte');        // Forma de arte mural (Valores válidos ES)
+  setCellValue(sheet, 147, rowIdx, 'Nuevo');                    // Estado del producto
+  setCellValue(sheet, 153, rowIdx, 'No');                       // La oferta puede ser un mensaje de regalo (Sí / No)
+  setCellValue(sheet, 154, rowIdx, 'No');                       // ¿Está disponible el papel de regalo? (Sí / No)
+  setCellValue(sheet, 231, rowIdx, 'Italia');                   // País de origen — nome in spagnolo
+  setCellValue(sheet, 255, rowIdx, 'No');                       // Restricciones de edad (Sí / No)
+  setCellValue(sheet, 256, rowIdx, 'sivigliart@outlook.it');    // E-mail persona responsable (DSA)
+  setCellValue(sheet, 276, rowIdx, 'Sí');                       // Certificación de seguridad GPSR (Sí / No)
+  setCellValue(sheet, 277, rowIdx, 'sivigliart@outlook.it');    // E-mail del fabricante (GPSR)
+  setCellValue(sheet, 289, rowIdx, 'No');                       // ¿Es producto de fuente OEM? (Sí / No)
   // ─────────────────────────────────────────────────────────────────────────
 
   // ── Dimensioni variante ──────────────────────────────────────────────────
   if (dims) {
-    // Dimensioni articolo (col 135-138)
+    // Dimensioni articolo (col 135-138 = EF-EI)
     setCellValue(sheet, 135, rowIdx, Number(dims.lunghezza));
-    setCellValue(sheet, 136, rowIdx, 'Zentimeter');
+    setCellValue(sheet, 136, rowIdx, 'Centímetros');
     setCellValue(sheet, 137, rowIdx, Number(dims.larghezza));
-    setCellValue(sheet, 138, rowIdx, 'Zentimeter');
-    // Imballaggio — lunghezza e larghezza (col 188-191)
-    setCellValue(sheet, 188, rowIdx, Number(dims.lunghezza));
-    setCellValue(sheet, 189, rowIdx, 'Zentimeter');
-    setCellValue(sheet, 190, rowIdx, Number(dims.larghezza));
-    setCellValue(sheet, 191, rowIdx, 'Zentimeter');
-    // Altezza imballaggio: fissa 3 cm (col 192-193)
-    setCellValue(sheet, 192, rowIdx, 3);
-    setCellValue(sheet, 193, rowIdx, 'Zentimeter');
+    setCellValue(sheet, 138, rowIdx, 'Centímetros');
+    // Imballaggio — lunghezza e larghezza (col 187-190 = GF-GI)
+    setCellValue(sheet, 187, rowIdx, Number(dims.lunghezza));
+    setCellValue(sheet, 188, rowIdx, 'Centímetros');
+    setCellValue(sheet, 189, rowIdx, Number(dims.larghezza));
+    setCellValue(sheet, 190, rowIdx, 'Centímetros');
+    // Altura paquete: fissa 3 cm (col 191-192 = GJ-GK)
+    setCellValue(sheet, 191, rowIdx, 3);
+    setCellValue(sheet, 192, rowIdx, 'Centímetros');
   }
 
   // ── Peso variante ────────────────────────────────────────────────────────
   if (peso !== null && peso !== undefined) {
-    // Peso articolo (col 254-255)
-    setCellValue(sheet, 254, rowIdx, Number(peso));
-    setCellValue(sheet, 255, rowIdx, 'Kilogramm');
-    // Peso imballaggio = peso + 0.3 kg (col 194-195)
-    setCellValue(sheet, 194, rowIdx, Math.round((Number(peso) + 0.3) * 10) / 10);
-    setCellValue(sheet, 195, rowIdx, 'Kilogramm');
+    // Peso artículo (col 253-254 = IT-IU)
+    setCellValue(sheet, 253, rowIdx, Number(peso));
+    setCellValue(sheet, 254, rowIdx, 'Kilogramos');
+    // Peso paquete = peso + 0.3 kg (col 193-194 = GL-GM)
+    setCellValue(sheet, 193, rowIdx, Math.round((Number(peso) + 0.3) * 10) / 10);
+    setCellValue(sheet, 194, rowIdx, 'Kilogramos');
   }
 
   // ── Immagini variante child ───────────────────────────────────────────────
-  // Nel template DE le immagini sono a col 20-28 (shift -1 rispetto a IT/FR)
+  // Nel template ES le immagini sono a col 20-28 (come DE, shift -1 rispetto al nome umano).
+  // Attenzione: nel mapping ATTR_COL_ES "Immagine principale" è mappata a col 20
+  // (che è l'indice 0-based della 21esima colonna → col U "URL de la imagen principal").
   if (!isParent) {
     for (let c = 20; c <= 28; c++) setCellValue(sheet, c, rowIdx, '');
     const mainImgChild = attrs['Immagine principale'] || immagine || immagine2 || null;
@@ -336,27 +344,27 @@ function buildRowDE(sheet, rowIdx, product, attrs, variant) {
   }
 }
 
-// ─── Helper: carica attributi DE con fallback a IT ────────────────────────────
-async function loadAttrsDE(productId, product) {
-  // 1. Carica listing tedesco (testo AI: titolo, bullets, keywords, ecc.)
-  const attrsDE = await getProductListingDE(productId);
-  const hasDE = Object.keys(attrsDE).some(k => attrsDE[k] && attrsDE[k].length > 0);
+// ─── Helper: carica attributi ES con fallback a IT ────────────────────────────
+async function loadAttrsES(productId, product) {
+  // 1. Carica listing spagnolo (testo AI: titolo, bullets, keywords, ecc.)
+  const attrsES = await getProductListingES(productId);
+  const hasES = Object.keys(attrsES).some(k => attrsES[k] && attrsES[k].length > 0);
 
-  if (hasDE) {
+  if (hasES) {
     // 2. Inietta le immagini dalla tabella IT (sono identiche per tutti i mercati)
     const sections = await getProductListing(productId, product);
     for (const items of Object.values(sections)) {
       for (const item of items) {
         if (item.nome && item.nome.startsWith('Immagine') && item.value) {
-          attrsDE[item.nome] = item.value;
+          attrsES[item.nome] = item.value;
         }
       }
     }
-    return attrsDE;
+    return attrsES;
   }
 
   // 3. Fallback: usa il listing italiano completo (prodotti non ancora tradotti)
-  console.warn(`[exportDE] Prodotto #${productId} — nessun listing DE trovato, uso fallback IT`);
+  console.warn(`[exportES] Prodotto #${productId} — nessun listing ES trovato, uso fallback IT`);
   const sections = await getProductListing(productId, product);
   const attrsIT = {};
   for (const items of Object.values(sections)) {
@@ -369,22 +377,22 @@ async function loadAttrsDE(productId, product) {
   return attrsIT;
 }
 
-// ─── Funzione: export singolo prodotto → DE ───────────────────────────────────
-async function exportProductToXlsmDE(productId) {
+// ─── Funzione: export singolo prodotto → ES ───────────────────────────────────
+async function exportProductToXlsmES(productId) {
   const productResult = await query('SELECT * FROM products WHERE id = $1', [productId]);
   const product = productResult.rows[0];
   if (!product) throw new Error(`Prodotto #${productId} non trovato`);
 
-  const attrs = await loadAttrsDE(productId, product);
+  const attrs = await loadAttrsES(productId, product);
 
   let wb;
   try {
     wb = xlsx.readFile(TEMPLATE_PATH);
   } catch {
-    throw new Error('Template WALL_ART_DE.xlsm non trovato nella root del progetto');
+    throw new Error('Template WALL_ART_ES.xlsm non trovato nella root del progetto');
   }
-  const sheet = wb.Sheets['Vorlage'];
-  if (!sheet) throw new Error('Foglio "Vorlage" non trovato nel template DE');
+  const sheet = wb.Sheets['Plantilla'];
+  if (!sheet) throw new Error('Foglio "Plantilla" non trovato nel template ES');
 
   clearDataRows(sheet);
 
@@ -423,7 +431,7 @@ async function exportProductToXlsmDE(productId) {
   }
 
   rows.forEach((variant, i) => {
-    buildRowDE(sheet, DATA_START_ROW + i, product, attrs, variant);
+    buildRowES(sheet, DATA_START_ROW + i, product, attrs, variant);
   });
 
   const currentRange = xlsx.utils.decode_range(sheet['!ref'] || 'A1');
@@ -432,13 +440,13 @@ async function exportProductToXlsmDE(productId) {
 
   const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsm' });
   const skuLabel = product.sku_padre || `prodotto-${productId}`;
-  const filename = `WALL_ART_DE_${skuLabel.replace(/[^a-zA-Z0-9_-]/g, '_')}.xlsm`;
+  const filename = `WALL_ART_ES_${skuLabel.replace(/[^a-zA-Z0-9_-]/g, '_')}.xlsm`;
 
   return { buffer, filename };
 }
 
-// ─── Funzione: export tutti/selezionati prodotti → DE ────────────────────────
-async function exportAllProductsToXlsmDE(productIds = null) {
+// ─── Funzione: export tutti/selezionati prodotti → ES ────────────────────────
+async function exportAllProductsToXlsmES(productIds = null) {
   let result;
   if (productIds && productIds.length > 0) {
     result = await query(
@@ -463,17 +471,17 @@ async function exportAllProductsToXlsmDE(productIds = null) {
   try {
     wb = xlsx.readFile(TEMPLATE_PATH);
   } catch {
-    throw new Error('Template WALL_ART_DE.xlsm non trovato nella root del progetto');
+    throw new Error('Template WALL_ART_ES.xlsm non trovato nella root del progetto');
   }
-  const sheet = wb.Sheets['Vorlage'];
-  if (!sheet) throw new Error('Foglio "Vorlage" non trovato nel template DE');
+  const sheet = wb.Sheets['Plantilla'];
+  if (!sheet) throw new Error('Foglio "Plantilla" non trovato nel template ES');
 
   clearDataRows(sheet);
 
   let currentRow = DATA_START_ROW;
 
   for (const product of products) {
-    const attrs = await loadAttrsDE(product.id, product);
+    const attrs = await loadAttrsES(product.id, product);
 
     const rows = [];
     const hasVariants = !!(product.sku_max || product.sku_padre);
@@ -509,7 +517,7 @@ async function exportAllProductsToXlsmDE(productIds = null) {
     }
 
     rows.forEach((variant, i) => {
-      buildRowDE(sheet, currentRow + i, product, attrs, variant);
+      buildRowES(sheet, currentRow + i, product, attrs, variant);
     });
     currentRow += rows.length;
   }
@@ -520,9 +528,9 @@ async function exportAllProductsToXlsmDE(productIds = null) {
 
   const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsm' });
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const filename = `WALL_ART_DE_ALL_${today}.xlsm`;
+  const filename = `WALL_ART_ES_ALL_${today}.xlsm`;
 
   return { buffer, filename, count: products.length };
 }
 
-module.exports = { exportProductToXlsmDE, exportAllProductsToXlsmDE };
+module.exports = { exportProductToXlsmES, exportAllProductsToXlsmES };

@@ -228,24 +228,34 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
 
     <!-- PRODOTTI TABLE -->
     <div class="card" id="productsCard">
-      <div class="card-header">
-        <h2>🖼️ Prodotti importati</h2>
+      <div class="card-header" style="flex-direction:column;align-items:stretch;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <h2>🖼️ Prodotti importati</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label style="font-size:12px;font-weight:600;color:var(--gray-600);">🛒 Amazon:</label>
+            <select id="filterAmazon" onchange="filterByAmazonStatus()"
+              style="padding:5px 10px;font-size:13px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;cursor:pointer;background:white;">
+              <option value="all">Tutti</option>
+              <option value="none">🔴 Non caricati</option>
+              <option value="partial">🟡 Parziali</option>
+              <option value="live">🟢 Live</option>
+            </select>
+          </div>
+        </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <label style="font-size:12px;font-weight:600;color:var(--gray-600);">🛒 Amazon:</label>
-          <select id="filterAmazon" onchange="filterByAmazonStatus()"
-            style="padding:5px 10px;font-size:13px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;cursor:pointer;background:white;">
-            <option value="all">Tutti</option>
-            <option value="none">🔴 Non caricati</option>
-            <option value="partial">🟡 Parziali</option>
-            <option value="live">🟢 Live</option>
-          </select>
-          <button class="btn btn-primary btn-sm" id="generateAllBtn" style="display:none">
-            ✨ Genera tutti i listing
+          <button class="btn btn-sm" id="generateAllBtn"
+                  style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;font-weight:600;display:none;">
+            🇮🇹 Genera tutti IT
           </button>
           <button class="btn btn-sm" id="downloadAllBtn"
                   style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;font-weight:600;display:none;"
                   onclick="downloadAllForAmazon()">
-            📥 Scarica XLSM per Amazon
+            🇮🇹 Scarica XLSM Italia
+          </button>
+          <button class="btn btn-sm" id="generateAllFRBtn"
+                  style="background:linear-gradient(135deg,#1e40af,#1d4ed8);color:#fff;border:none;font-weight:600;display:none;"
+                  onclick="generateAllFR()">
+            🇫🇷 Genera tutti FR
           </button>
           <button class="btn btn-sm" id="downloadAllFRBtn"
                   style="background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;border:none;font-weight:600;display:none;"
@@ -262,14 +272,32 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
                   onclick="downloadAllForAmazonDE()">
             🇩🇪 Scarica XLSM Germania
           </button>
+          <button class="btn btn-sm" id="generateAllESBtn"
+                  style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:600;display:none;"
+                  onclick="generateAllES()">
+            🇪🇸 Genera tutti ES
+          </button>
+          <button class="btn btn-sm" id="downloadAllESBtn"
+                  style="background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;font-weight:600;display:none;"
+                  onclick="downloadAllForAmazonES()">
+            🇪🇸 Scarica XLSM Spagna
+          </button>
         </div>
       </div>
       <!-- BARRA SELEZIONE (visibile solo quando almeno 1 prodotto è selezionato) -->
       <div id="selectionBar" style="display:none;padding:10px 20px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;border-radius:0;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
         <span id="selectionCount" style="font-size:13px;font-weight:600;color:#1d4ed8;">✅ 0 prodotti selezionati</span>
+        <button id="generateSelectedBtn" onclick="generateSelected()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇮🇹 Genera IT selezionati
+        </button>
         <button id="exportSelectedBtn" onclick="downloadSelectedForAmazon()"
-          style="padding:6px 14px;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
-          📥 Esporta IT selezionati
+          style="padding:6px 14px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇮🇹 Esporta IT selezionati
+        </button>
+        <button id="generateSelectedFRBtn" onclick="generateSelectedFR()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#1e40af,#1d4ed8);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇫🇷 Genera FR selezionati
         </button>
         <button id="exportSelectedFRBtn" onclick="downloadSelectedForAmazonFR()"
           style="padding:6px 14px;background:linear-gradient(135deg,#0d47a1,#1565c0);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
@@ -282,6 +310,14 @@ Tecnica: stampa digitale UV su canvas con telaio in legno."></textarea>
         <button id="exportSelectedDEBtn" onclick="downloadSelectedForAmazonDE()"
           style="padding:6px 14px;background:linear-gradient(135deg,#d32f2f,#b71c1c);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
           🇩🇪 Esporta DE selezionati
+        </button>
+        <button id="generateSelectedESBtn" onclick="generateSelectedES()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇪🇸 Genera ES selezionati
+        </button>
+        <button id="exportSelectedESBtn" onclick="downloadSelectedForAmazonES()"
+          style="padding:6px 14px;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          🇪🇸 Esporta ES selezionati
         </button>
         <button onclick="deselectAll()"
           style="padding:6px 12px;background:white;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">

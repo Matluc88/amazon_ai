@@ -1236,6 +1236,176 @@ Rispondi SOLO con JSON valido:
   return result;
 }
 
+// ─── AREA 0 universali ES — keyword validate su Amazon.es 2026 ─────────────
+// Volumi stimati per il mercato spagnolo (Pósteres y grabados):
+// cuadros decoracion salon, cuadros modernos, cuadros grandes,
+// decoracion pared salon, laminas decorativas, cuadros pared, cuadros dormitorio
+const AREA0_PHRASES_ES = [
+  'cuadros decoracion salon',     // top keyword ES
+  'cuadros modernos',
+  'cuadros grandes',
+  'decoracion pared salon',
+  'laminas decorativas',
+  'cuadros pared',
+  'cuadros dormitorio',
+];
+
+function ensureArea0AndBytesES(chiavi, stableKey) {
+  if (!chiavi) return chiavi;
+  const MIN_BYTES = 1100;
+
+  const lower = chiavi.toLowerCase();
+  const missingPhrases = AREA0_PHRASES_ES.filter(p => !lower.includes(p));
+
+  let result = chiavi;
+  if (missingPhrases.length > 0) {
+    result = missingPhrases.join(' ') + ' ' + result;
+    console.warn(`[AI-ES] ⚠️ AREA 0 ES mancanti [${stableKey}]: ${missingPhrases.join(', ')} — aggiunte in testa`);
+  }
+
+  const byteCount = Buffer.byteLength(result, 'utf8');
+  if (byteCount < MIN_BYTES) {
+    console.warn(`[AI-ES] ⚠️ Chiavi ES sotto target [${stableKey}]: ${byteCount}/${MIN_BYTES} byte`);
+  }
+
+  return smartTruncateChiavi(result, stableKey);
+}
+
+/**
+ * Genera TUTTI gli attributi AI per il mercato SPAGNOLO (amazon.es).
+ * Output: stessi campi JSON dell'IT (chiavi DB in italiano), contenuto in SPAGNOLO.
+ *
+ * @param {object} product - dati del prodotto
+ * @param {string[]} keywords - keyword minate (opzionale)
+ * @param {string} cerebroSection - sezione Cerebro ES (opzionale)
+ * @returns {object} - { "Nome dell'articolo": "...(ES)...", ... }
+ */
+async function generateAllAiAttributesES(product, keywords = [], cerebroSection = '') {
+  const imageUrl = getProductImageUrl(product);
+  const autore = (product.autore && product.autore.trim()) ? product.autore.trim() : 'Alessandro Siviglia';
+  const stableKey = product.sku_max || product.sku_media || product.sku_mini || String(product.id || 0);
+
+  const keywordsSection = keywords.length > 0
+    ? `\nPALABRAS CLAVE REALES AMAZON.ES — úsalas donde sea natural:\n${keywords.slice(0, 20).join(', ')}\n`
+    : '';
+  const cerebroSectionText = cerebroSection ? `\n${cerebroSection}\n` : '';
+
+  const variantiSection = (product.misura_max || product.sku_max)
+    ? `\nVARIANTES DISPONIBLES (3 tamaños):\n- Grande: ${product.misura_max || '—'} cm — €${product.prezzo_max || '—'} (SKU: ${product.sku_max || '—'})\n- Mediana: ${product.misura_media || '—'} cm — €${product.prezzo_media || '—'} (SKU: ${product.sku_media || '—'})\n- Pequeña: ${product.misura_mini || '—'} cm — €${product.prezzo_mini || '—'} (SKU: ${product.sku_mini || '—'})\n`
+    : '';
+
+  const hasSizeVariants = typeof product.misura_max === 'string'
+    ? product.misura_max.trim().length > 0 && product.misura_max.trim() !== '—'
+    : Boolean(product.misura_max);
+  const dimensioneSingle = product.dimensioni || product.misura_max || '';
+
+  const oriCalc = calcOrientamento(product.misura_max || product.dimensioni || '');
+  const formatoES = oriCalc
+    ? (() => {
+        const es = oriCalc.orientamento === 'Orizzontale' ? 'PAISAJE' : oriCalc.orientamento === 'Verticale' ? 'RETRATO' : 'CUADRADO';
+        return `\n⚠️ FORMATO DE LA OBRA: ${es} — medidas ANCHO×ALTO (ej. "${oriCalc.display}"). En los términos de búsqueda, usa SIEMPRE este orden.`;
+      })()
+    : '';
+
+  const visionNote = imageUrl
+    ? '\n🖼️ ANÁLISIS VISUAL: Una imagen de la obra está adjunta. Úsala como fuente principal para los campos visuales (personajes, colores, estilo, composición).\n'
+    : '';
+
+  const prompt = `Sei un esperto di listing Amazon per il mercato SPAGNOLO (amazon.es), specializzato in arte e decorazione.
+
+Genera TUTTI gli attributi per un listing Amazon ottimizzato — impresión sobre lienzo (stampe su tela) su amazon.es.
+${visionNote}
+TESTO DELL'OPERA (in italiano — interpretare il soggetto, NON tradurre letteralmente):
+"""
+${product.descrizione_raw || 'Nessuna descrizione fornita'}
+"""
+${product.dimensioni ? `\nDIMENSIONES (grande): ${product.dimensioni} cm` : ''}
+
+ARTISTA: ${autore}
+⚠️ "${autore}" es el NOMBRE DEL ARTISTA — no confundir con el título de la obra.
+${variantiSection}${keywordsSection}${cerebroSectionText}
+
+⚠️ REGLA ABSOLUTA: TODOS los campos de texto (título, descripción, viñetas, palabras clave) DEBEN estar en ESPAÑOL. Solo los campos meta (Stile, Tema, Tipo di stanza, Famiglia di colori, Stagioni, Edizione, Funzioni speciali, Personaggio rappresentato, Tema animali, Colore, Usi consigliati) permanecen en ITALIANO (son claves del DB).
+⚠️ POLÍTICA AMAZON: PROHIBIDO en cualquier campo: "erótico", "sensual", "sexy" o términos adultos. Para obras románticas: usar ÚNICAMENTE "romántico", "pareja", "amor", "pasión artística".
+
+### NOMBRE DEL PRODUCTO (Título — 80-110 car., ideal 85-105, NUNCA +200):
+✔ "Lienzo" SIEMPRE presente ✔ TIPO + ESTANCIA + Sujeto 2-4 palabras ✔ Todo en ESPAÑOL
+TIPOS: "Cuadro Moderno" (DEFAULT), "Cuadro Romántico" (SÓLO pareja/beso), "Cuadro Abstracto" (SÓLO abstracto), "Cuadro Marino" (SÓLO marítimo), "Cuadro Paisaje" (SÓLO paisaje), "Lienzo Decorativo" (neutro)
+ESTANCIAS: "Salón" (DEFAULT), "Dormitorio" (romántico/floral), "Oficina" (paisaje/abstracto)
+ESTRUCTURA: A) "{Tipo} {Estancia} {Sujeto 2-4 palabras} – Lienzo {palabra clave 2}" B) "Lienzo {Sujeto} – {Tipo} {Estancia} {palabra clave 2}"
+PALABRAS CLAVE 2: "Decoración Pared", "Decoración Interior", "Idea Regalo", "Listo para Colgar"
+hasSizeVariants=${hasSizeVariants} — si FALSE añadir ", ${dimensioneSingle} cm" al final.
+EJEMPLOS: "Cuadro Moderno Salón Caballos Circo – Lienzo Decoración Pared" (68) | "Cuadro Romántico Dormitorio Pareja Beso – Lienzo Decoración Interior" (72)
+Salida: UNA línea en ESPAÑOL, sin comillas.
+
+### DESCRIPCIÓN DEL PRODUCTO (200-2000 car., TEXTO PLANO — SIN HTML, todo en ESPAÑOL):
+3 PARTES separadas por " — ":
+PARTE 1: PRIMERA FRASE OBLIGATORIA: "Impresión sobre lienzo de la obra original de ${autore}, lista para colgar con marco de madera incluido." + 1-2 frases sobre motivo/uso.
+PARTE 2: 3-5 frases cortas sobre la obra (motivo, colores, atmósfera). Máx 20 palabras/frase.
+PARTE 3: Dónde/para quién + CTA. Si hay variantes: "Disponible en varios formatos: [pequeño], [mediano], [grande] cm."
+PROHIBIDO: "pintado", "pintado a mano".
+
+### PALABRAS CLAVE (backend — 5 slots × 250 bytes = 1250 bytes, SÓLO ESPAÑOL):
+${formatoES}
+Formato: SÓLO espacios, sin comas. Todo en minúsculas. Objetivo: 1100-1200 bytes UTF-8.
+
+ZONA 0 — OBLIGATORIAS (todos los lienzos Amazon.es):
+cuadros decoracion salon cuadros modernos cuadros grandes decoracion pared salon laminas decorativas cuadros pared cuadros dormitorio regalo original decoracion hogar
++ TODAS las palabras clave Cerebro tier BACKEND y BULLET del prompt (si están presentes).
+
+ZONA 1 — SINÓNIMOS PRODUCTO (min 20 términos): cuadro lienzo poster lamina pintura dibujo arte decoracion mural marco pared cuadros impresion reproduccion...
+ZONA 2 — SUJETO ESPECÍFICO (min 25 palabras en español): variantes del motivo de la obra...
+ZONA 3 — ESTILO Y TÉCNICA (min 15 palabras): figurativo abstracto contemporaneo moderno impresionista expresionista...
+ZONA 4 — AMBIENTES (min 20 palabras): entrada pasillo cocina baño terraza balcon hotel restaurante bar consulta medica sala espera recepcion...
+ZONA 5 — REGALOS Y LONG-TAIL (min 30 palabras): regalo dia madre regalo cumpleaños novia regalo boda inauguracion casa regalo navidad san valentin dia padre regalo amigo...
+REGLAS: CERO inglés (nada wall art, nada canvas, nada gift), nada "sivigliart", min 150 palabras.
+
+### VIÑETAS (5 bullets en ESPAÑOL — máx 220 car. cada uno):
+PROHIBIDO: "pintado", "pintado a mano". "Lienzo" en al menos 2 viñetas.
+Viñeta 1: "Cuadro moderno para {estancia 1} y {estancia 2}, ideal como decoración de pared en espacios {adj}. Con marco de madera incluido, sin marco de cristal, listo para colgar."
+Viñeta 2: "Lienzo con {calidad}, perfecto para {uso}. Reproducción de alta resolución de la obra original de ${autore}." [única viñeta con el artista]
+Viñeta 3: "Cuadro sobre lienzo listo para colgar con marco de madera resistente y acabado lacado. Ganchos incluidos, montaje sencillo en pocos minutos." [SIEMPRE "acabado lacado"]
+Viñeta 4: "Perfecto como idea regalo para mudanza, {contexto 1}, {contexto 2} o {contexto 3}. Se adapta a todos los estilos de decoración."
+Viñeta 5: ${hasSizeVariants ? `"Disponible en varios formatos: ${product.misura_mini || '[pequeño]'}, ${product.misura_media || '[mediano]'}, ${product.misura_max || '[grande]'} cm, para adaptarse a todos los espacios. Devolución aceptada en 14 días según condiciones Amazon."` : '"Disponible en varios tamaños para adaptarse a todos los espacios. Devolución aceptada en 14 días según condiciones Amazon."'}
+
+### CAMPOS META (en ITALIANO — chiavi DB):
+- "Personaggio rappresentato": figura umana → 1-3 parole IT (es. "Coppia", "Donna", "Musicista"); nessuna → "N/D"
+- "Colore": 1-2 dominanti IT (es. "Blu, Oro"); 3+ → "Multicolore"
+- "Stile": stile artistico IT (es. "Arte Moderna", "Impressionista", "Astratto")
+- "Tema": temi IT virgola-separati (es. "Coppia romantica, Amore")
+- "Tipo di stanza": 3-4 stanze IT, inizia "Soggiorno" (es. "Soggiorno, Camera da letto, Ufficio")
+- "Famiglia di colori": UNO tra: "Bianco"|"Bianco e nero"|"Caldi"|"Freddi"|"Luminosi"|"Neutro"|"Pastelli"|"Scala di grigi"|"Tonalità della terra"|"Toni gioiello"
+- "Usi consigliati per il prodotto": IT virgola-separati (es. "Decorazione parete, Regalo")
+- "Tema animali": animale principale IT (es. "Cavallo", "Leone"); assenza → "N/D"
+- "Funzioni speciali": SEMPRE "Pronto da appendere, Con telaio in legno" (IT)
+- "Stagioni": UNO tra: "Tutte le stagioni"|"Primavera"|"Estate"|"Autunno"|"Inverno"
+- "Edizione": IT (es. "Stampa Artistica Moderna")
+
+Rispondi SOLO con JSON valido:
+{"Nome dell'articolo":"...","Nome del modello":"...","Descrizione del prodotto":"...","Punto elenco 1":"...","Punto elenco 2":"...","Punto elenco 3":"...","Punto elenco 4":"...","Punto elenco 5":"...","Chiavi di ricerca":"...","Funzioni speciali":"...","Personaggio rappresentato":"...","Stile":"...","Tema":"...","Usi consigliati per il prodotto":"...","Tipo di stanza":"...","Famiglia di colori":"...","Motivo":"...","Colore":"...","Supporti di stampa":"Impresión sobre lienzo","Edizione":"...","Stagioni":"...","Tema animali":"..."}`;
+
+  if (imageUrl) {
+    console.log(`[AI-ES] Vision AI attiva per prodotto ${product.id || '?'} — immagine: ${imageUrl.slice(0, 60)}...`);
+  }
+
+  const message = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 3000,
+    messages: [{ role: 'user', content: buildMessageContent(prompt, imageUrl) }]
+  });
+
+  const result = parseJsonResponse(message.content[0].text);
+
+  if (result["Nome dell'articolo"]) {
+    result["Nome dell'articolo"] = smartTruncateTitle(result["Nome dell'articolo"], stableKey);
+  }
+  if (result["Chiavi di ricerca"]) {
+    result["Chiavi di ricerca"] = ensureArea0AndBytesES(result["Chiavi di ricerca"], stableKey);
+  }
+
+  return result;
+}
+
 /**
  * Chat AI per la dashboard metriche.
  * Riceve la domanda dell'utente e un oggetto "context" con i dati correnti
@@ -1348,4 +1518,4 @@ ${contextBlock}
   return text || 'Mi spiace, non ho potuto generare una risposta.';
 }
 
-module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR, generateAllAiAttributesDE, chatAboutMetrics };
+module.exports = { generateAllAiAttributes, regenerateSingleAttribute, generateKeywordsWithAI, verifyOrientationWithAI, generateAllAiAttributesFR, generateAllAiAttributesDE, generateAllAiAttributesES, chatAboutMetrics };

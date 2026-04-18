@@ -139,6 +139,26 @@ function updateStats(products) {
       downloadAllDEBtn.style.display = 'none';
     }
   }
+
+  // Mostra bottoni Spagna se ci sono prodotti con listing compilato
+  const generateAllESBtn = document.getElementById('generateAllESBtn');
+  if (generateAllESBtn) {
+    if (conListing > 0) {
+      generateAllESBtn.style.display = 'inline-flex';
+      generateAllESBtn.textContent = `🇪🇸 Genera tutti ES (${conListing})`;
+    } else {
+      generateAllESBtn.style.display = 'none';
+    }
+  }
+  const downloadAllESBtn = document.getElementById('downloadAllESBtn');
+  if (downloadAllESBtn) {
+    if (conListing > 0) {
+      downloadAllESBtn.style.display = 'inline-flex';
+      downloadAllESBtn.textContent = `🇪🇸 Scarica XLSM Spagna (${conListing})`;
+    } else {
+      downloadAllESBtn.style.display = 'none';
+    }
+  }
 }
 
 function renderProducts(products) {
@@ -627,6 +647,166 @@ async function downloadAllForAmazonDE() {
     showToast(`❌ Download DE fallito: ${err.message}`, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇩🇪 Scarica XLSM Germania'; }
+  }
+}
+
+// =============================================
+// GENERA LISTING ES — TUTTI I PRODOTTI (bulk)
+// =============================================
+async function generateAllES() {
+  const btn = document.getElementById('generateAllESBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; }
+
+  const toGenerate = allProducts.filter(p => parseInt(p.attributi_compilati) > 0);
+  if (toGenerate.length === 0) {
+    showToast('Nessun prodotto con listing compilato', 'warning');
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+    return;
+  }
+
+  showLoading(
+    `🇪🇸 Generazione listing ES per ${toGenerate.length} prodotti...`,
+    'Claude sta creando gli attributi Amazon in spagnolo. Potrebbe richiedere qualche minuto.'
+  );
+
+  let success = 0, errors = 0;
+  for (let i = 0; i < toGenerate.length; i++) {
+    try {
+      const res = await fetch(`/api/listings/generate-es/${toGenerate[i].id}`, { method: 'POST' });
+      if (res.ok) success++; else errors++;
+    } catch { errors++; }
+    document.getElementById('loadingSubtitle').textContent =
+      `Completati: ${success + errors} / ${toGenerate.length} (✅ ${success} | ❌ ${errors})`;
+  }
+
+  hideLoading();
+  if (errors === 0) showToast(`🇪🇸 Tutti i ${success} listing ES generati! Ora puoi esportare.`, 'success');
+  else showToast(`⚠️ ${success} generati ES, ${errors} errori.`, 'warning');
+  if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇪🇸 Genera tutti ES'; }
+}
+
+// =============================================
+// GENERA LISTING ES — SELEZIONATI (bulk)
+// =============================================
+async function generateSelectedES() {
+  const ids = Array.from(selectedProductIds);
+  if (ids.length === 0) {
+    showToast('Seleziona almeno un prodotto prima di generare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('generateSelectedESBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; }
+
+  showLoading(
+    `🇪🇸 Generazione listing ES per ${ids.length} prodotti...`,
+    'Claude sta creando gli attributi Amazon in spagnolo.'
+  );
+
+  let success = 0, errors = 0;
+  for (let i = 0; i < ids.length; i++) {
+    try {
+      const res = await fetch(`/api/listings/generate-es/${ids[i]}`, { method: 'POST' });
+      if (res.ok) success++; else errors++;
+    } catch { errors++; }
+    document.getElementById('loadingSubtitle').textContent =
+      `Completati: ${success + errors} / ${ids.length}`;
+  }
+
+  hideLoading();
+  if (errors === 0) showToast(`🇪🇸 Tutti i ${success} listing ES generati!`, 'success');
+  else showToast(`⚠️ ${success} generati ES, ${errors} errori.`, 'warning');
+  if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇪🇸 Genera ES selezionati'; }
+}
+
+// =============================================
+// DOWNLOAD XLSM ES — SOLO SELEZIONATI
+// =============================================
+async function downloadSelectedForAmazonES() {
+  const ids = Array.from(selectedProductIds);
+  if (ids.length === 0) {
+    showToast('Seleziona almeno un prodotto prima di esportare', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('exportSelectedESBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/es/selected', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: ids })
+    });
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export ES';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_ES_SELECTED.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || ids.length;
+    showToast(`🇪🇸 File Spagna scaricato con ${count} prodotti selezionati!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download ES fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇪🇸 Esporta ES selezionati'; }
+  }
+}
+
+// =============================================
+// DOWNLOAD XLSM ES (tutti i prodotti)
+// =============================================
+async function downloadAllForAmazonES() {
+  const btn = document.getElementById('downloadAllESBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;"></span> Generazione...'; }
+
+  try {
+    const res = await fetch('/api/export/es/all');
+    if (!res.ok) {
+      let msg = 'Errore durante l\'export ES';
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `WALL_ART_ES_ALL.xlsm`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    const count = res.headers.get('X-Product-Count') || '?';
+    showToast(`🇪🇸 File Spagna scaricato con ${count} prodotti. Carica su Amazon.es!`, 'success');
+  } catch (err) {
+    showToast(`❌ Download ES fallito: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml || '🇪🇸 Scarica XLSM Spagna'; }
   }
 }
 

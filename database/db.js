@@ -294,6 +294,23 @@ async function initDatabase() {
       ON product_attribute_values_de (product_id)
     `);
 
+    // Tabella valori attributi ES (Amazon.es) — contenuto in spagnolo generato da AI
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS product_attribute_values_es (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+        nome_attributo VARCHAR(255) NOT NULL,
+        value TEXT,
+        compiled_by VARCHAR(50) DEFAULT 'AI',
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(product_id, nome_attributo)
+      )
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_pav_es_product
+      ON product_attribute_values_es (product_id)
+    `);
+
     // Tabella chat interna
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (

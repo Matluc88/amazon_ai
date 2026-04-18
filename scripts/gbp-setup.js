@@ -140,10 +140,18 @@ async function doOAuth() {
 
 async function main() {
   try {
-    // ── Step 1: OAuth ──
-    const refreshToken = await doOAuth();
-    updateEnv({ GBP_REFRESH_TOKEN: refreshToken });
-    console.log('✅ Refresh token salvato in .env');
+    // ── Step 1: OAuth (skip se c'è già un refresh token valido) ──
+    let refreshToken = process.env.GBP_REFRESH_TOKEN;
+    if (refreshToken) {
+      console.log('');
+      console.log('🔐 Step 1/3 — Refresh token già presente in .env, salto OAuth');
+    } else {
+      refreshToken = await doOAuth();
+      updateEnv({ GBP_REFRESH_TOKEN: refreshToken });
+      console.log('✅ Refresh token salvato in .env');
+    }
+    // Propaga al processo corrente così i require seguenti lo trovano
+    process.env.GBP_REFRESH_TOKEN = refreshToken;
 
     // ── Step 2: Lista account ──
     console.log('');

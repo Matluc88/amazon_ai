@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Google Ads API — Design Document — Sivigliart BI</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  h1 {
+    font-size: 20pt;
+    margin: 0 0 6px;
+    color: #111;
+    border-bottom: 2px solid #FF9900;
+    padding-bottom: 8px;
+  }
+  h2 {
+    font-size: 14pt;
+    margin: 24px 0 10px;
+    color: #111;
+    border-left: 4px solid #FF9900;
+    padding-left: 10px;
+  }
+  h3 {
+    font-size: 12pt;
+    margin: 16px 0 6px;
+    color: #222;
+  }
+  p, ul, ol { margin: 0 0 10px; }
+  ul, ol { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  strong { color: #000; }
+  .meta {
+    background: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    font-size: 10pt;
+  }
+  .meta table { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 3px 0; vertical-align: top; }
+  .meta td:first-child { font-weight: 600; width: 180px; color: #444; }
+  code, pre {
+    font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+    font-size: 9.5pt;
+  }
+  code {
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #c7254e;
+  }
+  pre {
+    background: #1e1e1e;
+    color: #e8e8e8;
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.45;
+    margin: 10px 0;
+    page-break-inside: avoid;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  .figure {
+    margin: 16px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .figure img {
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .caption {
+    font-size: 9.5pt;
+    color: #555;
+    font-style: italic;
+    margin-top: 6px;
+    padding: 0 20px;
+  }
+  .callout {
+    background: #fff8e1;
+    border-left: 4px solid #f9a825;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-size: 10.5pt;
+  }
+  .callout.ok {
+    background: #e8f5e9;
+    border-left-color: #43a047;
+  }
+  .status-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 10.5pt;
+  }
+  .status-table th, .status-table td {
+    border: 1px solid #ddd;
+    padding: 7px 10px;
+    text-align: left;
+  }
+  .status-table th {
+    background: #f5f5f5;
+    font-weight: 600;
+  }
+  .status-live { color: #2e7d32; font-weight: 600; }
+  .status-ready { color: #ef6c00; font-weight: 600; }
+  .ascii-art {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 9pt;
+    line-height: 1.2;
+    white-space: pre;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>Google Ads API — Design Document</h1>
+<p style="color:#666;font-size:10pt;margin-top:0;">Sivigliart BI Dashboard — Basic Access Application</p>
+
+<div class="meta">
+  <table>
+    <tr><td>Tool name:</td><td>Sivigliart BI Dashboard</td></tr>
+    <tr><td>Applicant:</td><td>Matteo Luceri — independent marketing consultant</td></tr>
+    <tr><td>Email:</td><td>matteo.luceri2@gmail.com</td></tr>
+    <tr><td>LinkedIn:</td><td>https://www.linkedin.com/in/matteo-luceri-137ab120a/</td></tr>
+    <tr><td>Live deployment:</td><td><strong>https://amazon-ai.onrender.com/metrics</strong> (password-protected)</td></tr>
+    <tr><td>Source code path:</td><td>services/googleAdsService.js (code-complete, deployed)</td></tr>
+    <tr><td>Google Ads MCC:</td><td>433-866-3546</td></tr>
+    <tr><td>Client account ID:</td><td>553-612-2825 (Sivigliart — single client)</td></tr>
+    <tr><td>Document date:</td><td>April 2026</td></tr>
+  </table>
+</div>
+
+<h2>1. Purpose and Overview</h2>
+<p>
+Sivigliart BI Dashboard is an <strong>internal, single-user reporting tool</strong>
+used by Matteo Luceri, an independent marketing consultant, to monitor advertising
+performance for a single client account: <strong>Sivigliart</strong>, an Italian
+seller of art prints and canvas wall art.
+</p>
+<p>
+The tool aggregates <strong>read-only</strong> daily performance metrics (spend,
+impressions, clicks, conversions, conversion value) from each marketing platform
+the consultant manages for the client, into a single PostgreSQL database. Campaign
+performance is reviewed from a unified internal dashboard instead of logging into
+each platform's native UI.
+</p>
+<p>
+The tool <strong>does not create, modify, pause, enable or delete</strong> any
+campaigns, ad groups, keywords, ads, budgets, bids or assets. It performs
+strictly read-only reporting.
+</p>
+
+<h2>2. Current Deployment Status</h2>
+<p>
+The tool is deployed and actively serves real data for the following platforms.
+Google Ads is code-complete (see §5 and §6) and activates automatically upon
+Basic Access approval; data then populates the same dashboard sections shown below.
+</p>
+<table class="status-table">
+  <thead>
+    <tr>
+      <th>Data source</th>
+      <th>Integration</th>
+      <th>Status</th>
+      <th>Proof</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Meta Marketing API</td>
+      <td>v21.0 Insights, unified attribution</td>
+      <td class="status-live">● Live</td>
+      <td>Figure 1 — Funnel section populated with Meta data</td>
+    </tr>
+    <tr>
+      <td>Google Analytics 4</td>
+      <td>Data API v1 (Service Account)</td>
+      <td class="status-live">● Live</td>
+      <td>Figure 3 — GA4 section populated</td>
+    </tr>
+    <tr>
+      <td>WooCommerce REST API</td>
+      <td>v3 (Consumer Key/Secret)</td>
+      <td class="status-live">● Live</td>
+      <td>Figure 2 — WooCommerce sales section populated</td>
+    </tr>
+    <tr>
+      <td>Google Business Profile</td>
+      <td>Performance API v1 (OAuth)</td>
+      <td class="status-live">● Live</td>
+      <td>Active sync in production (physical store metrics)</td>
+    </tr>
+    <tr>
+      <td><strong>Google Ads API</strong></td>
+      <td>REST + GAQL v18</td>
+      <td class="status-ready">◐ Code-complete, ready</td>
+      <td>§5 (code), §6 (GAQL query), Figure 4 (UI entry point)</td>
+    </tr>
+  </tbody>
+</table>
+<div class="callout ok">
+<strong>What this means for the review:</strong> the entire ETL architecture,
+database schema, and dashboard are built, deployed and operational with four
+data sources. Google Ads uses the same architecture; the service code is
+implemented, the UI section is built, and the sync button in the dashboard
+header lists Google Ads as a registered source (see Figure 4). Only the
+developer token currently restricts it to test accounts.
+</div>
+
+<h2>3. Users and Access</h2>
+<ul>
+  <li><strong>Number of users:</strong> 1 (the consultant himself).</li>
+  <li><strong>User type:</strong> Internal — a single-person consulting activity.</li>
+  <li><strong>Authentication:</strong> The dashboard sits behind an email/password
+  login using express-session + bcrypt, served only over HTTPS via Render.</li>
+  <li><strong>Number of Google Ads accounts accessed:</strong> 1 client account
+  (Sivigliart — customer ID 553-612-2825), under the consultant's MCC
+  (433-866-3546).</li>
+  <li><strong>Distribution:</strong> The tool is NOT distributed to any third party,
+  is NOT publicly available, is NOT a SaaS product, is not sold and is not licensed
+  to anyone.</li>
+</ul>
+
+<h2>4. Live Dashboard — What Google Ads Data Populates</h2>
+<p>
+The following three figures show the dashboard as it runs in production today.
+Numerical values are visually obscured to protect the client's confidential
+business data; the structure, layout, and integration points are unchanged.
+</p>
+
+<div class="figure">
+  <img src="screenshots/01-funnel.png" alt="Conversion funnel with Meta + Google Ads labels" />
+  <div class="caption">
+    <strong>Figure 1 — Conversion funnel and paid-advertising KPI section.</strong>
+    Stage "VEDE" (Sees) and "CLICCA" (Clicks) explicitly aggregate
+    <em>Meta + Google Ads</em>. The "Pubblicità a pagamento" (Paid advertising)
+    KPI cards (Spend, Impressions, Clicks, Conversions, Revenue) aggregate both
+    ad platforms by reading from the <code>metrics_ads_daily</code> table. Google
+    Ads rows contribute to these cards via <code>platform='google'</code>.
+  </div>
+</div>
+
+<div class="figure">
+  <img src="screenshots/02-woocommerce.png" alt="WooCommerce real sales section" />
+  <div class="caption">
+    <strong>Figure 2 — WooCommerce "Real sales" section.</strong>
+    Gross revenue, orders, average order value, items sold, refunds. These are
+    the ground-truth business outcomes the consultant correlates against ad
+    spend (from Meta and Google Ads) to compute actual ROAS per platform.
+    This is why Google Ads data matters: to connect ad spend to real revenue
+    for an internal performance review.
+  </div>
+</div>
+
+<div class="figure">
+  <img src="screenshots/03-ga4.png" alt="Google Analytics 4 section" />
+  <div class="caption">
+    <strong>Figure 3 — Google Analytics 4 section.</strong>
+    Sessions, users, page views, average session duration, bounce rate,
+    conversions. Populated via Google Analytics Data API v1 using a Service
+    Account. Demonstrates the same ETL pattern the Google Ads integration uses.
+  </div>
+</div>
+
+<div class="figure">
+  <img src="screenshots/04-sync-dropdown.png" alt="Sync dropdown listing Google Ads as a registered data source" />
+  <div class="caption">
+    <strong>Figure 4 — Per-source sync control, dashboard header.</strong>
+    "Sincronizza" (Synchronize) dropdown lists each registered data source,
+    including <strong>Google Ads</strong>. Clicking an item triggers the
+    corresponding service (for Google Ads: <code>services/googleAdsService.js</code>
+    → <code>fetchLastDays()</code>) and UPSERTs results into
+    <code>metrics_ads_daily</code>. The Google Ads entry is wired in the UI
+    today; it executes against test accounts while awaiting Basic Access approval.
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>5. Architecture Overview</h2>
+<div class="ascii-art">  ┌─────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+  │  Google Ads API │   │  Meta Marketing  │   │  GA4 / WC / GBP  │
+  │   (read-only)   │   │       API        │   │   (read-only)    │
+  └────────┬────────┘   └────────┬─────────┘   └────────┬─────────┘
+           │                     │                      │
+           └─────────────────────┼──────────────────────┘
+                                 │
+                                 ▼
+                ┌───────────────────────────────┐
+                │  ETL Worker (Node.js script)  │
+                │  scripts/sync-metrics.js      │
+                │  Runs once per day via cron   │
+                └──────────────┬────────────────┘
+                               │ UPSERT
+                               ▼
+                ┌───────────────────────────────┐
+                │   PostgreSQL database         │
+                │   table: metrics_ads_daily    │
+                │   UNIQUE(date, platform,      │
+                │          campaign_id)         │
+                └──────────────┬────────────────┘
+                               │ SELECT
+                               ▼
+                ┌───────────────────────────────┐
+                │ Express.js HTTP API           │
+                │ /api/metrics/summary          │
+                │ /api/metrics/daily            │
+                │ /api/metrics/campaigns        │
+                └──────────────┬────────────────┘
+                               │ JSON
+                               ▼
+                ┌───────────────────────────────┐
+                │  HTML dashboard (Chart.js)    │
+                │  /metrics                     │
+                │  KPI cards, line chart,       │
+                │  campaign table, funnel       │
+                └───────────────────────────────┘</div>
+
+<p>All components run inside a single Node.js application hosted on Render
+(https://render.com), a PaaS provider. The stack is:</p>
+<ul>
+  <li><strong>Language:</strong> Node.js v20</li>
+  <li><strong>HTTP server:</strong> Express.js</li>
+  <li><strong>Database:</strong> PostgreSQL (Render-managed)</li>
+  <li><strong>Scheduler:</strong> Render Cron Jobs (native)</li>
+  <li><strong>Google Ads client:</strong> direct REST calls to
+  <code>googleads.googleapis.com/v18</code> using <code>fetch</code>
+  (no third-party SDK)</li>
+  <li><strong>Auth:</strong> OAuth 2.0 refresh-token flow against
+  <code>oauth2.googleapis.com/token</code></li>
+</ul>
+
+<h3>5.1 Google Ads service — excerpt from <code>services/googleAdsService.js</code></h3>
+<p>
+The service file is 171 lines. It exposes three functions consumed by the
+ETL worker and a diagnostic utility. All calls are read-only GAQL queries via
+<code>googleAds:search</code>.
+</p>
+<pre><code>const API_VERSION = 'v18';
+const BASE = `https://googleads.googleapis.com/${API_VERSION}`;
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+async function gaqlSearch(query) {
+  const devToken  = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  const loginCid  = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+  const customerId = process.env.GOOGLE_ADS_CUSTOMER_ID;
+
+  const accessToken = await getAccessToken();  // refresh-token flow
+  const url = `${BASE}/customers/${customerId}/googleAds:search`;
+
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    'developer-token': devToken,
+    'Content-Type': 'application/json',
+  };
+  if (loginCid) headers['login-customer-id'] = loginCid;
+
+  // Paginated POST with pageToken (read-only)
+  // ...
+}</code></pre>
+
+<h2>6. API Calls — Exact GAQL Query Used</h2>
+<p>
+The tool makes <strong>read-only</strong> calls to the Google Ads API. A single
+GAQL query runs once per day during the scheduled sync. The query body is
+shown below exactly as it appears in the codebase:
+</p>
+<pre><code>SELECT
+  segments.date,
+  campaign.id,
+  campaign.name,
+  metrics.cost_micros,
+  metrics.impressions,
+  metrics.clicks,
+  metrics.conversions,
+  metrics.conversions_value
+FROM campaign
+WHERE segments.date BETWEEN '{dateFrom}' AND '{dateTo}'
+  AND campaign.status != 'REMOVED'
+ORDER BY segments.date DESC</code></pre>
+
+<p>
+The initial backfill window is 90 days. After that, the nightly sync refetches
+the last 7 days (rolling window, so late conversion attributions are captured
+correctly) and UPSERTs the results into PostgreSQL using
+<code>ON CONFLICT (date, platform, campaign_id) DO UPDATE</code>.
+</p>
+
+<h3>6.1 Read-only endpoints used</h3>
+<ul>
+  <li><code>POST /v18/customers/{customerId}/googleAds:search</code> — main query endpoint.</li>
+  <li><code>GET /v18/customers:listAccessibleCustomers</code> — one-time only,
+  during initial setup, to verify the customer ID.</li>
+</ul>
+
+<h3>6.2 Endpoints NOT used (never)</h3>
+<ul>
+  <li>Any <code>Mutate*</code> operation on campaigns, ad groups, ads, keywords,
+  budgets, bidding strategies or assets.</li>
+  <li>Any write operation whatsoever.</li>
+</ul>
+
+<h2>7. Database Schema</h2>
+<p>
+The table <code>metrics_ads_daily</code> is the canonical store for all ad
+platforms. The <code>platform</code> column already discriminates rows so that
+Google Ads data ingests alongside Meta data transparently. Extract from
+<code>database/db.js</code>:
+</p>
+<pre><code>CREATE TABLE IF NOT EXISTS metrics_ads_daily (
+  id            SERIAL PRIMARY KEY,
+  date          DATE NOT NULL,
+  platform      VARCHAR(20) NOT NULL,   -- 'meta' | 'google'
+  account_id    VARCHAR(100),
+  campaign_id   VARCHAR(100) NOT NULL,
+  campaign_name VARCHAR(500),
+  spend         DECIMAL(12,2) DEFAULT 0,
+  impressions   BIGINT DEFAULT 0,
+  clicks        BIGINT DEFAULT 0,
+  conversions   DECIMAL(12,2) DEFAULT 0,
+  revenue       DECIMAL(12,2) DEFAULT 0,
+  currency      VARCHAR(3) DEFAULT 'EUR',
+  updated_at    TIMESTAMP DEFAULT NOW(),
+  UNIQUE(date, platform, campaign_id)
+);
+CREATE INDEX idx_metrics_ads_platform_date
+  ON metrics_ads_daily (platform, date DESC);</code></pre>
+
+<h2>8. Authentication Flow</h2>
+<ol>
+  <li>The Google Cloud Console project ("Sivigliart BI") hosts an OAuth 2.0
+  Client ID of type <em>Desktop app</em>.</li>
+  <li>During one-time setup, the consultant runs a local CLI script that opens
+  a browser, authenticates with his Google account
+  (matteo.luceri2@gmail.com, which has access to the MCC 433-866-3546) and
+  accepts the <code>https://www.googleapis.com/auth/adwords</code> read scope.</li>
+  <li>The resulting refresh token is stored as an environment variable on
+  Render (<code>GOOGLE_ADS_REFRESH_TOKEN</code>) alongside
+  <code>GOOGLE_ADS_CLIENT_ID</code>, <code>GOOGLE_ADS_CLIENT_SECRET</code>,
+  <code>GOOGLE_ADS_DEVELOPER_TOKEN</code>, <code>GOOGLE_ADS_LOGIN_CUSTOMER_ID</code>,
+  <code>GOOGLE_ADS_CUSTOMER_ID</code>.</li>
+  <li>At runtime, the ETL worker exchanges the refresh token for a short-lived
+  access token on each sync run and attaches it as a Bearer header to every
+  REST request.</li>
+  <li>No end-user OAuth flow is exposed. This is a private single-user tool,
+  not a public application.</li>
+</ol>
+
+<h2>9. API Quota and Rate Limiting</h2>
+<ul>
+  <li><strong>Expected call volume:</strong> ~1 query per day (nightly sync).</li>
+  <li><strong>Expected operations per day:</strong> well under 100 — orders of
+  magnitude below the 15,000 operations/day default quota.</li>
+  <li><strong>Concurrency:</strong> 1 request at a time, strictly sequential.</li>
+  <li><strong>Backoff:</strong> the <code>gaqlSearch</code> function surfaces
+  non-2xx responses with the full error body; the ETL worker logs the failure
+  to the <code>metrics_sync_log</code> table and exits non-zero. Render alerts
+  the consultant by email.</li>
+  <li><strong>Caching:</strong> results live in PostgreSQL for a 90-day rolling
+  window. The dashboard reads exclusively from PostgreSQL — it never calls
+  the Google Ads API directly from the frontend.</li>
+</ul>
+
+<h2>10. Data Storage and Security</h2>
+<ul>
+  <li><strong>Where data lives:</strong> only in the private Render-managed
+  PostgreSQL database owned by the consultant. The database is not accessible
+  from the public internet; access is restricted to the Render internal network
+  and the consultant's machine via <code>DATABASE_URL</code>.</li>
+  <li><strong>Data retained:</strong> aggregated daily campaign metrics only.
+  No personal data, no ad creatives, no user-level data.</li>
+  <li><strong>Data sharing:</strong> NONE. Data is never shared with any third
+  party, not sold, not forwarded to other systems, not aggregated with data
+  from any other client or advertiser.</li>
+  <li><strong>Secrets:</strong> all API credentials live exclusively as
+  environment variables on Render, never committed to Git. The repository's
+  <code>.gitignore</code> excludes <code>.env</code>.</li>
+  <li><strong>Encryption in transit:</strong> every API call uses HTTPS. The
+  dashboard is served only over HTTPS via Render.</li>
+</ul>
+
+<h2>11. Error Handling and Monitoring</h2>
+<ul>
+  <li>Each sync run writes a row to <code>metrics_sync_log</code> with status
+  (<code>running</code> / <code>ok</code> / <code>error</code>), start time,
+  end time, rows synced, error message if any.</li>
+  <li>The dashboard displays the last sync status in its header ("Ultimo sync
+  Meta: 14/04/2026, 12:32:24 — ok (157 righe)" — visible in Figure 1).</li>
+  <li>On repeated failures, Render delivers an email notification to
+  matteo.luceri2@gmail.com.</li>
+</ul>
+
+<h2>12. Compliance with Google Ads API Policies</h2>
+<ul>
+  <li><strong>Required Minimum Functionality (RMF):</strong> the tool is an
+  <em>internal tool</em> used solely by the consultant to report on a single
+  managed account. Per the Required Minimum Functionality policy, internal
+  tools are subject to reduced RMF requirements.</li>
+  <li><strong>No prohibited uses:</strong> the tool performs no automated
+  bidding, no mass account creation, no scraping of Google services, no
+  redistribution of Google Ads data to third parties, no App Conversion
+  Tracking, no Remarketing.</li>
+  <li><strong>Data usage:</strong> all data retrieved from the Google Ads API
+  is used exclusively for performance reporting within the consultant's
+  internal dashboard. No export, resale or external sharing exists.</li>
+</ul>
+
+<h2>13. Contact</h2>
+<p>
+For any questions about this design document or the tool's intended use:
+</p>
+<div class="meta">
+  <table>
+    <tr><td>Name:</td><td>Matteo Luceri</td></tr>
+    <tr><td>Email:</td><td>matteo.luceri2@gmail.com</td></tr>
+    <tr><td>LinkedIn:</td><td>https://www.linkedin.com/in/matteo-luceri-137ab120a/</td></tr>
+    <tr><td>Google Ads MCC:</td><td>433-866-3546</td></tr>
+    <tr><td>Live dashboard:</td><td>https://amazon-ai.onrender.com/metrics (access on request)</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

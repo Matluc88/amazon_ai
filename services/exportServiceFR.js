@@ -21,6 +21,7 @@ const xlsx = require('xlsx');
 const path = require('path');
 const { query } = require('../database/db');
 const { getProductListing, getProductListingFR, extractDimensions } = require('./attributeService');
+const { translateEnumValue } = require('./enumTranslations');
 
 const TEMPLATE_PATH = path.join(__dirname, '../WALL_ART_FR.xlsm');
 const DATA_START_ROW = 6; // indice 0-based — il template FR ha 6 righe header (vs 7 del template IT)
@@ -229,10 +230,14 @@ function buildRowFR(sheet, rowIdx, product, attrs, variant) {
   // ── Attributi DB → colonne FR ─────────────────────────────────────────────
   const INVALID_VALUES = new Set(['N/D', 'n/d']);
   for (const [nome, col] of Object.entries(ATTR_COL_FR)) {
-    const val = attrs[nome];
+    let val = attrs[nome];
     if (val === undefined || val === '') continue;
     if (INVALID_VALUES.has(String(val).trim())) continue;
     if (nome === 'Prezzo al pubblico consigliato (IVA inclusa)' && (val === '0' || val === 0 || val === '' || !val)) continue;
+    // Traduci i valori enum IT → FR (Colore, Tema, Tipo di stanza, Famiglia di
+    // colori, Stagioni, Funzioni speciali, ecc.). Non-enum restano invariati.
+    val = translateEnumValue(nome, val, 'fr');
+    if (!val || INVALID_VALUES.has(String(val).trim())) continue;
     setCellValue(sheet, col, rowIdx, val);
   }
 

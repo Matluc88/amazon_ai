@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/db');
-const { generateAllAiAttributes, regenerateSingleAttribute, generateAllAiAttributesDE } = require('../services/anthropicService');
-const { compileFixedAndAuto, saveAiValues, saveAiValuesDE, getProductListing, getProductListingDE, upsertAttributeValue, getCachedKeywords } = require('../services/attributeService');
+const { generateAllAiAttributes, regenerateSingleAttribute, generateAllAiAttributesFR, generateAllAiAttributesDE, generateAllAiAttributesES } = require('../services/anthropicService');
+const { compileFixedAndAuto, saveAiValues, saveAiValuesFR, saveAiValuesDE, saveAiValuesES, getProductListing, getProductListingFR, getProductListingDE, getProductListingES, upsertAttributeValue, getCachedKeywords } = require('../services/attributeService');
 const { getCerebroPromptSection } = require('../services/cerebroService');
 
 // GET /api/listings — tutti i prodotti con conteggio attributi compilati
@@ -73,6 +73,24 @@ router.post('/generate/:productId', async (req, res) => {
   }
 });
 
+// POST /api/listings/generate-fr/:productId — genera listing FR con AI
+router.post('/generate-fr/:productId', async (req, res) => {
+  try {
+    const prodResult = await query('SELECT * FROM products WHERE id = $1', [req.params.productId]);
+    const product = prodResult.rows[0];
+    if (!product) return res.status(404).json({ error: 'Prodotto non trovato' });
+
+    const aiValues = await generateAllAiAttributesFR(product, [], '');
+    await saveAiValuesFR(req.params.productId, aiValues);
+
+    const attrsFR = await getProductListingFR(req.params.productId);
+    res.json({ success: true, attrsFR });
+  } catch (err) {
+    console.error('Errore generazione listing FR:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/listings/generate-de/:productId — genera listing DE con AI
 router.post('/generate-de/:productId', async (req, res) => {
   try {
@@ -87,6 +105,24 @@ router.post('/generate-de/:productId', async (req, res) => {
     res.json({ success: true, attrsDE });
   } catch (err) {
     console.error('Errore generazione listing DE:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/listings/generate-es/:productId — genera listing ES con AI
+router.post('/generate-es/:productId', async (req, res) => {
+  try {
+    const prodResult = await query('SELECT * FROM products WHERE id = $1', [req.params.productId]);
+    const product = prodResult.rows[0];
+    if (!product) return res.status(404).json({ error: 'Prodotto non trovato' });
+
+    const aiValues = await generateAllAiAttributesES(product, [], '');
+    await saveAiValuesES(req.params.productId, aiValues);
+
+    const attrsES = await getProductListingES(req.params.productId);
+    res.json({ success: true, attrsES });
+  } catch (err) {
+    console.error('Errore generazione listing ES:', err);
     res.status(500).json({ error: err.message });
   }
 });
