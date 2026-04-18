@@ -292,6 +292,7 @@ const TEMA = {
   'Primi passi':           { fr: 'Premiers pas',             de: 'Erste Schritte',         es: 'Primeros pasos' },
   'Arte':                  { fr: 'Art',                      de: 'Kunst',                  es: 'Arte' },
   'Forza femminile':       { fr: 'Force féminine',           de: 'Weibliche Stärke',       es: 'Fuerza femenina' },
+  'Coraggio':              { fr: 'Courage',                  de: 'Mut',                    es: 'Valentía' },
   'Libertà':               { fr: 'Liberté',                  de: 'Freiheit',               es: 'Libertad' },
   'Uguaglianza':           { fr: 'Égalité',                  de: 'Gleichheit',             es: 'Igualdad' },
   'Educazione':            { fr: 'Éducation',                de: 'Bildung',                es: 'Educación' },
