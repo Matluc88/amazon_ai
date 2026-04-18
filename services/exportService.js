@@ -210,6 +210,9 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
   setCellValue(sheet, 15, rowIdx, 'Unità');           // Livello di aggregazione: singolo pezzo
   setCellValue(sheet, 275, rowIdx, 'No');             // Le batterie sono necessarie?
   setCellValue(sheet, 276, rowIdx, 'No');             // Le batterie sono incluse?
+  // Col 192 = "Prezzo al pubblico consigliato" — il template originale ha 0 numerico su ogni riga;
+  // clearDataRows lo cancella, quindi lo riscriviamo esplicitamente per evitare errore Amazon
+  sheet[xlsx.utils.encode_cell({ r: rowIdx, c: 192 })] = { v: 0, t: 'n' };
 
   if (isParent) {
     setCellValue(sheet, 3, rowIdx, 'Articolo parent');
