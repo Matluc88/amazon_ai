@@ -227,7 +227,6 @@ function buildRow(sheet, rowIdx, product, attrs, variant) {
     setCellValue(sheet, 216, rowIdx, 100);           // quantità
     setCellValue(sheet, 217, rowIdx, 7);             // tempo di gestione = 7 giorni
     if (prezzo) setCellValue(sheet, 220, rowIdx, Number(prezzo) + 10); // prezzo Amazon = prezzo DB + €10
-    if (prezzo) setCellValue(sheet, 192, rowIdx, Number(prezzo) + 10); // prezzo consigliato = prezzo di vendita (obbligatorio Amazon IT)
     setCellValue(sheet, 229, rowIdx, 'studio');      // gruppo spedizione venditore
   }
 
