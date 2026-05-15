@@ -347,6 +347,36 @@ router.get('/ga4/outbound-clicks', async (req, res) => {
 });
 
 /**
+ * GET /api/metrics/ga4/ecommerce-funnel
+ * Funnel di acquisto basato su eventi GA4 (view_item → add_to_cart → view_cart → begin_checkout → purchase).
+ * Aggiunge anche il numero di acquisti REALI da WooCommerce (verità assoluta).
+ */
+router.get('/ga4/ecommerce-funnel', async (req, res) => {
+  try {
+    const { from, to } = resolveRange(req);
+    const { fetchEcommerceFunnel } = require('../services/ga4Service');
+    const stages = await fetchEcommerceFunnel({ dateFrom: from, dateTo: to });
+
+    // Integra acquisti reali da WooCommerce (stati validi: completed + processing)
+    const wcRow = await query(
+      `SELECT COUNT(*) AS orders, COUNT(DISTINCT customer_email) AS buyers, SUM(total::numeric) AS revenue
+         FROM metrics_wc_orders
+        WHERE date_created BETWEEN $1 AND $2
+          AND status IN ('completed','processing','on-hold')`,
+      [from, to + ' 23:59:59']
+    );
+    const wcOrders = Number(wcRow.rows[0].orders || 0);
+    const wcBuyers = Number(wcRow.rows[0].buyers || 0);
+    const wcRevenue = Number(wcRow.rows[0].revenue || 0);
+
+    res.json({ from, to, stages, wc: { orders: wcOrders, buyers: wcBuyers, revenue: wcRevenue } });
+  } catch (err) {
+    console.error('ga4/ecommerce-funnel error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/metrics/ga4/sources
  * Top sorgenti di traffico per il periodo.
  */

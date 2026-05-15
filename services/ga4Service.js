@@ -336,6 +336,49 @@ function classifyChannel(url) {
   return 'Altro';
 }
 
+/**
+ * Funnel e-commerce: conta utenti unici e eventi per le tappe principali del checkout.
+ * Fonte: eventi GA4 sparati da PixelYourSite (view_item, add_to_cart, begin_checkout, purchase).
+ */
+async function fetchEcommerceFunnel({ dateFrom, dateTo }) {
+  const STAGES = [
+    { event: 'view_item',      label: 'Vede prodotto',     icon: '👀' },
+    { event: 'add_to_cart',    label: 'Aggiunge al carrello', icon: '🛒' },
+    { event: 'view_cart',      label: 'Apre il carrello',  icon: '🧺' },
+    { event: 'begin_checkout', label: 'Inizia checkout',   icon: '💳' },
+    { event: 'purchase',       label: 'Compra (GA4)',      icon: '✅' },
+  ];
+  const r = await runReport({
+    dateFrom, dateTo,
+    dimensions: ['eventName'],
+    metrics: ['eventCount', 'totalUsers'],
+    limit: 500,
+  });
+  const byEvent = {};
+  for (const row of (r.rows || [])) {
+    const name = (row.dimensionValues[0] || {}).value;
+    byEvent[name] = {
+      eventCount: Number((row.metricValues[0] || {}).value || 0),
+      totalUsers: Number((row.metricValues[1] || {}).value || 0),
+    };
+  }
+  return STAGES.map((s, i, arr) => {
+    const data = byEvent[s.event] || { eventCount: 0, totalUsers: 0 };
+    const prev = i > 0 ? (byEvent[arr[i - 1].event] || { totalUsers: 0 }) : null;
+    const conv = prev && prev.totalUsers > 0
+      ? (data.totalUsers / prev.totalUsers)
+      : null;
+    return {
+      stage: s.event,
+      label: s.label,
+      icon: s.icon,
+      event_count: data.eventCount,
+      users: data.totalUsers,
+      conv_from_prev: conv,
+    };
+  });
+}
+
 module.exports = {
   getAccessToken,
   runReport,
@@ -347,4 +390,5 @@ module.exports = {
   fetchLandingPages,
   fetchAiAssistants,
   fetchOutboundClicks,
+  fetchEcommerceFunnel,
 };

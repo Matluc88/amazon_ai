@@ -610,6 +610,22 @@
       <div class="funnel-help" id="funnelHelp" style="display:none;"></div>
     </div>
 
+    <div class="section-title">🛒 Funnel di acquisto online</div>
+    <div class="section-subtitle">
+      Il viaggio dettagliato del cliente sul sito: da quando guarda un quadro fino a quando completa l'acquisto.
+      Ogni tappa mostra quante persone diverse l'hanno raggiunta e la percentuale di chi è passato alla tappa successiva.
+      Le tappe sono tracciate da PixelYourSite e inviate a Google Analytics. L'ultima riga "Vendite reali" arriva direttamente da WooCommerce.
+    </div>
+
+    <div class="funnel-wrap">
+      <div class="funnel-stages" id="ecommerceFunnelStages">
+        <div class="funnel-stage">
+          <div class="fs-label">Caricamento...</div>
+        </div>
+      </div>
+      <div class="funnel-help" id="ecommerceFunnelHelp" style="display:none;"></div>
+    </div>
+
     <div class="alert-banner" id="merchantAlert">
       <div class="alert-title">⚠️ Prodotti disapprovati su Google Shopping</div>
       <div class="alert-body">
@@ -1052,6 +1068,7 @@
       state.campaigns = (campRes.campaigns || []).map(computeDerived);
       renderTable();
       loadFunnel();
+      loadEcommerceFunnel();
       loadWooCommerce();
       loadGa4();
       loadMatomo();
@@ -1193,6 +1210,74 @@
         help.style.display = 'block';
       } catch (err) {
         console.error('Funnel load error:', err);
+      }
+    }
+
+    async function loadEcommerceFunnel() {
+      const qs = `?range=${state.range}`;
+      try {
+        const r = await fetch('/api/metrics/ga4/ecommerce-funnel' + qs).then(r => r.json());
+        const stages = r.stages || [];
+        const el = document.getElementById('ecommerceFunnelStages');
+        if (!stages.length) {
+          el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Nessun dato</div>';
+          return;
+        }
+        // Aggiungo la riga "Acquisti reali da WooCommerce" come tappa finale di verità
+        const wcStage = {
+          stage: 'wc_orders',
+          label: 'Vendite reali',
+          icon: '💰',
+          users: r.wc ? r.wc.buyers : 0,
+          event_count: r.wc ? r.wc.orders : 0,
+          conv_from_prev: null,
+          isWc: true,
+          revenue: r.wc ? r.wc.revenue : 0,
+        };
+        const allStages = [...stages, wcStage];
+
+        el.innerHTML = allStages.map((s) => {
+          const rateHtml = s.conv_from_prev != null
+            ? `<div class="fs-rate">Conv: ${(s.conv_from_prev * 100).toFixed(1)}%</div>`
+            : '';
+          const sourceLabel = s.isWc
+            ? `WooCommerce (€${fmtInt(Math.round(s.revenue))})`
+            : `${fmtInt(s.event_count)} eventi totali`;
+          return `
+            <div class="funnel-stage">
+              <div class="fs-icon">${s.icon}</div>
+              <div class="fs-label">${s.label}</div>
+              <div class="fs-value">${fmtInt(s.users)}</div>
+              ${rateHtml}
+              <div class="fs-source">${sourceLabel}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Insight automatico
+        const view = stages.find(s => s.stage === 'view_item');
+        const cart = stages.find(s => s.stage === 'add_to_cart');
+        const checkout = stages.find(s => s.stage === 'begin_checkout');
+        const wcOrders = r.wc ? r.wc.orders : 0;
+        const help = document.getElementById('ecommerceFunnelHelp');
+        let insight = '';
+        if (view && cart && view.users > 0) {
+          const cartRate = (cart.users / view.users) * 100;
+          if (cartRate < 2) {
+            insight = `<strong>Punto critico:</strong> solo il ${cartRate.toFixed(1)}% di chi vede un quadro lo aggiunge al carrello. Il salto principale da migliorare è qui — pagina prodotto (foto, descrizioni, prezzo visibile, prove sociali, urgency).`;
+          } else if (cartRate < 5) {
+            insight = `<strong>Pagina prodotto:</strong> ${cartRate.toFixed(1)}% di chi visita un quadro lo aggiunge al carrello. Nella media per arte di lusso.`;
+          } else {
+            insight = `<strong>Pagina prodotto efficace:</strong> ${cartRate.toFixed(1)}% di chi vede un quadro lo aggiunge al carrello — ottimo livello.`;
+          }
+        }
+        if (wcOrders > 0 && checkout && checkout.users === 0) {
+          insight += ` <strong>Nota tecnica:</strong> ${wcOrders} acquisti completati ma l'evento "inizio checkout" non è stato tracciato. Significa che la maggior parte dei clienti acquista tramite PayPal Express o un percorso che salta la pagina di checkout standard.`;
+        }
+        help.innerHTML = insight + '<br><br><em>Fonte: eventi GA4 sparati da PixelYourSite. Le "Vendite reali" sono prese direttamente da WooCommerce (verità assoluta).</em>';
+        help.style.display = 'block';
+      } catch (err) {
+        console.error('Ecommerce funnel load error:', err);
       }
     }
 
