@@ -81,7 +81,7 @@ async function main() {
     console.log('⏭️  GBP: skip (credenziali mancanti — lancia scripts/gbp-setup.js)');
   }
 
-  if (process.env.MATOMO_URL && process.env.MATOMO_AUTH_TOKEN) {
+  if ((process.env.MATOMO_WP_REST_URL || process.env.MATOMO_URL) && (process.env.MATOMO_WP_APP_PASSWORD || process.env.MATOMO_AUTH_TOKEN)) {
     results.push(await runPlatform('matomo', fetchMatomo, days, upsertMatomoRows));
   } else {
     console.log('⏭️  Matomo: skip (credenziali mancanti)');

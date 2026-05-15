@@ -153,6 +153,16 @@ async function shutdown(signal) {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
+// Sopravvive a errori transienti di rete (es. sleep/wake del Mac chiude
+// le connessioni TLS al Postgres di Render): il pool li rieapre da solo
+// al prossimo poll, ma senza handler il processo morirebbe.
+process.on('uncaughtException', (err) => {
+  console.error(`[${new Date().toISOString()}] ⚠️  uncaughtException ignorata: ${err.code || ''} ${err.message}`);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error(`[${new Date().toISOString()}] ⚠️  unhandledRejection ignorata: ${reason && reason.message ? reason.message : reason}`);
+});
+
 console.log(`[${new Date().toISOString()}] 🚀 Sync daemon v${DAEMON_VERSION} avviato`);
 console.log(`   Polling ogni ${POLL_INTERVAL_MS / 1000}s sulla tabella sync_requests`);
 console.log(`   Platform supportate: woocommerce`);

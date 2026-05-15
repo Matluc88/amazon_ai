@@ -586,6 +586,7 @@
           <button data-platform="ga4" id="syncGa4Btn"><span class="dot ga4"></span>Google Analytics 4</button>
           <button data-platform="woocommerce" id="syncWcBtn"><span class="dot wc"></span>WooCommerce</button>
           <button data-platform="gbp" id="syncGbpBtn"><span class="dot" style="background:#ec4899;"></span>Google Business Profile</button>
+          <button data-platform="merchant" id="syncMerchantBtn"><span class="dot" style="background:#0ea5e9;"></span>Google Merchant Center</button>
         </div>
       </div>
     </div>
@@ -799,6 +800,62 @@
       <canvas id="gbpChart"></canvas>
     </div>
 
+    <div class="section-title">📦 Google Merchant Center (catalogo Shopping)</div>
+    <div class="section-subtitle">
+      Lo stato del catalogo prodotti su Google Shopping. Ogni prodotto approvato è candidato a mostrarsi
+      negli annunci Shopping e nelle ricerche Google. Ogni prodotto disapprovato è una vendita persa:
+      invisibile alle ricerche. La lista problemi in fondo ti dice esattamente cosa correggere.
+    </div>
+
+    <div class="kpi-grid" id="merchantKpiGrid">
+      <div class="empty-state">Caricamento...</div>
+    </div>
+
+    <div class="table-card" style="margin-top:16px;">
+      <h3 style="margin:0 0 4px;font-size:16px;">🔎 Problemi rilevati (raggruppati per tipo)</h3>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">
+        Quanti prodotti sono affetti da ogni tipo di problema. Parti dai più frequenti per risolverne di più
+        con meno sforzo.
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Codice problema</th>
+              <th>Descrizione</th>
+              <th>Severità</th>
+              <th>Prodotti affetti</th>
+            </tr>
+          </thead>
+          <tbody id="merchantIssuesBody">
+            <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-card" style="margin-top:16px;">
+      <h3 style="margin:0 0 4px;font-size:16px;">🧩 Dettaglio prodotti con problemi</h3>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">
+        Singoli prodotti problematici con il motivo specifico. Click sul nome per aprire la pagina prodotto sul sito.
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Prodotto</th>
+              <th>Stato</th>
+              <th>Paese</th>
+              <th>Problema</th>
+            </tr>
+          </thead>
+          <tbody id="merchantProductsBody">
+            <tr><td colspan="4" class="empty-state">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="section-title">🌐 Sito web (Google Analytics)</div>
     <div class="section-subtitle">
       Quanto traffico arriva al sito alessandrosiviglia.it, da dove vengono i visitatori,
@@ -914,6 +971,37 @@
       <div id="outboundClicksFooter" style="font-size:12px;color:var(--gray-500);margin-top:8px;"></div>
     </div>
 
+    <div class="section-title">📊 Sito web (Matomo — fonte indipendente)</div>
+    <div class="section-subtitle">
+      Statistiche del traffico raccolte dal secondo sistema di analisi installato sul sito (Matomo for WordPress).
+      Matomo conta tutte le visite, anche quelle dei visitatori che rifiutano i cookie — quindi i numeri sono
+      tipicamente più alti di Google Analytics. Utile come controllo incrociato e per il bounce rate.
+    </div>
+
+    <div class="kpi-grid" id="matomoKpiGrid"></div>
+
+    <div class="chart-card">
+      <canvas id="matomoChart"></canvas>
+    </div>
+
+    <div class="table-card">
+      <h3 style="margin:0 0 12px;font-size:16px;">🌐 Sorgenti di traffico (Matomo)</h3>
+      <table class="metrics-table">
+        <thead>
+          <tr>
+            <th>Sorgente</th>
+            <th>Visite</th>
+            <th>Visitatori unici</th>
+            <th>Azioni</th>
+            <th>Conversioni</th>
+          </tr>
+        </thead>
+        <tbody id="matomoSourcesBody">
+          <tr><td colspan="5" class="empty-state">Caricamento...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
   <script>
@@ -966,7 +1054,9 @@
       loadFunnel();
       loadWooCommerce();
       loadGa4();
+      loadMatomo();
       loadGbp();
+      loadMerchant();
     }
 
     function renderGbpKpis(t) {
@@ -1370,9 +1460,6 @@
       `;
     }
 
-    // NOTA: le funzioni Matomo e Merchant sotto sono DEAD CODE
-    // (le sezioni HTML relative sono state rimosse). Non vengono più chiamate
-    // ma le lascio definite per future riattivazioni — zero costi runtime.
     function renderMatomoKpis(t) {
       const el = document.getElementById('matomoKpiGrid');
       const avgTime = Number(t.avg_time || 0);
@@ -2010,6 +2097,7 @@
     document.getElementById('syncGa4Btn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('ga4', 'syncMenuBtn', 'GA4'); });
     document.getElementById('syncWcBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('woocommerce', 'syncMenuBtn', 'WooCommerce'); });
     document.getElementById('syncGbpBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('gbp', 'syncMenuBtn', 'Google Business Profile'); });
+    document.getElementById('syncMerchantBtn').addEventListener('click', () => { syncMenuItems.classList.remove('open'); runSync('merchant', 'syncMenuBtn', 'Merchant Center'); });
 
     // Sincronizza tutti in sequenza
     document.getElementById('syncAllBtn').addEventListener('click', async () => {
@@ -2208,7 +2296,7 @@
     <div class="ai-header">
       <div>
         <h3>🤖 Assistente Sivigliart BI</h3>
-        <div class="ai-sub">Powered by Claude — conosce i tuoi dati live</div>
+        <div class="ai-sub">Powered by Claude — analizza i tuoi dati BI (sync ogni 24h)</div>
       </div>
       <button class="ai-close" id="aiClose">✕</button>
     </div>

@@ -7,12 +7,12 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/homebrew/bin/node</string>
-        <string>/Users/matteo/Desktop/AMAZON_AI/scripts/sync-daemon.js</string>
+        <string>/Users/matteo/.nvm/versions/node/v20.20.2/bin/node</string>
+        <string>/Users/matteo/Code/AMAZON_AI/scripts/sync-daemon.js</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/matteo/Desktop/AMAZON_AI</string>
+    <string>/Users/matteo/Code/AMAZON_AI</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -21,10 +21,10 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/matteo/Desktop/AMAZON_AI/logs/sync-daemon.log</string>
+    <string>/Users/matteo/Code/AMAZON_AI/logs/sync-daemon.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/matteo/Desktop/AMAZON_AI/logs/sync-daemon.error.log</string>
+    <string>/Users/matteo/Code/AMAZON_AI/logs/sync-daemon.error.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

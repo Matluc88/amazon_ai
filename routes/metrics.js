@@ -887,23 +887,38 @@ async function saveMerchantSnapshot(snap) {
     [merchantId, counts.total, counts.approved, counts.limited, counts.disapproved, counts.pending]
   );
 
-  // 2. Issue correnti: DELETE + INSERT (sempre stato attuale)
+  // 2. Issue correnti: DELETE + bulk INSERT chunked (per evitare pg timeout su 30k+ row)
   await query(`DELETE FROM metrics_merchant_issues WHERE merchant_id = $1`, [merchantId]);
 
+  if (!issues.length) return 0;
+
+  const CHUNK_SIZE = 500; // 500 × 11 cols = 5500 params, molto sotto il limite pg (~65k)
   let inserted = 0;
-  for (const i of issues) {
+  for (let start = 0; start < issues.length; start += CHUNK_SIZE) {
+    const chunk = issues.slice(start, start + CHUNK_SIZE);
+    const values = [];
+    const params = [];
+    let paramIdx = 1;
+    for (const i of chunk) {
+      values.push(
+        `($${paramIdx},$${paramIdx+1},$${paramIdx+2},$${paramIdx+3},$${paramIdx+4},` +
+        `$${paramIdx+5},$${paramIdx+6},$${paramIdx+7},$${paramIdx+8},$${paramIdx+9},$${paramIdx+10}, NOW())`
+      );
+      params.push(
+        merchantId, i.product_id, i.title, i.link, i.image_link,
+        i.status, i.country, i.issue_code, i.issue_severity,
+        i.issue_description, i.issue_detail
+      );
+      paramIdx += 11;
+    }
     await query(
       `INSERT INTO metrics_merchant_issues
          (merchant_id, product_id, title, link, image_link, status, country,
           issue_code, issue_severity, issue_description, issue_detail, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())`,
-      [
-        merchantId, i.product_id, i.title, i.link, i.image_link,
-        i.status, i.country, i.issue_code, i.issue_severity,
-        i.issue_description, i.issue_detail,
-      ]
+       VALUES ${values.join(',')}`,
+      params
     );
-    inserted++;
+    inserted += chunk.length;
   }
   return inserted;
 }
