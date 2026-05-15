@@ -199,6 +199,9 @@
       margin-top: 8px;
       font-style: italic;
     }
+    .kpi-trend-up    { color: #15803d; }
+    .kpi-trend-down  { color: #b91c1c; }
+    .kpi-trend-neutral { color: #6b7280; }
     .section-title {
       font-size: 20px;
       font-weight: 700;
@@ -593,6 +596,15 @@
     <div class="sync-info-row" id="syncInfo"></div>
 
     <div class="token-banner" id="tokenBanner"></div>
+
+    <div class="section-title">📈 Confronto col periodo precedente</div>
+    <div class="section-subtitle">
+      I numeri chiave del periodo selezionato confrontati con i giorni precedenti di pari durata.
+      Verde = stai crescendo, rosso = stai calando. Utile per capire i trend con una sola occhiata.
+    </div>
+    <div class="kpi-grid" id="overviewGrid">
+      <div class="empty-state">Caricamento...</div>
+    </div>
 
     <div class="section-title">🎯 Il tuo funnel di conversione</div>
     <div class="section-subtitle">
@@ -1067,6 +1079,7 @@
       renderChart(dailyRes.rows || []);
       state.campaigns = (campRes.campaigns || []).map(computeDerived);
       renderTable();
+      loadOverview();
       loadFunnel();
       loadEcommerceFunnel();
       loadWooCommerce();
@@ -1074,6 +1087,45 @@
       loadMatomo();
       loadGbp();
       loadMerchant();
+    }
+
+    async function loadOverview() {
+      const qs = `?range=${state.range}`;
+      try {
+        const r = await fetch('/api/metrics/overview' + qs).then(r => r.json());
+        const m = r.metrics || {};
+        const el = document.getElementById('overviewGrid');
+        if (!m) { el.innerHTML = '<div class="empty-state">Nessun dato</div>'; return; }
+
+        const KPIS = [
+          { key: 'wc_revenue', label: '💰 Fatturato online', fmt: fmtEur, higherBetter: true },
+          { key: 'wc_orders', label: '🛍️ Ordini completati', fmt: fmtInt, higherBetter: true },
+          { key: 'ads_spend', label: '📢 Spesa pubblicità', fmt: fmtEur, higherBetter: null },
+          { key: 'ads_revenue', label: '💸 Ricavi da pubblicità', fmt: fmtEur, higherBetter: true },
+          { key: 'site_visits', label: '🌐 Visite al sito', fmt: fmtInt, higherBetter: true },
+          { key: 'gbp_directions', label: '🗺️ Indicazioni negozio', fmt: fmtInt, higherBetter: true },
+        ];
+
+        el.innerHTML = KPIS.map(kpi => {
+          const d = m[kpi.key] || { current: 0, previous: 0, delta: null };
+          let arrow = '', cls = 'kpi-trend-neutral';
+          if (d.delta === null) { arrow = '—'; }
+          else if (d.delta > 0.02) { arrow = `↑ +${(d.delta * 100).toFixed(0)}%`; cls = kpi.higherBetter === false ? 'kpi-trend-down' : 'kpi-trend-up'; }
+          else if (d.delta < -0.02) { arrow = `↓ ${(d.delta * 100).toFixed(0)}%`; cls = kpi.higherBetter === false ? 'kpi-trend-up' : 'kpi-trend-down'; }
+          else { arrow = '≈ ' + (d.delta * 100).toFixed(1) + '%'; }
+          const prevStr = `vs ${kpi.fmt(d.previous)} prima`;
+          return `
+            <div class="kpi-card">
+              <div class="kpi-label">${kpi.label}</div>
+              <div class="kpi-value">${kpi.fmt(d.current)}</div>
+              <div class="${cls}" style="font-size:13px;font-weight:600;margin-top:4px;">${arrow}</div>
+              <div class="kpi-help" style="margin-top:4px;">${prevStr}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Overview load error:', err);
+      }
     }
 
     function renderGbpKpis(t) {

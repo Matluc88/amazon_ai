@@ -51,6 +51,19 @@ function resolveRange(req) {
 }
 
 /**
+ * Calcola il periodo "precedente" di durata uguale a quello corrente.
+ * Esempio: 15 apr-15 mag (30gg) → 16 mar - 14 apr (30gg precedenti).
+ */
+function previousRange(from, to) {
+  const f = new Date(from); const t = new Date(to);
+  const days = Math.round((t - f) / (1000 * 60 * 60 * 24)) + 1;
+  const prevTo = new Date(f); prevTo.setDate(prevTo.getDate() - 1);
+  const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - days + 1);
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  return { from: fmt(prevFrom), to: fmt(prevTo) };
+}
+
+/**
  * GET /api/metrics/summary
  * Totali del periodo raggruppati per piattaforma.
  */
@@ -73,6 +86,82 @@ router.get('/summary', async (req, res) => {
     res.json({ from, to, platforms: r.rows });
   } catch (err) {
     console.error('metrics/summary error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/metrics/overview
+ * KPI principali del periodo + confronto col periodo precedente di pari durata.
+ * Utile per il riepilogo "vs mese precedente" in cima alla dashboard.
+ */
+router.get('/overview', async (req, res) => {
+  try {
+    const cur = resolveRange(req);
+    const prev = previousRange(cur.from, cur.to);
+
+    async function metricsFor(from, to) {
+      const ads = await query(
+        `SELECT COALESCE(SUM(spend),0) AS spend, COALESCE(SUM(revenue),0) AS revenue,
+                COALESCE(SUM(impressions),0) AS impressions, COALESCE(SUM(clicks),0) AS clicks
+           FROM metrics_ads_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      );
+      const wc = await query(
+        `SELECT COUNT(*) AS orders, COALESCE(SUM(total::numeric),0) AS revenue
+           FROM metrics_wc_orders
+          WHERE date_created BETWEEN $1 AND $2
+            AND status IN ('completed','processing','on-hold')`,
+        [from, to + ' 23:59:59']
+      );
+      const matomo = await query(
+        `SELECT COALESCE(SUM(sessions),0) AS visits, COALESCE(SUM(page_views),0) AS pv
+           FROM metrics_matomo_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      );
+      const gbp = await query(
+        `SELECT COALESCE(SUM(impressions_desktop_maps+impressions_desktop_search+
+                              impressions_mobile_maps+impressions_mobile_search),0) AS imp,
+                COALESCE(SUM(direction_requests),0) AS directions
+           FROM metrics_gbp_daily WHERE date BETWEEN $1 AND $2`,
+        [from, to]
+      );
+      return {
+        ads_spend: Number(ads.rows[0].spend),
+        ads_revenue: Number(ads.rows[0].revenue),
+        ads_impressions: Number(ads.rows[0].impressions),
+        ads_clicks: Number(ads.rows[0].clicks),
+        wc_orders: Number(wc.rows[0].orders),
+        wc_revenue: Number(wc.rows[0].revenue),
+        site_visits: Number(matomo.rows[0].visits),
+        site_pageviews: Number(matomo.rows[0].pv),
+        gbp_impressions: Number(gbp.rows[0].imp),
+        gbp_directions: Number(gbp.rows[0].directions),
+      };
+    }
+
+    const [current, previous] = await Promise.all([
+      metricsFor(cur.from, cur.to),
+      metricsFor(prev.from, prev.to),
+    ]);
+
+    function delta(a, b) {
+      if (b === 0) return a > 0 ? null : 0;
+      return ((a - b) / b);
+    }
+
+    const compare = {};
+    for (const k of Object.keys(current)) {
+      compare[k] = { current: current[k], previous: previous[k], delta: delta(current[k], previous[k]) };
+    }
+
+    res.json({
+      current_period: cur,
+      previous_period: prev,
+      metrics: compare,
+    });
+  } catch (err) {
+    console.error('metrics/overview error:', err);
     res.status(500).json({ error: err.message });
   }
 });
